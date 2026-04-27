@@ -54,6 +54,8 @@ const safeJsonParse = Result.fromThrowable(
   () => "invalid JSON",
 );
 
+const shellEscape = (s: string) => `'${s.replaceAll("'", "'\\''")}'`;
+
 export const extractJsonFromText = (text: string): string => {
   const trimmed = text.trim();
 
@@ -146,9 +148,15 @@ export const runClaude = async ({
   await onProgress?.(`${label} Starting claude -p (cwd=${cwd})...`);
 
   return new Promise<RunClaudeResult>((resolve, reject) => {
-    let child: ReturnType<typeof spawn>;
+    const child = (() => {
+      if (!ssh) {
+        return spawn(CLAUDE_BIN, claudeArgs, {
+          cwd,
+          stdio: ["pipe", "pipe", "pipe"],
+          env: extraEnv ? { ...process.env, ...extraEnv } : undefined,
+        });
+      }
 
-    if (ssh) {
       const sshArgs: string[] = [];
       if (ssh.keyPath) sshArgs.push("-i", ssh.keyPath);
       if (ssh.port) sshArgs.push("-p", String(ssh.port));
@@ -157,27 +165,27 @@ export const runClaude = async ({
 
       // Build the remote command: cd to cwd, then run claude with args
       // Shell-escape each arg for safe transport over SSH
-      const shellEscape = (s: string) => `'${s.replace(/'/g, "'\\''")}'`;
       const remoteCmd = `cd ${shellEscape(cwd)} && claude ${claudeArgs.map(shellEscape).join(" ")}`;
       sshArgs.push(remoteCmd);
 
-      child = spawn("ssh", sshArgs, {
+      return spawn("ssh", sshArgs, {
         stdio: ["pipe", "pipe", "pipe"],
         env: extraEnv ? { ...process.env, ...extraEnv } : undefined,
       });
-    } else {
-      child = spawn(CLAUDE_BIN, claudeArgs, {
-        cwd,
-        stdio: ["pipe", "pipe", "pipe"],
-        env: extraEnv ? { ...process.env, ...extraEnv } : undefined,
-      });
-    }
+    })();
 
     const events: ClaudeStreamEvent[] = [];
     const streamState = { lineBuf: "" };
     const stderrChunks: Buffer[] = [];
+    const { stdout, stderr, stdin } = child;
 
-    child.stdout.on("data", (chunk: Buffer) => {
+    if (!stdout || !stderr || !stdin) {
+      reject(new Error("claude process stdio streams are unavailable"));
+
+      return;
+    }
+
+    stdout.on("data", (chunk: Buffer) => {
       streamState.lineBuf += chunk.toString("utf8");
       const lines = streamState.lineBuf.split("\n");
       streamState.lineBuf = lines.pop() ?? "";
@@ -195,10 +203,10 @@ export const runClaude = async ({
       }
     });
 
-    child.stderr.on("data", (chunk: Buffer) => stderrChunks.push(chunk));
+    stderr.on("data", (chunk: Buffer) => stderrChunks.push(chunk));
 
-    child.stdin.write(truncatedPrompt);
-    child.stdin.end();
+    stdin.write(truncatedPrompt);
+    stdin.end();
 
     const timer = setTimeout(() => {
       child.kill("SIGTERM");
