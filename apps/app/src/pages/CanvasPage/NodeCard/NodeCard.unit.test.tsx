@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Box } from "lucide-react";
 import { NodeCard } from "./NodeCard";
 
@@ -7,6 +7,35 @@ describe("NodeCard", () => {
   it("renders label", () => {
     render(<NodeCard icon={Box} label="Test Node" theme="emerald" />);
     expect(screen.getByText("Test Node")).toBeInTheDocument();
+  });
+
+  it("does not re-render when props are stable", () => {
+    const onRender = vi.fn();
+    const TrackRenders = ({ headerRight }: { headerRight?: React.ReactNode }) => {
+      onRender();
+      return <NodeCard headerRight={headerRight} icon={Box} label="Test" theme="emerald" />;
+    };
+
+    const { rerender } = render(<TrackRenders />);
+    expect(onRender).toHaveBeenCalledTimes(1);
+
+    rerender(<TrackRenders />);
+    expect(onRender).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not re-render when headerRight reference is stable", () => {
+    const onRender = vi.fn();
+    const TrackRenders = ({ headerRight }: { headerRight?: React.ReactNode }) => {
+      onRender();
+      return <NodeCard headerRight={headerRight} icon={Box} label="Test" theme="emerald" />;
+    };
+
+    const stableHeader = <span>Status</span>;
+    const { rerender } = render(<TrackRenders headerRight={stableHeader} />);
+    expect(onRender).toHaveBeenCalledTimes(1);
+
+    rerender(<TrackRenders headerRight={stableHeader} />);
+    expect(onRender).toHaveBeenCalledTimes(2);
   });
 
   it("renders children in body", () => {
