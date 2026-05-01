@@ -53,3 +53,67 @@ Skipping or reordering is a protocol violation
 - State changes through Zustand stores with slice pattern, never through mutable globals
 - Side effects isolated at the boundary; core logic remains referentially transparent
 - No implicit dependencies — everything is explicit, injectable, and testable
+
+## Frontend-Specific Rules
+
+### F1. No useEffect
+
+- **Do not use `useEffect`**. It is a source of bugs: dependency changes trigger callbacks but "nobody understands why they are called"
+- Find alternatives: derive state from props, use event handlers, or lift state to the store
+- If you absolutely need side effects, isolate them in a dedicated hook file with a clear name, never inline in a component
+
+### F2. Component Names Must End in a Noun
+
+- Component names must end in a noun that corresponds to a visible entity: `Button`, `Dialog`, `Card`, `Form`
+- **Forbidden**: verb endings like `CanvasQuickAdd` (Add is a verb), `CreateOperation` (Create is a verb)
+- **Correct**: `CanvasQuickAddPanel`, `OperationCreator`, `OperationForm`
+
+### F3. Export Name Must Match File Name
+
+- The exported component name, the file name, and the external import name must all match exactly
+- **Forbidden**: file `Button.tsx` exports `PrimaryButton`; file `utils.ts` exports `formatDate`
+- **Correct**: file `Button.tsx` exports `Button`; file `formatDate.ts` exports `formatDate`
+- Barrel exports (`index.ts`) are allowed only for re-exporting; the re-exported name must still match the original
+
+### F4. No Conditional Rendering Inside Child Components
+
+- Child components must not contain `if (!isOpen) return null` or similar guards
+- **The parent component is responsible for conditional rendering**
+- **Forbidden**:
+  ```tsx
+  const Dialog = ({ isOpen }) => {
+    if (!isOpen) return null;  // WRONG
+    return <div>...</div>;
+  };
+  ```
+- **Correct**:
+  ```tsx
+  const Parent = () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <div>
+        {isOpen && <Dialog />}  {/* Parent decides */}
+      </div>
+    );
+  };
+  ```
+
+### F5. Logic and View Must Be Separated
+
+- Components must not define `handleXxx` functions and pass them down
+- **All event handlers must come directly from the Store**
+- **Forbidden**:
+  ```tsx
+  const Form = () => {
+    const handleSubmit = () => { ... };  // WRONG: inline handler
+    return <button onClick={handleSubmit}>Submit</button>;
+  };
+  ```
+- **Correct**:
+  ```tsx
+  const Form = () => {
+    const store = useFormStore();
+    const handleSubmit = useStore(store, s => s.handleSubmit);  // From store
+    return <button onClick={handleSubmit}>Submit</button>;
+  };
+  ```
