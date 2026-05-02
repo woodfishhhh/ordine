@@ -3,6 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import { Box } from "lucide-react";
 import { NodeCard } from "./NodeCard";
 
+const makeTrackedIcon = () =>
+  vi.fn((props: React.SVGProps<SVGSVGElement>) => <svg data-testid="tracked-icon" {...props} />);
+
 describe("NodeCard", () => {
   it("renders label", () => {
     render(<NodeCard icon={Box} label="Test Node" theme="emerald" />);
@@ -10,32 +13,26 @@ describe("NodeCard", () => {
   });
 
   it("does not re-render when props are stable", () => {
-    const onRender = vi.fn();
-    const TrackRenders = ({ headerRight }: { headerRight?: React.ReactNode }) => {
-      onRender();
-      return <NodeCard headerRight={headerRight} icon={Box} label="Test" theme="emerald" />;
-    };
+    const Icon = makeTrackedIcon();
 
-    const { rerender } = render(<TrackRenders />);
-    expect(onRender).toHaveBeenCalledTimes(1);
+    const { rerender } = render(<NodeCard icon={Icon} label="Test" theme="emerald" />);
+    expect(Icon).toHaveBeenCalledTimes(1);
 
-    rerender(<TrackRenders />);
-    expect(onRender).toHaveBeenCalledTimes(2);
+    rerender(<NodeCard icon={Icon} label="Test" theme="emerald" />);
+    expect(Icon).toHaveBeenCalledTimes(1);
   });
 
   it("does not re-render when headerRight reference is stable", () => {
-    const onRender = vi.fn();
-    const TrackRenders = ({ headerRight }: { headerRight?: React.ReactNode }) => {
-      onRender();
-      return <NodeCard headerRight={headerRight} icon={Box} label="Test" theme="emerald" />;
-    };
+    const Icon = makeTrackedIcon();
 
     const stableHeader = <span>Status</span>;
-    const { rerender } = render(<TrackRenders headerRight={stableHeader} />);
-    expect(onRender).toHaveBeenCalledTimes(1);
+    const { rerender } = render(
+      <NodeCard headerRight={stableHeader} icon={Icon} label="Test" theme="emerald" />
+    );
+    expect(Icon).toHaveBeenCalledTimes(1);
 
-    rerender(<TrackRenders headerRight={stableHeader} />);
-    expect(onRender).toHaveBeenCalledTimes(2);
+    rerender(<NodeCard headerRight={stableHeader} icon={Icon} label="Test" theme="emerald" />);
+    expect(Icon).toHaveBeenCalledTimes(1);
   });
 
   it("renders children in body", () => {

@@ -8,6 +8,7 @@ import {
 } from "@repo/ui/card";
 import { cn } from "@repo/ui/lib/utils";
 import type { NodeRunStatus } from "@repo/pipeline-engine/schemas";
+import { memo } from "react";
 
 export type NodeTheme = "emerald" | "violet" | "amber" | "sky" | "orange" | "teal" | "indigo";
 
@@ -86,7 +87,7 @@ export interface NodeCardProps {
 
 const handleMouseDown = (e: React.MouseEvent) => e.stopPropagation();
 
-export const NodeCard = ({
+const NodeCardComponent = ({
   selected,
   theme,
   icon: Icon,
@@ -152,3 +153,6 @@ export const NodeCard = ({
     </Card>
   );
 };
+
+export const NodeCard = memo(NodeCardComponent);
+NodeCard.displayName = "NodeCard";
