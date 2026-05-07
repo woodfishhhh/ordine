@@ -1,4 +1,4 @@
-import { ResultAsync } from "neverthrow";
+import { Result, ResultAsync } from "neverthrow";
 import {
   createDistillationsDao,
   createJobsDao,
@@ -11,11 +11,20 @@ import {
 } from "@repo/models";
 import { extractJsonFromText } from "@repo/agent";
 import { logger } from "@repo/logger";
-import { PipelineSchema, type PipelineData } from "@repo/pipeline-engine/schemas";
+import {
+  PipelineSchema,
+  PipelineOperationProposalSchema,
+  type PipelineData,
+  type PipelineGraphSnapshot,
+  type PipelineOperationProposal,
+  type PipelineOperationDiagnostic,
+} from "@repo/pipeline-engine/schemas";
+import { validatePipelineOperations } from "@repo/pipeline-engine";
 import { runAgent } from "../pipelineRunnerService/agentRunner/agentRunner";
 import { normalizeSettingsRecord } from "../settingsService/normalizeSettingsRecord";
 
 const OPTIMIZE_AGENT_ID = "pipeline-optimizer";
+const PROPOSE_AGENT_ID = "pipeline-propose-operations";
 
 const OPTIMIZE_SYSTEM_PROMPT = [
   "You are a pipeline optimization agent for Ordine, an AI-first pipeline orchestration platform.",
@@ -101,6 +110,46 @@ const MAX_SNAPSHOT_CHARS = 20_000;
 const truncate = (text: string, max: number) =>
   text.length <= max ? text : `${text.slice(0, max)}\n... (truncated)`;
 
+const PROPOSE_SYSTEM_PROMPT = [
+  "You are an AI pipeline editing assistant for Ordine, a pipeline orchestration platform.",
+  "Your job is to propose a sequence of graph edit operations that modify a pipeline graph based on the user's request.",
+  "",
+  "=== AVAILABLE OPERATION TYPES ===",
+  "",
+  "1. addNode — adds a new node to the graph:",
+  '   { "type": "addNode", "node": { "id": "<unique>", "type": "<nodeType>", "position": {"x": number, "y": number}, "data": { "nodeType": "<nodeType>", ... } } }',
+  "",
+  "2. removeNode — removes a node and all its connected edges:",
+  '   { "type": "removeNode", "nodeId": "<nodeId>" }',
+  "",
+  "3. addEdge — adds a connection between two nodes:",
+  '   { "type": "addEdge", "edge": { "id": "<unique>", "source": "<nodeId>", "target": "<nodeId>" } }',
+  "",
+  "4. removeEdge — removes a connection:",
+  '   { "type": "removeEdge", "edgeId": "<edgeId>" }',
+  "",
+  "5. reconnectEdge — changes the source/target of an existing edge:",
+  '   { "type": "reconnectEdge", "edgeId": "<edgeId>", "source": "<nodeId>", "target": "<nodeId>" }',
+  "",
+  "6. replaceNodeData — replaces the data payload of a node (must keep the same nodeType):",
+  '   { "type": "replaceNodeData", "nodeId": "<nodeId>", "data": { "nodeType": "<sameNodeType>", ... } }',
+  "",
+  "=== OUTPUT SCHEMA ===",
+  "Return ONLY a JSON object matching this exact schema:",
+  '{ "summary": "Brief description of what changes are proposed and why", "operations": [ /* array of operations above */ ] }',
+  "",
+  "=== RULES ===",
+  "- The 'summary' field must be a non-empty string explaining the proposed changes.",
+  "- The 'operations' array must contain at least one operation.",
+  "- All node IDs and edge IDs must be unique within the graph.",
+  "- When adding edges, both source and target nodes must already exist in the graph (or be added in a previous operation).",
+  "- When replacing node data, the 'nodeType' inside 'data' MUST match the node's existing type.",
+  "- Compound nodes (type === 'compound' or data.nodeType === 'compound') are NOT supported.",
+  "- Child nodes (nodes with a 'parentId' field) are NOT supported.",
+  "- Do NOT propose operations that create compound nodes or child nodes.",
+  "- Return ONLY the JSON object. No markdown, no explanation, no code fences.",
+].join("\n");
+
 export const createPipelinesService = (db: DbConnection) => {
   const dao = createPipelinesDao(db);
   const distillationsDao = createDistillationsDao(db);
@@ -116,6 +165,111 @@ export const createPipelinesService = (db: DbConnection) => {
     create: (...args: Parameters<typeof dao.create>) => dao.create(...args),
     update: (...args: Parameters<typeof dao.update>) => dao.update(...args),
     delete: (id: string) => dao.delete(id),
+
+    proposeOperations: async (opts: {
+      snapshot: PipelineGraphSnapshot;
+      message: string;
+      pipelineId?: string;
+      pipelineName?: string;
+    }): Promise<{
+      proposal: PipelineOperationProposal | null;
+      diagnostics: PipelineOperationDiagnostic[];
+    }> => {
+      const settings = normalizeSettingsRecord(await settingsDao.get());
+
+      const userPromptText = [
+        "=== PIPELINE CONTEXT ===",
+        `Pipeline ID: ${opts.pipelineId ?? "(unsaved)"}`,
+        `Pipeline Name: ${opts.pipelineName ?? "(unnamed)"}`,
+        "",
+        "=== CURRENT GRAPH ===",
+        truncate(JSON.stringify(opts.snapshot, null, 2), MAX_SNAPSHOT_CHARS),
+        "",
+        "=== USER REQUEST ===",
+        opts.message,
+        "",
+        "Propose the operations now. Return ONLY the JSON object.",
+      ].join("\n");
+
+      const MAX_RETRIES = 3;
+      const execution = await (async () => {
+        for (const attempt of Array.from({ length: MAX_RETRIES }, (_, i) => i + 1)) {
+          const result = await ResultAsync.fromPromise(
+            runAgent({
+              agent: settings.defaultAgentRuntime,
+              systemPrompt: PROPOSE_SYSTEM_PROMPT,
+              userPrompt: userPromptText,
+              inputPath: process.cwd(),
+              agentId: PROPOSE_AGENT_ID,
+              allowedTools: [],
+              logPrefix: "proposeOperations",
+              apiKey: settings.defaultApiKey,
+              model: settings.defaultModel,
+            }),
+            (cause) => (cause instanceof Error ? cause : new Error(String(cause))),
+          );
+          if (result.isOk()) return result;
+          if (attempt === MAX_RETRIES) return result;
+          logger.warn(
+            { attempt, err: result.error.message },
+            "proposeOperations: agent attempt failed, retrying",
+          );
+        }
+
+        return undefined;
+      })();
+
+      if (!execution || execution.isErr()) {
+        logger.error(
+          { err: execution?.error },
+          "proposeOperations: agent failed after retries",
+        );
+
+        return { proposal: null, diagnostics: [] };
+      }
+
+      const raw = execution.value;
+      const extractJsonResult = Result.fromThrowable(
+        extractJsonFromText,
+        () => new Error("failed to extract JSON from agent response"),
+      )(raw);
+      if (extractJsonResult.isErr()) {
+        logger.error({ raw }, "proposeOperations: failed to extract JSON from agent response");
+
+        return { proposal: null, diagnostics: [] };
+      }
+
+      const parseJsonResult = Result.fromThrowable(
+        JSON.parse,
+        () => new Error("extracted text is not valid JSON"),
+      )(extractJsonResult.value);
+      if (parseJsonResult.isErr()) {
+        logger.error(
+          { json: extractJsonResult.value },
+          "proposeOperations: extracted text is not valid JSON",
+        );
+
+        return { proposal: null, diagnostics: [] };
+      }
+
+      const parsed = PipelineOperationProposalSchema.safeParse(parseJsonResult.value);
+      if (!parsed.success) {
+        logger.error(
+          { error: parsed.error },
+          "proposeOperations: invalid PipelineOperationProposal from agent",
+        );
+
+        return { proposal: null, diagnostics: [] };
+      }
+
+      const proposal = parsed.data;
+
+      // Validate operations against the snapshot to get diagnostics
+      const validationResult = validatePipelineOperations(opts.snapshot, proposal.operations);
+      const diagnostics = validationResult.isErr() ? validationResult.error : [];
+
+      return { proposal, diagnostics };
+    },
 
     optimizeFromDistillation: async (opts: {
       distillationId: string;

@@ -56,6 +56,19 @@ pipelinesRoutes.delete("/:id", async (c) => {
   return c.body(null, 204);
 });
 
+pipelinesRoutes.post("/:id/propose-operations", async (c) => {
+  const id = c.req.param("id");
+  const body = await c.req.json();
+  const result = await pipelinesService.proposeOperations({
+    pipelineId: id,
+    snapshot: body.snapshot,
+    message: body.message,
+    pipelineName: body.pipelineName,
+  });
+
+  return c.json(result);
+});
+
 pipelinesRoutes.post("/:id/run", async (c) => {
   const id = c.req.param("id");
   const pipeline = await pipelinesService.getById(id);

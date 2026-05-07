@@ -2,7 +2,10 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { publicProcedure, router } from "../init";
 import { pipelinesService, pipelineRunnerService } from "../services";
-import { PipelineSchema } from "@repo/pipeline-engine/schemas";
+import {
+  PipelineGraphSnapshotSchema,
+  PipelineSchema,
+} from "@repo/pipeline-engine/schemas";
 
 export const pipelinesRouter = router({
   getMany: publicProcedure.query(() => pipelinesService.getAll()),
@@ -88,6 +91,26 @@ export const pipelinesRouter = router({
           message: "Failed to generate optimized pipeline",
         });
       }
+
+      return result;
+    }),
+
+  proposeOperations: publicProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        snapshot: PipelineGraphSnapshotSchema,
+        message: z.string(),
+        pipelineName: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const result = await pipelinesService.proposeOperations({
+        pipelineId: input.id,
+        snapshot: input.snapshot,
+        message: input.message,
+        pipelineName: input.pipelineName,
+      });
 
       return result;
     }),

@@ -536,6 +536,15 @@ export const dataProvider: DataProvider = {
 
       return { data: data as unknown as TData };
     }
+    if (url === "pipelines/proposeOperations") {
+      const data = await trpcClient.pipelines.proposeOperations.mutate(
+        payload as unknown as Parameters<
+          typeof trpcClient.pipelines.proposeOperations.mutate
+        >[0]
+      );
+
+      return { data: data as unknown as TData };
+    }
     if (url === "rules/toggle") {
       const data = await trpcClient.rules.toggle.mutate(
         payload as unknown as Parameters<typeof trpcClient.rules.toggle.mutate>[0]

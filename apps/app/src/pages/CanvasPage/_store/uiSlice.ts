@@ -1,4 +1,9 @@
-import type { NodeRunStatus } from "@repo/pipeline-engine/schemas";
+import { applyPipelineOperations } from "@repo/pipeline-engine/operations";
+import type {
+  NodeRunStatus,
+  PipelineOperationProposal,
+  PipelineOperationDiagnostic,
+} from "@repo/pipeline-engine/schemas";
 import type { HarnessCanvasStoreSlice } from "./harnessCanvasStore";
 import { DEFAULT_CANVAS_VIEWPORT } from "../utils/canvasViewport";
 
@@ -28,6 +33,13 @@ export interface ConnectStartState {
   handleType: "source" | "target" | null;
 }
 
+export interface AgentPanelState {
+  isOpen: boolean;
+  pendingProposal: PipelineOperationProposal | null;
+  diagnostics: PipelineOperationDiagnostic[] | null;
+  isLoading: boolean;
+}
+
 export interface UISlice {
   pipelineId: string | null;
   pipelineName: string;
@@ -53,6 +65,9 @@ export interface UISlice {
   nodeRunStatuses: Record<string, NodeRunStatus>;
   nodeLlmContent: Record<string, string>;
   inspectingNodeId: string | null;
+
+  // Agent panel state
+  agentPanel: AgentPanelState;
 
   handlePipelineIdChange: (id: string) => void;
   handleSidebarPanelChange: (panel: SidebarPanel) => void;
@@ -95,6 +110,12 @@ export interface UISlice {
   markNodeRunning: (nodeId: string) => void;
   markNodePassed: (nodeId: string) => void;
   markNodeFailed: (nodeId: string) => void;
+
+  // Agent panel actions
+  toggleAgentPanel: () => void;
+  setPendingProposal: (proposal: PipelineOperationProposal | null, diagnostics: PipelineOperationDiagnostic[] | null) => void;
+  clearPendingProposal: () => void;
+  applyAgentProposal: (proposal: PipelineOperationProposal) => void;
 }
 
 export const createUISlice = (
@@ -127,6 +148,13 @@ export const createUISlice = (
   nodeRunStatuses: {},
   nodeLlmContent: {},
   inspectingNodeId: null,
+  // Agent panel state defaults
+  agentPanel: {
+    isOpen: false,
+    pendingProposal: null,
+    diagnostics: null,
+    isLoading: false,
+  },
   handlePipelineIdChange: (id) => {
     set({ pipelineId: id });
   },
@@ -336,6 +364,84 @@ export const createUISlice = (
       nodeRunStatuses: {
         ...state.nodeRunStatuses,
         [nodeId]: "fail" as NodeRunStatus,
+      },
+    }));
+  },
+
+  toggleAgentPanel: () => {
+    set((state) => ({
+      sidebarPanel: state.agentPanel.isOpen ? null : "ai-assistant",
+      agentPanel: { ...state.agentPanel, isOpen: !state.agentPanel.isOpen },
+    }));
+  },
+
+  setPendingProposal: (proposal, diagnostics) => {
+    set((state) => ({
+      agentPanel: {
+        ...state.agentPanel,
+        pendingProposal: proposal,
+        diagnostics,
+        isLoading: false,
+      },
+    }));
+  },
+
+  clearPendingProposal: () => {
+    set((state) => ({
+      agentPanel: {
+        ...state.agentPanel,
+        pendingProposal: null,
+        diagnostics: null,
+        isLoading: false,
+      },
+    }));
+  },
+
+  applyAgentProposal: (proposal) => {
+    const { nodes, edges, recordCommand } = get();
+
+    const snapshot = { nodes, edges };
+    const result = applyPipelineOperations(snapshot, proposal.operations);
+
+    if (result.isErr()) {
+      set((s) => ({
+        agentPanel: {
+          ...s.agentPanel,
+          diagnostics: result.error,
+          isLoading: false,
+        },
+      }));
+      return;
+    }
+
+    const next = result.value;
+
+    recordCommand(
+      {
+        type: "APPLY_AGENT_PROPOSAL",
+        label: `应用 AI 提案: ${proposal.summary}`,
+        payload: { summary: proposal.summary, operationCount: proposal.operations.length },
+      },
+      (draft) => {
+        draft.nodes = next.nodes as typeof draft.nodes;
+        draft.edges = next.edges as typeof draft.edges;
+      }
+    );
+
+    set((s) => ({
+      selectedNodeId: null,
+      selectedEdgeId: null,
+      contextMenu: null,
+      connectionMenu: null,
+      nodeContextMenu: null,
+      connectStart: null,
+      isQuickAddOpen: false,
+      quickAddQuery: "",
+      agentPanel: {
+        ...s.agentPanel,
+        pendingProposal: null,
+        diagnostics: null,
+        isLoading: false,
       },
     }));
   },

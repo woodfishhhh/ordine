@@ -10,6 +10,7 @@ import {
   Play,
   AlignLeft,
   Plus,
+  Bot,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@repo/ui/button";
@@ -34,6 +35,7 @@ export const CanvasToolbar = () => {
   const handleRedo = useStore(store, (state) => state.handleRedo);
   const handleFormatLayout = useStore(store, (state) => state.formatLayout);
   const handleRunTest = useStore(store, (state) => state.handleRunTest);
+  const toggleAgentPanel = useStore(store, (state) => state.toggleAgentPanel);
 
   return (
     <div className="absolute left-1/2 top-3 z-10 -translate-x-1/2">
@@ -129,6 +131,24 @@ export const CanvasToolbar = () => {
             <Plus className="h-4 w-4" />
           </TooltipTrigger>
           <TooltipContent>{t("canvas.quickAdd.open")}</TooltipContent>
+        </Tooltip>
+
+        {/* AI Assistant */}
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                className="h-7 w-7 text-primary hover:bg-primary/10"
+                size="icon"
+                title={t("canvas.agentPanel.toggle")}
+                variant="ghost"
+                onClick={toggleAgentPanel}
+              />
+            }
+          >
+            <Bot className="h-4 w-4" />
+          </TooltipTrigger>
+          <TooltipContent>{t("canvas.agentPanel.toggle")}</TooltipContent>
         </Tooltip>
 
         <Separator className="mx-1 h-5" orientation="vertical" />

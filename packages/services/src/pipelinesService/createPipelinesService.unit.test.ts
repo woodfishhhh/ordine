@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 
 const mockDao = {
   findMany: vi.fn().mockResolvedValue([{ id: "p1" }]),
@@ -7,6 +7,15 @@ const mockDao = {
   update: vi.fn().mockResolvedValue({ id: "p1" }),
   delete: vi.fn().mockResolvedValue(undefined),
 };
+const mockSettingsDao = {
+  get: vi.fn().mockResolvedValue({
+    defaultAgentRuntime: "codex",
+    defaultApiKey: "test-key",
+    defaultModel: "gpt-5.4-mini",
+  }),
+};
+const mockRunAgent = vi.fn();
+const mockExtractJsonFromText = vi.fn((raw: string) => raw);
 
 vi.mock("@repo/models", () => ({
   createPipelinesDao: () => mockDao,
@@ -17,12 +26,58 @@ vi.mock("@repo/models", () => ({
   createAgentRawExportsDao: () => ({}),
   createAgentSpansDao: () => ({}),
   createOperationsDao: () => ({}),
-  createSettingsDao: () => ({}),
+  createSettingsDao: () => mockSettingsDao,
+}));
+vi.mock("@repo/agent", () => ({
+  extractJsonFromText: (raw: string) => mockExtractJsonFromText(raw),
+}));
+vi.mock("../pipelineRunnerService/agentRunner/agentRunner", () => ({
+  runAgent: (opts: unknown) => mockRunAgent(opts),
 }));
 
 import { createPipelinesService } from "./createPipelinesService";
 
 describe("createPipelinesService", () => {
+  const snapshot = {
+    nodes: [
+      {
+        id: "folder-1",
+        type: "folder",
+        position: { x: 0, y: 0 },
+        data: { nodeType: "folder", label: "Folder 1" },
+      },
+    ],
+    edges: [],
+  } as never;
+
+  const compoundSnapshot = {
+    nodes: [
+      {
+        id: "compound-1",
+        type: "compound",
+        position: { x: 0, y: 0 },
+        data: { nodeType: "compound", label: "Group 1", childNodeIds: [] },
+      },
+    ],
+    edges: [],
+  } as never;
+
+  const resetCommonMocks = () => {
+    mockDao.findMany.mockClear();
+    mockDao.findById.mockClear();
+    mockDao.create.mockClear();
+    mockDao.update.mockClear();
+    mockDao.delete.mockClear();
+    mockSettingsDao.get.mockClear();
+    mockRunAgent.mockReset();
+    mockExtractJsonFromText.mockReset();
+    mockExtractJsonFromText.mockImplementation((raw: string) => raw);
+  };
+
+  beforeEach(() => {
+    resetCommonMocks();
+  });
+
   it("getAll delegates to dao.findMany", async () => {
     const svc = createPipelinesService({} as never);
     const result = await svc.getAll();
@@ -53,5 +108,102 @@ describe("createPipelinesService", () => {
     const svc = createPipelinesService({} as never);
     await svc.delete("p1");
     expect(mockDao.delete).toHaveBeenCalledWith("p1");
+  });
+
+  it("proposeOperations returns a parsed proposal and diagnostics", async () => {
+    mockRunAgent.mockResolvedValue(
+      JSON.stringify({
+        summary: "remove stale node",
+        operations: [{ type: "removeNode", nodeId: "folder-1" }],
+      }),
+    );
+    const svc = createPipelinesService({} as never);
+
+    const result = await svc.proposeOperations({
+      snapshot,
+      message: "remove folder-1",
+      pipelineId: "p1",
+      pipelineName: "Pipeline 1",
+    });
+
+    expect(mockRunAgent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        allowedTools: [],
+        agentId: "pipeline-propose-operations",
+      }),
+    );
+    expect(result.proposal).toEqual({
+      summary: "remove stale node",
+      operations: [{ type: "removeNode", nodeId: "folder-1" }],
+    });
+    expect(result.diagnostics).toEqual([]);
+    expect(mockDao.create).not.toHaveBeenCalled();
+    expect(mockDao.update).not.toHaveBeenCalled();
+    expect(mockDao.delete).not.toHaveBeenCalled();
+  });
+
+  it("proposeOperations returns null proposal when extracted JSON is invalid", async () => {
+    mockRunAgent.mockResolvedValue("raw response");
+    mockExtractJsonFromText.mockReturnValue("not-json");
+    const svc = createPipelinesService({} as never);
+
+    const result = await svc.proposeOperations({
+      snapshot,
+      message: "invalid",
+    });
+
+    expect(result).toEqual({ proposal: null, diagnostics: [] });
+    expect(mockDao.create).not.toHaveBeenCalled();
+    expect(mockDao.update).not.toHaveBeenCalled();
+    expect(mockDao.delete).not.toHaveBeenCalled();
+  });
+
+  it("proposeOperations returns null proposal when schema validation fails", async () => {
+    mockRunAgent.mockResolvedValue("raw response");
+    mockExtractJsonFromText.mockReturnValue(
+      JSON.stringify({
+        summary: "",
+        operations: [],
+      }),
+    );
+    const svc = createPipelinesService({} as never);
+
+    const result = await svc.proposeOperations({
+      snapshot,
+      message: "schema-invalid",
+    });
+
+    expect(result).toEqual({ proposal: null, diagnostics: [] });
+    expect(mockDao.create).not.toHaveBeenCalled();
+    expect(mockDao.update).not.toHaveBeenCalled();
+    expect(mockDao.delete).not.toHaveBeenCalled();
+  });
+
+  it("proposeOperations returns diagnostics for disallowed compound-node operations", async () => {
+    mockRunAgent.mockResolvedValue(
+      JSON.stringify({
+        summary: "remove grouped node",
+        operations: [{ type: "removeNode", nodeId: "compound-1" }],
+      }),
+    );
+    const svc = createPipelinesService({} as never);
+
+    const result = await svc.proposeOperations({
+      snapshot: compoundSnapshot,
+      message: "remove group",
+    });
+
+    expect(result.proposal).toEqual({
+      summary: "remove grouped node",
+      operations: [{ type: "removeNode", nodeId: "compound-1" }],
+    });
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "COMPOUND_NODE_NOT_SUPPORTED" }),
+      ]),
+    );
+    expect(mockDao.create).not.toHaveBeenCalled();
+    expect(mockDao.update).not.toHaveBeenCalled();
+    expect(mockDao.delete).not.toHaveBeenCalled();
   });
 });

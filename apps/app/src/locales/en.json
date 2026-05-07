@@ -322,6 +322,23 @@
     "redo": "Redo",
     "run": "Run",
     "aiMode": "AI Mode",
+    "agentPanel": {
+      "toggle": "AI Assistant",
+      "title": "AI Assistant",
+      "welcome": "Hi! I'm your AI assistant. Tell me what you'd like to do with your pipeline and I'll suggest operations.",
+      "thinking": "Thinking...",
+      "proposal": "Proposed Operations",
+      "proposalReceived": "I've received a proposal. Review it below and choose to apply or discard.",
+      "noProposal": "I've processed your request but no operations were proposed.",
+      "apply": "Apply",
+      "discard": "Discard",
+      "applied": "Proposal applied.",
+      "discarded": "Proposal discarded.",
+      "diagnostics": "Diagnostics",
+      "error": "Request failed. Please try again later.",
+      "errorTitle": "AI Assistant Error",
+      "inputPlaceholder": "Type your request..."
+    },
     "emptyState": {
       "title": "Start with a node",
       "description": "Add an input object, Operation, or Recipe to shape the first pipeline path.",

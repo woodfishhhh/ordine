@@ -16,3 +16,7 @@ export * from "./PipelineEdgeDataSchema";
 export * from "./PipelineNodeSchema";
 export * from "./PipelineEdgeSchema";
 export * from "./PipelineSchema";
+export * from "./PipelineGraphSnapshotSchema";
+export * from "./PipelineOperationDiagnosticSchema";
+export * from "./PipelineOperationSchema";
+export * from "./PipelineOperationProposalSchema";
