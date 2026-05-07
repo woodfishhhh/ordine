@@ -40,8 +40,18 @@ vi.mock("@repo/pipeline-engine/operations", () => ({
 }));
 
 const mockCustom = vi.fn();
+const mockGetOne = vi.fn();
+const mockGetList = vi.fn();
 vi.mock("@/integrations/refine/dataProvider", () => ({
-  dataProvider: { custom: (...args: unknown[]) => mockCustom(...args) },
+  ResourceName: {
+    settings: "settings",
+    agentRuntimes: "agentRuntimes",
+  },
+  dataProvider: {
+    custom: (...args: unknown[]) => mockCustom(...args),
+    getOne: (...args: unknown[]) => mockGetOne(...args),
+    getList: (...args: unknown[]) => mockGetList(...args),
+  },
 }));
 
 vi.mock("@repo/ui/button", () => ({
@@ -137,7 +147,16 @@ const makeProposal = (overrides: Partial<PipelineOperationProposal> = {}): Pipel
 describe("AgentPanel", () => {
   beforeEach(() => {
     mockCustom.mockReset();
+    mockGetOne.mockReset();
+    mockGetList.mockReset();
     mockApplyPipelineOperations.mockReset();
+    mockGetOne.mockResolvedValue({
+      data: { defaultAgentRuntime: "codex" },
+    });
+    mockGetList.mockResolvedValue({
+      data: [{ type: "codex" }],
+      total: 1,
+    });
   });
 
   it("renders panel with title and welcome message", () => {
@@ -336,5 +355,28 @@ describe("AgentPanel", () => {
     await waitFor(() => {
       expect(screen.getByText("已收到操作建议，请查看并决定是否应用。")).toBeInTheDocument();
     });
+  });
+
+  it("shows runtime setup link when AI runtime is not configured", async () => {
+    const user = userEvent.setup();
+    mockGetOne.mockResolvedValue({
+      data: { defaultAgentRuntime: "codex" },
+    });
+    mockGetList.mockResolvedValue({
+      data: [],
+      total: 0,
+    });
+
+    render(<AgentPanel />, { wrapper: wrapperWithState() });
+    const input = screen.getByPlaceholderText("输入你的需求...");
+    await user.type(input, "add node");
+    await user.keyboard("{Enter}");
+
+    await waitFor(() => {
+      expect(screen.getByRole("link", { name: "前往配置" })).toBeInTheDocument();
+    });
+    const link = screen.getByRole("link", { name: "前往配置" });
+    expect(link).toHaveAttribute("href", "/runtimes");
+    expect(mockCustom).not.toHaveBeenCalled();
   });
 });

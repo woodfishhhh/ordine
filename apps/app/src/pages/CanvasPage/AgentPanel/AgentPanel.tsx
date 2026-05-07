@@ -17,7 +17,7 @@ import { Input } from "@repo/ui/input";
 import { cn } from "@repo/ui/lib/utils";
 import { ResultAsync } from "neverthrow";
 import { useHarnessCanvasStore } from "../_store";
-import { dataProvider } from "@/integrations/refine/dataProvider";
+import { dataProvider, ResourceName } from "@/integrations/refine/dataProvider";
 import { toastStore } from "@/store/toastStore";
 import type {
   PipelineOperationProposal,
@@ -73,6 +73,7 @@ export const AgentPanel = () => {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [needsRuntimeSetup, setNeedsRuntimeSetup] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -105,6 +106,58 @@ export const AgentPanel = () => {
     setInputValue("");
     scrollToBottom();
     setIsSending(true);
+
+    const runtimeSetupResult = await ResultAsync.fromPromise(
+      Promise.all([
+        dataProvider.getOne!({
+          resource: ResourceName.settings,
+          id: "default",
+        }),
+        dataProvider.getList!({
+          resource: ResourceName.agentRuntimes,
+        }),
+      ]),
+      (error) => (error instanceof Error ? error : new Error(String(error)))
+    );
+
+    if (runtimeSetupResult.isErr()) {
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: t("canvas.agentPanel.error"),
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+      toastStore.getState().addToast({
+        type: "error",
+        title: t("canvas.agentPanel.errorTitle"),
+        description: runtimeSetupResult.error.message,
+      });
+      setIsSending(false);
+      scrollToBottom();
+      return;
+    }
+
+    const [settingsResult, runtimesResult] = runtimeSetupResult.value;
+    const settings = settingsResult.data as { defaultAgentRuntime?: string };
+    const runtimeConfigs = runtimesResult.data as Array<{ type?: string }>;
+    const hasConfiguredRuntime = runtimeConfigs.some(
+      (runtime) => runtime.type === settings.defaultAgentRuntime
+    );
+
+    if (!hasConfiguredRuntime) {
+      setNeedsRuntimeSetup(true);
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: t("canvas.agentPanel.runtimeNotConfigured"),
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+      setIsSending(false);
+      scrollToBottom();
+      return;
+    }
+
+    setNeedsRuntimeSetup(false);
 
     const result = await ResultAsync.fromPromise(
       dataProvider.custom!({
@@ -327,6 +380,21 @@ export const AgentPanel = () => {
                 {t("canvas.agentPanel.discard")}
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {needsRuntimeSetup && (
+        <div className="border-t bg-amber-50/70">
+          <div className="flex items-center gap-2 p-3 text-xs text-amber-800">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            <span>{t("canvas.agentPanel.runtimeNotConfigured")}</span>
+            <a
+              className="font-medium underline underline-offset-2"
+              href="/runtimes"
+            >
+              {t("canvas.agentPanel.goToRuntimeSettings")}
+            </a>
           </div>
         </div>
       )}

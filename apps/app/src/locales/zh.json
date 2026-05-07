@@ -337,7 +337,9 @@
       "diagnostics": "诊断信息",
       "error": "请求失败，请稍后重试。",
       "errorTitle": "AI 助手错误",
-      "inputPlaceholder": "输入你的需求..."
+      "inputPlaceholder": "输入你的需求...",
+      "runtimeNotConfigured": "暂未配置运行时 AI。",
+      "goToRuntimeSettings": "前往配置"
     },
     "emptyState": {
       "title": "从一个节点开始",
