@@ -11,6 +11,8 @@ node_modules
 .env.development.local
 .env.test.local
 .env.production.local
+.env.qa.local
+
 
 # Testing
 coverage
@@ -82,6 +84,7 @@ test_output.log
 .vscode
 .omx
 output
+.output
 
 # Local agent/context files
 AGENTS.md

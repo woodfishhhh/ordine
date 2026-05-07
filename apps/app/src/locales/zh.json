@@ -54,7 +54,8 @@
     "back": "返回",
     "workspace": "工作区",
     "library": "库",
-    "knowledge": "知识"
+    "knowledge": "知识",
+    "logout": "退出登录"
   },
   "sidebar": {
     "user": "Ordine 用户"
@@ -581,7 +582,6 @@
     "title": "运行时",
     "empty": "尚未配置运行时。添加一个以启用 Agent 执行。",
     "unnamed": "未命名运行时",
-    "addRuntime": "添加运行时",
     "runtime": "运行时",
     "selectHint": "选择一个运行时查看详情",
     "scan": "扫描可用运行时",

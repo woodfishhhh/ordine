@@ -1,6 +1,6 @@
 {
   "name": "@ordine/cli",
-  "version": "0.0.1-preview",
+  "version": "0.0.2-preview.0",
   "private": false,
   "bin": {
     "ordine": "./dist/index.js"
@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "commander": "^14.0.0",
+    "neverthrow": "^8.2.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
