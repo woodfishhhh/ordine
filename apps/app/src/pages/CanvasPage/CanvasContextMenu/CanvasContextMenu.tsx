@@ -25,7 +25,7 @@ import { useList } from "@refinedev/core";
 import { ResourceName } from "@/integrations/refine/dataProvider";
 import type { Operation, Recipe } from "@repo/schemas";
 import { getAllowedConnections } from "../utils/getAllowedConnections";
-import { getNodeMeta } from "../utils/nodeTypeMeta";
+import { getNodeMeta, getNodeTypeLabel } from "../utils/nodeTypeMeta";
 import type { NodeType, BuiltinNodeType } from "@repo/pipeline-engine/schemas";
 import { cn } from "@repo/ui/lib/utils";
 
@@ -125,7 +125,7 @@ export const CanvasContextMenu = () => {
     if (!connectStart) return null;
     const node = nodes.find((n) => n.id === connectStart.nodeId);
 
-    return node ? { type: node.type, label: getNodeMeta(node.type)!.label } : null;
+    return node ? { type: node.type, label: getNodeTypeLabel(t, node.type) } : null;
   })();
 
   // Filter object types based on available connections
@@ -182,19 +182,24 @@ export const CanvasContextMenu = () => {
               })()}
             </span>
             <ArrowRight className="size-3 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground">连接到...</span>
+            <span className="text-xs font-medium text-muted-foreground">
+              {t("canvas.contextMenu.connectTo")}
+            </span>
           </div>
         ) : (
-          <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">新建节点</div>
+          <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">
+            {t("canvas.contextMenu.newNode")}
+          </div>
         )}
 
         {/* Object types group */}
         {visibleObjectTypes.length > 0 && (
           <ContextMenuGroup>
-            <ContextMenuLabel>处理对象 (Object)</ContextMenuLabel>
+            <ContextMenuLabel>{t("canvas.contextMenu.objectTypes")}</ContextMenuLabel>
             {visibleObjectTypes.map((type) => {
               const Icon = TYPE_ICONS[type];
               const typeMeta = getNodeMeta(type)!;
+              const typeLabel = getNodeTypeLabel(t, type);
 
               return (
                 <ContextMenuItem
@@ -210,7 +215,7 @@ export const CanvasContextMenu = () => {
                   >
                     <Icon className="size-2.5 text-white" />
                   </span>
-                  <span className="text-xs font-medium">{typeMeta.label}</span>
+                  <span className="text-xs font-medium">{typeLabel}</span>
                 </ContextMenuItem>
               );
             })}
@@ -244,9 +249,9 @@ export const CanvasContextMenu = () => {
           <>
             <ContextMenuSeparator />
             <ContextMenuGroup>
-              <ContextMenuLabel>操作节点 (Operation)</ContextMenuLabel>
+              <ContextMenuLabel>{t("canvas.contextMenu.operationNodes")}</ContextMenuLabel>
               <p className="px-1.5 py-1 text-xs text-muted-foreground">
-                没有接受此类型的 Operation
+                {t("canvas.contextMenu.noOperationsForType")}
               </p>
             </ContextMenuGroup>
           </>
@@ -277,12 +282,12 @@ export const CanvasContextMenu = () => {
         {/* Compound / Group section */}
         <ContextMenuSeparator />
         <ContextMenuGroup>
-          <ContextMenuLabel>编组</ContextMenuLabel>
+          <ContextMenuLabel>{t("canvas.contextMenu.group")}</ContextMenuLabel>
           <ContextMenuItem closeOnClick={false} onClick={() => handleCreateObjectNode("compound")}>
             <span className="flex size-4 shrink-0 items-center justify-center rounded bg-indigo-500">
               <Group className="size-2.5 text-white" />
             </span>
-            <span className="text-xs font-medium">新建复合节点</span>
+            <span className="text-xs font-medium">{t("canvas.contextMenu.newCompoundNode")}</span>
           </ContextMenuItem>
           {(() => {
             if (selectedIds.length < 2) return null;
@@ -292,7 +297,9 @@ export const CanvasContextMenu = () => {
                 <span className="flex size-4 shrink-0 items-center justify-center rounded bg-indigo-500">
                   <Group className="size-2.5 text-white" />
                 </span>
-                <span className="text-xs font-medium">编组 {selectedIds.length} 个选中节点</span>
+                <span className="text-xs font-medium">
+                  {t("canvas.contextMenu.groupSelected", { count: selectedIds.length })}
+                </span>
               </ContextMenuItem>
             );
           })()}

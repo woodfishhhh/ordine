@@ -301,6 +301,7 @@
     "title": "画布",
     "pipelineTitle": "Pipeline 标题",
     "pipelineTitlePlaceholder": "无标题 Pipeline",
+    "nodeLabel": "节点标签",
     "unsavedPipeline": "未保存的 Pipeline",
     "saveSuccess": "Pipeline 已保存",
     "saveFailed": "保存失败",
@@ -309,7 +310,9 @@
     "noPipelineId": "Pipeline 尚未保存",
     "runFailed": "Pipeline 验证失败，请重试",
     "runSaveFailed": "Pipeline 验证结果保存失败",
+    "runStartFailed": "Pipeline 启动失败",
     "runCompleted": "Pipeline 运行完成提醒",
+    "runSuccessDescription": "Job {{jobId}} 已完成 Pipeline 验证",
     "runTest": "运行测试",
     "collapseSidebar": "收起侧栏",
     "expandSidebar": "展开侧栏",
@@ -364,6 +367,7 @@
       "noSelection": "未选中节点"
     },
     "contextMenu": {
+      "actions": "操作",
       "addCodeFile": "添加 Code File",
       "addFolder": "添加 Folder",
       "addCondition": "添加 Condition",
@@ -378,8 +382,92 @@
       "recipeNode": "快捷配方",
       "outputEndpoint": "输出终点",
       "noOperationsForType": "没有接受此类型的 Operation",
-      "newNode": "新建节点"
+      "newNode": "新建节点",
+      "group": "编组",
+      "newCompoundNode": "新建复合节点",
+      "groupSelected": "编组 {{count}} 个选中节点",
+      "ungroup": "解散编组",
+      "detachFromGroup": "从编组中移除",
+      "duplicate": "复制",
+      "delete": "删除"
     },
+    "floatingMenu": {
+      "menu": "菜单",
+      "backToWorkspace": "回到工作区",
+      "save": "保存",
+      "export": "导出",
+      "import": "导入",
+      "settings": "设置",
+      "importJson": "导入 Canvas JSON",
+      "saveSuccessDescription": "Pipeline「{{name}}」已保存",
+      "createSuccessDescription": "Pipeline「{{name}}」已创建",
+      "saveFailedDescription": "请稍后重试"
+    },
+    "nodeTypes": {
+      "operation": {
+        "label": "操作节点",
+        "shortLabel": "操作"
+      },
+      "code-file": {
+        "label": "代码文件",
+        "shortLabel": "文件"
+      },
+      "folder": {
+        "label": "文件夹",
+        "shortLabel": "文件夹"
+      },
+      "github-projects": {
+        "label": "GitHub 项目",
+        "shortLabel": "GitHub"
+      },
+      "output-project-path": {
+        "label": "项目输出",
+        "shortLabel": "输出"
+      },
+      "output-local-path": {
+        "label": "本地输出",
+        "shortLabel": "本地"
+      },
+      "compound": {
+        "label": "复合节点",
+        "shortLabel": "组"
+      }
+    },
+    "compoundNode": {
+      "childCount": "{{count}} 个节点"
+    },
+    "llmContent": {
+      "title": "{{label}} - 思考内容",
+      "running": "LLM 正在思考中...",
+      "empty": "暂无 LLM 输出内容"
+    },
+    "runConsole": {
+      "title": "控制台",
+      "logs": "{{count}} 条日志",
+      "loading": "加载中...",
+      "statusQueued": "排队中",
+      "statusRunning": "运行中",
+      "statusDone": "完成",
+      "statusFailed": "失败",
+      "statusCancelled": "已取消",
+      "statusExpired": "已过期"
+    },
+    "history": {
+      "addEdge": "连接 {{source}} -> {{target}}",
+      "addNode": "添加节点 {{label}}",
+      "addNodeWithEdge": "添加 {{label}} 并连接",
+      "removeNode": "删除节点 {{label}}",
+      "updateNode": "编辑 {{label}}",
+      "duplicateNode": "复制节点 {{label}}",
+      "clearCanvas": "清空画布",
+      "addToCompound": "添加 {{node}} 到 {{compound}}",
+      "removeFromCompound": "从 {{compound}} 移除 {{node}}",
+      "groupNodes": "编组 {{count}} 个节点",
+      "ungroupCompound": "解散编组 {{label}}"
+    },
+    "unknownNode": "未知节点",
+    "folderTreeLoading": "加载中...",
+    "excludePath": "排除 {{name}}",
     "folderDescPlaceholder": "文件夹描述...",
     "clickToSwitchRepo": "点击切换仓库",
     "pickFromLibrary": "从项目库选取",
@@ -651,8 +739,32 @@
       "selectThisFolder": "选择此文件夹"
     },
     "codeFile": {
+      "pathLabel": "代码文件路径",
+      "languageLabel": "代码文件语言",
+      "descriptionLabel": "代码文件描述",
       "descriptionPlaceholder": "文件描述...",
       "browseFile": "浏览文件"
+    },
+    "operation": {
+      "description": "自定义操作",
+      "statusIdle": "待运行",
+      "statusRunning": "运行中",
+      "statusPass": "成功",
+      "statusFail": "失败",
+      "config": "配置",
+      "acceptedObjectTypes": "接受的对象类型",
+      "objectTypeFile": "文件",
+      "objectTypeFolder": "文件夹",
+      "objectTypeProject": "项目",
+      "agentRuntime": "Agent Runtime",
+      "runtime": "Runtime",
+      "defaultRuntime": "默认",
+      "viewLlmOutput": "点击查看 LLM 输出",
+      "loopEnabled": "循环已开启",
+      "enableLoop": "开启循环",
+      "maxLoopCount": "最大次数",
+      "loopAcceptanceCondition": "验收条件",
+      "loopAcceptancePlaceholder": "描述输出需要满足的条件..."
     },
     "condition": {
       "expressionPlaceholder": "未设置表达式",
@@ -663,11 +775,13 @@
       "statusFail": "失败"
     },
     "outputProjectPath": {
+      "description": "项目输出",
       "descriptionPlaceholder": "描述此输出...",
       "projectIdLabel": "项目 ID",
       "pathLabel": "路径"
     },
     "outputLocalPathNode": {
+      "description": "本地输出",
       "pathLabel": "路径",
       "filenameLabel": "文件名",
       "writeModeLabel": "写入模式",
@@ -699,11 +813,28 @@
     "defaultBranch": "默认分支",
     "connectRepo": "连接仓库",
     "back": "返回",
+    "private": "Private",
+    "public": "Public",
     "tokenConfigured": "已配置 Token（可访问私有仓库）",
     "tokenMissing": "未配置 Token（仅可访问公开仓库）",
     "configure": "配置",
     "modify": "修改",
-    "urlParseError": "无法解析 GitHub URL，请输入完整的仓库链接"
+    "urlParseError": "无法解析 GitHub URL，请输入完整的仓库链接",
+    "tokenTitle": "GitHub Personal Access Token",
+    "tokenStatusConfigured": "Token 已配置",
+    "tokenPrivateAccess": "可访问私有仓库",
+    "tokenStatusMissing": "未配置 Token",
+    "tokenPrivateRequiresPat": "访问私有仓库需要填写 Personal Access Token",
+    "personalAccessToken": "Personal Access Token",
+    "showToken": "显示 Token",
+    "hideToken": "隐藏 Token",
+    "verify": "验证",
+    "verifySuccess": "验证成功，已登录为 {{login}}",
+    "tokenLocalOnly": "Token 仅保存在本地浏览器，不会上传至服务器。",
+    "createTokenLink": "在 GitHub 创建 Token（需勾选 repo 权限）",
+    "clearToken": "清除 Token",
+    "projectListEmpty": "项目库为空，请先在「项目」页面连接 GitHub 仓库",
+    "projectListNoResults": "未找到匹配的项目"
   },
   "skills": {
     "pageStructure": "页面结构",

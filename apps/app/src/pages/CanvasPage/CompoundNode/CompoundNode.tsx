@@ -1,5 +1,6 @@
 import { Handle, Position } from "@xyflow/react";
 import { Group } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@repo/ui/lib/utils";
 import { useStore } from "zustand";
 import { useHarnessCanvasStore } from "../_store";
@@ -16,6 +17,7 @@ const handleMouseDown = (e: React.MouseEvent) => {
 };
 
 export const CompoundNode = ({ id, data, selected }: CompoundNodeProps) => {
+  const { t } = useTranslation();
   const store = useHarnessCanvasStore();
   const hoveredCompoundId = useStore(store, (s) => s.hoveredCompoundId);
   const updateNodeData = useStore(store, (s) => s.updateNodeData);
@@ -49,7 +51,7 @@ export const CompoundNode = ({ id, data, selected }: CompoundNodeProps) => {
         />
         {data.childNodeIds.length > 0 && (
           <span className="text-[10px] text-indigo-400 whitespace-nowrap">
-            {data.childNodeIds.length} 节点
+            {t("canvas.compoundNode.childCount", { count: data.childNodeIds.length })}
           </span>
         )}
       </div>

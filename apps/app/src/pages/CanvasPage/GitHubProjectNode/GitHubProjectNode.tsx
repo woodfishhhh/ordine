@@ -78,7 +78,7 @@ export const GitHubProjectNode = ({ id, data, selected }: GitHubProjectNodeProps
       <NodeCard
         rightHandle
         bodyClassName="space-y-2"
-        description="GitHub Project"
+        description={t("canvas.nodeTypes.github-projects.label")}
         dimmed={dimmed}
         icon={SiGitHubIcon}
         label={data.label}

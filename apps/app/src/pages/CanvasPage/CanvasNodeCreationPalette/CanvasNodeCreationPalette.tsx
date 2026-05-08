@@ -11,7 +11,7 @@ import { cn } from "@repo/ui/lib/utils";
 import { SiGitHubIcon } from "@/components/icons/SiGitHubIcon";
 import { ResourceName } from "@/integrations/refine/dataProvider";
 import { useHarnessCanvasStore } from "../_store";
-import { getNodeMeta } from "../utils/nodeTypeMeta";
+import { getNodeMeta, getNodeTypeLabel, getNodeTypeShortLabel } from "../utils/nodeTypeMeta";
 import type { XYPosition } from "@xyflow/system";
 
 const QUICK_ADD_OBJECT_TYPES: BuiltinNodeType[] = ["code-file", "folder", "github-projects"];
@@ -57,8 +57,10 @@ export const CanvasNodeCreationPalette = ({
 
   const objectItems = QUICK_ADD_OBJECT_TYPES.filter((type) => {
     const meta = getNodeMeta(type);
+    const label = getNodeTypeLabel(t, type);
+    const shortLabel = getNodeTypeShortLabel(t, type);
 
-    return search === "" || includesSearch([meta?.label, meta?.shortLabel, type], search);
+    return search === "" || includesSearch([label, shortLabel, meta?.label, type], search);
   });
 
   const operationItems = operations.filter((operation) =>
@@ -124,6 +126,8 @@ export const CanvasNodeCreationPalette = ({
                 {objectItems.map((type) => {
                   const Icon = TYPE_ICONS[type];
                   const meta = getNodeMeta(type);
+                  const label = getNodeTypeLabel(t, type);
+                  const shortLabel = getNodeTypeShortLabel(t, type);
                   if (!meta) return null;
 
                   return (
@@ -141,8 +145,8 @@ export const CanvasNodeCreationPalette = ({
                       >
                         <Icon className="size-3.5 text-white" />
                       </span>
-                      <span className="min-w-0 flex-1 truncate font-medium">{meta.label}</span>
-                      <span className="text-xs text-muted-foreground">{meta.shortLabel}</span>
+                      <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
+                      <span className="text-xs text-muted-foreground">{shortLabel}</span>
                     </button>
                   );
                 })}
@@ -169,7 +173,9 @@ export const CanvasNodeCreationPalette = ({
                       <Zap className="size-3.5 text-white" />
                     </span>
                     <span className="min-w-0 flex-1 truncate font-medium">{operation.name}</span>
-                    <span className="text-xs text-muted-foreground">OP</span>
+                    <span className="text-xs text-muted-foreground">
+                      {t("canvas.nodeTypes.operation.shortLabel")}
+                    </span>
                   </button>
                 ))}
               </div>
