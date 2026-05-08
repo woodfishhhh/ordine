@@ -1,4 +1,36 @@
 import type { BuiltinNodeType } from "@repo/pipeline-engine/schemas";
+import type { TFunction } from "i18next";
+
+const nodeTypeI18nKeys = {
+  operation: {
+    label: "canvas.nodeTypes.operation.label",
+    shortLabel: "canvas.nodeTypes.operation.shortLabel",
+  },
+  "code-file": {
+    label: "canvas.nodeTypes.code-file.label",
+    shortLabel: "canvas.nodeTypes.code-file.shortLabel",
+  },
+  folder: {
+    label: "canvas.nodeTypes.folder.label",
+    shortLabel: "canvas.nodeTypes.folder.shortLabel",
+  },
+  "github-projects": {
+    label: "canvas.nodeTypes.github-projects.label",
+    shortLabel: "canvas.nodeTypes.github-projects.shortLabel",
+  },
+  "output-project-path": {
+    label: "canvas.nodeTypes.output-project-path.label",
+    shortLabel: "canvas.nodeTypes.output-project-path.shortLabel",
+  },
+  "output-local-path": {
+    label: "canvas.nodeTypes.output-local-path.label",
+    shortLabel: "canvas.nodeTypes.output-local-path.shortLabel",
+  },
+  compound: {
+    label: "canvas.nodeTypes.compound.label",
+    shortLabel: "canvas.nodeTypes.compound.shortLabel",
+  },
+} as const satisfies Record<BuiltinNodeType, { label: string; shortLabel: string }>;
 
 export const nodeTypeMeta = {
   operation: {
@@ -13,8 +45,8 @@ export const nodeTypeMeta = {
     plusBg: "bg-violet-100 text-violet-700 hover:bg-violet-200",
   },
   "code-file": {
-    label: "代码文件",
-    shortLabel: "文件",
+    label: "Code file",
+    shortLabel: "File",
     border: "border-orange-200",
     selectedBorder: "border-orange-500",
     header: "bg-orange-50",
@@ -24,8 +56,8 @@ export const nodeTypeMeta = {
     plusBg: "bg-orange-100 text-orange-700 hover:bg-orange-200",
   },
   folder: {
-    label: "文件夹",
-    shortLabel: "文件夹",
+    label: "Folder",
+    shortLabel: "Folder",
     border: "border-orange-200",
     selectedBorder: "border-orange-500",
     header: "bg-orange-50",
@@ -35,7 +67,7 @@ export const nodeTypeMeta = {
     plusBg: "bg-orange-100 text-orange-700 hover:bg-orange-200",
   },
   "github-projects": {
-    label: "GitHub 项目",
+    label: "GitHub project",
     shortLabel: "GitHub",
     border: "border-orange-200",
     selectedBorder: "border-orange-500",
@@ -46,8 +78,8 @@ export const nodeTypeMeta = {
     plusBg: "bg-orange-100 text-orange-700 hover:bg-orange-200",
   },
   "output-project-path": {
-    label: "项目路径输出",
-    shortLabel: "输出",
+    label: "Project output",
+    shortLabel: "Output",
     border: "border-teal-200",
     selectedBorder: "border-teal-500",
     header: "bg-teal-50",
@@ -57,8 +89,8 @@ export const nodeTypeMeta = {
     plusBg: "bg-teal-100 text-teal-700 hover:bg-teal-200",
   },
   "output-local-path": {
-    label: "本地路径输出",
-    shortLabel: "本地",
+    label: "Local output",
+    shortLabel: "Local",
     border: "border-teal-200",
     selectedBorder: "border-teal-500",
     header: "bg-teal-50",
@@ -68,8 +100,8 @@ export const nodeTypeMeta = {
     plusBg: "bg-teal-100 text-teal-700 hover:bg-teal-200",
   },
   compound: {
-    label: "复合节点",
-    shortLabel: "组",
+    label: "Compound node",
+    shortLabel: "Group",
     border: "border-indigo-200",
     selectedBorder: "border-indigo-500",
     header: "bg-indigo-50",
@@ -85,3 +117,19 @@ type NodeMetaEntry = (typeof nodeTypeMeta)[BuiltinNodeType];
 /** Safe lookup — returns meta for known types, undefined for plugin types */
 export const getNodeMeta = (type: string): NodeMetaEntry | undefined =>
   nodeTypeMeta[type as BuiltinNodeType] as NodeMetaEntry | undefined;
+
+export const getNodeTypeLabel = (t: TFunction, type: string): string => {
+  const meta = getNodeMeta(type);
+  const keys = nodeTypeI18nKeys[type as BuiltinNodeType];
+
+  return keys ? t(keys.label, { defaultValue: meta?.label ?? type }) : (meta?.label ?? type);
+};
+
+export const getNodeTypeShortLabel = (t: TFunction, type: string): string => {
+  const meta = getNodeMeta(type);
+  const keys = nodeTypeI18nKeys[type as BuiltinNodeType];
+
+  return keys
+    ? t(keys.shortLabel, { defaultValue: meta?.shortLabel ?? type })
+    : (meta?.shortLabel ?? type);
+};

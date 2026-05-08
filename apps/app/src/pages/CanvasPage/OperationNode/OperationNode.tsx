@@ -1,5 +1,6 @@
 import { Zap, CheckCircle2, XCircle, Loader2, Circle, Brain, Repeat } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@repo/ui/lib/utils";
 import {
   Select,
@@ -27,16 +28,16 @@ export interface OperationNodeProps {
 
 const statusConfig: Record<
   NodeRunStatus,
-  { icon: React.ElementType; color: string; label: string }
+  { icon: React.ElementType; color: string; labelKey: string }
 > = {
-  idle: { icon: Circle, color: "text-gray-400", label: "待运行" },
+  idle: { icon: Circle, color: "text-gray-400", labelKey: "nodes.operation.statusIdle" },
   running: {
     icon: Loader2,
     color: "text-blue-500 animate-spin",
-    label: "运行中",
+    labelKey: "nodes.operation.statusRunning",
   },
-  pass: { icon: CheckCircle2, color: "text-green-500", label: "成功" },
-  fail: { icon: XCircle, color: "text-red-500", label: "失败" },
+  pass: { icon: CheckCircle2, color: "text-green-500", labelKey: "nodes.operation.statusPass" },
+  fail: { icon: XCircle, color: "text-red-500", labelKey: "nodes.operation.statusFail" },
 };
 
 const handleStopPropagation = (e: React.SyntheticEvent) => e.stopPropagation();
@@ -48,6 +49,7 @@ const RUNTIME_LABELS: Record<string, string> = {
 };
 
 export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
+  const { t } = useTranslation();
   const store = useHarnessCanvasStore();
   const { runStatus: nodeRunStatus, dimmed } = useStore(store, useShallow(selectNodeRunState(id)));
   const { result: operationsResult } = useList<Operation>({
@@ -60,7 +62,8 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
   const setInspectingNodeId = useStore(store, (s) => s.setInspectingNodeId);
   const { leftPortCount, rightPortCount } = useNodePortCounts(id);
 
-  const { icon: StatusIcon, color, label: statusLabel } = statusConfig[data.status ?? "idle"];
+  const { icon: StatusIcon, color, labelKey } = statusConfig[data.status ?? "idle"];
+  const statusLabel = t(labelKey);
 
   const operation = operations.find((op: Operation) => op.id === data.operationId);
 
@@ -111,7 +114,7 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
         leftHandle
         rightHandle
         bodyClassName="space-y-2"
-        description={operation?.description || "自定义操作"}
+        description={operation?.description || t("nodes.operation.description")}
         dimmed={dimmed}
         headerRight={
           <div
@@ -142,7 +145,7 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
         {data.config && Object.keys(data.config).length > 0 && (
           <div className="space-y-1">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              配置
+              {t("nodes.operation.config")}
             </p>
             <div className="rounded bg-slate-50 px-2 py-1.5">
               <pre className="text-[9px] text-slate-500 overflow-hidden text-ellipsis">
@@ -157,7 +160,7 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
         {operation?.acceptedObjectTypes && (
           <div className="space-y-1">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              接受的对象类型
+              {t("nodes.operation.acceptedObjectTypes")}
             </p>
             <div className="flex flex-wrap gap-1">
               {operation.acceptedObjectTypes.map((type) => (
@@ -165,9 +168,9 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
                   key={type}
                   className="rounded bg-violet-50 px-1.5 py-0.5 text-[9px] font-medium text-violet-600"
                 >
-                  {type === "file" && "文件"}
-                  {type === "folder" && "文件夹"}
-                  {type === "project" && "项目"}
+                  {type === "file" && t("nodes.operation.objectTypeFile")}
+                  {type === "folder" && t("nodes.operation.objectTypeFolder")}
+                  {type === "project" && t("nodes.operation.objectTypeProject")}
                 </span>
               ))}
             </div>
@@ -178,7 +181,7 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
         <div className="space-y-1" onMouseDown={handleStopPropagation}>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
             <Brain className="mr-1 inline-block h-3 w-3" />
-            Agent Runtime
+            {t("nodes.operation.agentRuntime")}
           </p>
           <Select
             open={runtimeOpen}
@@ -194,8 +197,8 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectLabel>Runtime</SelectLabel>
-                <SelectItem value="__default__">默认</SelectItem>
+                <SelectLabel>{t("nodes.operation.runtime")}</SelectLabel>
+                <SelectItem value="__default__">{t("nodes.operation.defaultRuntime")}</SelectItem>
                 {AgentRuntimeSchema.options.map((p) => (
                   <SelectItem key={p} value={p}>
                     {RUNTIME_LABELS[p] ?? p}
@@ -209,7 +212,7 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
         {hasLlmContent && (
           <div className="flex items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] text-violet-600">
             <Brain className="h-3 w-3 shrink-0" />
-            <span>点击查看 LLM 输出</span>
+            <span>{t("nodes.operation.viewLlmOutput")}</span>
           </div>
         )}
 
@@ -226,17 +229,17 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
             onClick={handleLoopToggle}
           >
             <Repeat className="h-3 w-3 shrink-0" />
-            {data.loopEnabled ? "循环已开启" : "开启循环"}
+            {data.loopEnabled ? t("nodes.operation.loopEnabled") : t("nodes.operation.enableLoop")}
           </button>
 
           {data.loopEnabled && (
             <div className="space-y-1.5 rounded-md border border-amber-100 bg-amber-50/50 p-2">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-medium text-amber-700 whitespace-nowrap">
-                  最大次数
+                  {t("nodes.operation.maxLoopCount")}
                 </span>
                 <input
-                  aria-label="Maximum loop count"
+                  aria-label={t("nodes.operation.maxLoopCount")}
                   className="nodrag nopan h-5 w-14 rounded border border-amber-200 bg-white px-1.5 text-[10px] text-amber-800 focus:outline-none focus:ring-1 focus:ring-amber-300"
                   max={20}
                   min={1}
@@ -247,12 +250,14 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
                 />
               </div>
               <div className="space-y-0.5">
-                <span className="text-[10px] font-medium text-amber-700">验收条件</span>
+                <span className="text-[10px] font-medium text-amber-700">
+                  {t("nodes.operation.loopAcceptanceCondition")}
+                </span>
                 <textarea
-                  aria-label="Loop acceptance condition"
+                  aria-label={t("nodes.operation.loopAcceptanceCondition")}
                   className="nodrag nopan w-full rounded border border-amber-200 bg-white px-1.5 py-1 text-[10px] text-amber-800 placeholder:text-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-300"
                   name={`${id}-loopCondition`}
-                  placeholder="描述输出需要满足的条件..."
+                  placeholder={t("nodes.operation.loopAcceptancePlaceholder")}
                   rows={2}
                   value={data.loopConditionPrompt ?? ""}
                   onChange={handleConditionChange}

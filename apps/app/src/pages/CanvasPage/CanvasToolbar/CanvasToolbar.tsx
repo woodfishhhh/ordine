@@ -161,7 +161,7 @@ export const CanvasToolbar = () => {
                 className="h-7 gap-1.5 px-2 text-xs text-green-600 hover:bg-green-50 hover:text-green-700 disabled:text-muted-foreground/30"
                 disabled={isRunning || !pipelineId}
                 size="sm"
-                title="运行测试"
+                title={t("canvas.runTest")}
                 variant="ghost"
                 onClick={handleRunTest}
               />

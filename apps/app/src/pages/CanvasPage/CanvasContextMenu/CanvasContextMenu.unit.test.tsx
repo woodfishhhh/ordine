@@ -32,6 +32,6 @@ describe("CanvasContextMenu", () => {
         <CanvasContextMenu />
       </HarnessCanvasStoreContext.Provider>
     );
-    expect(screen.getByText("新建节点")).toBeTruthy();
+    expect(screen.getByText("New Node")).toBeTruthy();
   });
 });

@@ -1,5 +1,6 @@
 import { Handle, Position } from "@xyflow/react";
 import { AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@repo/ui/lib/utils";
 
 export interface ErrorNodeProps {
@@ -10,6 +11,8 @@ export interface ErrorNodeProps {
 }
 
 export const ErrorNode = ({ id, type, selected }: ErrorNodeProps) => {
+  const { t } = useTranslation();
+
   return (
     <div
       className={cn(
@@ -25,7 +28,7 @@ export const ErrorNode = ({ id, type, selected }: ErrorNodeProps) => {
           <AlertTriangle className="h-4 w-4 text-red-600" />
         </div>
         <div className="flex flex-col min-w-0">
-          <span className="text-xs font-semibold text-red-700">未知节点</span>
+          <span className="text-xs font-semibold text-red-700">{t("canvas.unknownNode")}</span>
           <span className="text-[10px] text-red-400 truncate">
             type: {type ?? "undefined"} | id: {id}
           </span>
