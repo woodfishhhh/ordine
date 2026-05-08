@@ -71,11 +71,13 @@ const wrapperWithPipeline = ({ children }: React.PropsWithChildren) => (
 );
 
 describe("CanvasToolbar - export removed", () => {
-  it("does NOT render 导出 tooltip/button in the toolbar", () => {
+  it("does NOT render export tooltip/button in any locale", () => {
     render(<CanvasToolbar />, { wrapper });
     const exportTooltips = screen
       .queryAllByTestId("tooltip")
-      .filter((el) => el.textContent === "导出");
+      .filter((el) => /导出|export/i.test(el.textContent ?? ""));
+
+    expect(screen.queryByRole("button", { name: /导出|export/i })).not.toBeInTheDocument();
     expect(exportTooltips).toHaveLength(0);
   });
 });

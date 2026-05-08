@@ -66,6 +66,21 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
   const handleFlowNodeDrag = useStore(store, (s) => s.handleFlowNodeDrag);
   const handleFlowNodeDragStop = useStore(store, (s) => s.handleFlowNodeDragStop);
   const handleFlowMove = useStore(store, (s) => s.handleFlowMove);
+  const interactiveHandlers = isCanvasInteractive
+    ? {
+        onConnect: handleConnect,
+        onConnectEnd: handleFlowConnectEnd,
+        onConnectStart: handleFlowConnectStart,
+        onEdgeClick: handleFlowEdgeClick,
+        onMove: (_event: unknown, viewport: { zoom: number }) => handleFlowMove(viewport.zoom),
+        onNodeClick: handleFlowNodeClick,
+        onNodeContextMenu: handleFlowNodeContextMenu,
+        onNodeDrag: handleFlowNodeDrag,
+        onNodeDragStop: handleFlowNodeDragStop,
+        onPaneClick: handleFlowPaneClick,
+        onPaneContextMenu: handleFlowPaneContextMenu,
+      }
+    : {};
 
   useHotkeys(
     "mod+z",
@@ -102,20 +117,10 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
         zoomOnDoubleClick={isCanvasInteractive}
         zoomOnPinch={isCanvasInteractive}
         zoomOnScroll={isCanvasInteractive}
-        onConnect={handleConnect}
-        onConnectEnd={handleFlowConnectEnd}
-        onConnectStart={handleFlowConnectStart}
-        onEdgeClick={handleFlowEdgeClick}
         onEdgesChange={handleEdgesChange}
         onInit={handleFlowInit}
-        onMove={(_event, viewport) => handleFlowMove(viewport.zoom)}
-        onNodeClick={handleFlowNodeClick}
-        onNodeContextMenu={handleFlowNodeContextMenu}
-        onNodeDrag={handleFlowNodeDrag}
-        onNodeDragStop={handleFlowNodeDragStop}
         onNodesChange={handleNodesChange}
-        onPaneClick={handleFlowPaneClick}
-        onPaneContextMenu={handleFlowPaneContextMenu}
+        {...interactiveHandlers}
       >
         <Background color="#cbd5e1" gap={24} size={1.5} variant={BackgroundVariant.Dots} />
         {nodes.length > 1 && !isConsoleOpen && (

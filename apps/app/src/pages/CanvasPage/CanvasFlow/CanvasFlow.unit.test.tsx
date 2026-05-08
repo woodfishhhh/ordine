@@ -27,6 +27,16 @@ vi.mock("@xyflow/react", async (importOriginal) => {
       zoomOnDoubleClick,
       zoomOnPinch,
       zoomOnScroll,
+      onConnect,
+      onConnectEnd,
+      onConnectStart,
+      onEdgeClick,
+      onNodeClick,
+      onNodeContextMenu,
+      onNodeDrag,
+      onNodeDragStop,
+      onPaneClick,
+      onPaneContextMenu,
     }: React.PropsWithChildren<{
       defaultViewport?: { zoom: number };
       fitView?: boolean;
@@ -38,11 +48,31 @@ vi.mock("@xyflow/react", async (importOriginal) => {
       zoomOnDoubleClick?: boolean;
       zoomOnPinch?: boolean;
       zoomOnScroll?: boolean;
+      onConnect?: unknown;
+      onConnectEnd?: unknown;
+      onConnectStart?: unknown;
+      onEdgeClick?: unknown;
+      onNodeClick?: unknown;
+      onNodeContextMenu?: unknown;
+      onNodeDrag?: unknown;
+      onNodeDragStop?: unknown;
+      onPaneClick?: unknown;
+      onPaneContextMenu?: unknown;
     }>) => {
       const handleMouseMove = () => onMove?.(null, { x: 0, y: 0, zoom: 0.6 });
 
       return (
         <div
+          data-has-on-connect={String(typeof onConnect === "function")}
+          data-has-on-connect-end={String(typeof onConnectEnd === "function")}
+          data-has-on-connect-start={String(typeof onConnectStart === "function")}
+          data-has-on-edge-click={String(typeof onEdgeClick === "function")}
+          data-has-on-node-click={String(typeof onNodeClick === "function")}
+          data-has-on-node-context-menu={String(typeof onNodeContextMenu === "function")}
+          data-has-on-node-drag={String(typeof onNodeDrag === "function")}
+          data-has-on-node-drag-stop={String(typeof onNodeDragStop === "function")}
+          data-has-on-pane-click={String(typeof onPaneClick === "function")}
+          data-has-on-pane-context-menu={String(typeof onPaneContextMenu === "function")}
           data-auto-fit={String(fitView ?? false)}
           data-elements-selectable={String(elementsSelectable ?? true)}
           data-nodes-connectable={String(nodesConnectable ?? true)}
@@ -122,6 +152,10 @@ describe("CanvasFlow", () => {
     expect(screen.getByTestId("react-flow")).toHaveAttribute("data-elements-selectable", "false");
     expect(screen.getByTestId("react-flow")).toHaveAttribute("data-pan-on-drag", "false");
     expect(screen.getByTestId("react-flow")).toHaveAttribute("data-zoom-on-scroll", "false");
+    expect(screen.getByTestId("react-flow")).toHaveAttribute("data-has-on-node-click", "false");
+    expect(screen.getByTestId("react-flow")).toHaveAttribute("data-has-on-edge-click", "false");
+    expect(screen.getByTestId("react-flow")).toHaveAttribute("data-has-on-pane-click", "false");
+    expect(screen.getByTestId("react-flow")).toHaveAttribute("data-has-on-connect", "false");
   });
 
   it("shows MiniMap when multiple nodes exist and the console is closed", () => {
