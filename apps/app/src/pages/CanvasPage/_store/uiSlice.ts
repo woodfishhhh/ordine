@@ -115,7 +115,7 @@ export interface UISlice {
   toggleAgentPanel: () => void;
   setPendingProposal: (proposal: PipelineOperationProposal | null, diagnostics: PipelineOperationDiagnostic[] | null) => void;
   clearPendingProposal: () => void;
-  applyAgentProposal: (proposal: PipelineOperationProposal) => void;
+  applyAgentProposal: (proposal: PipelineOperationProposal) => boolean;
 }
 
 export const createUISlice = (
@@ -411,7 +411,8 @@ export const createUISlice = (
           isLoading: false,
         },
       }));
-      return;
+
+      return false;
     }
 
     const next = result.value;
@@ -444,6 +445,8 @@ export const createUISlice = (
         isLoading: false,
       },
     }));
+
+    return true;
   },
 });
 

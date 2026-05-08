@@ -68,9 +68,10 @@ describe("uiSlice applyAgentProposal", () => {
 
     mockApplyPipelineOperations.mockReturnValue(ok({ nodes: [nodeB], edges: [edgeB] }));
 
-    store.getState().applyAgentProposal(proposal);
+    const applied = store.getState().applyAgentProposal(proposal);
 
     const state = store.getState();
+    expect(applied).toBe(true);
     expect(state.nodes).toEqual([nodeB]);
     expect(state.edges).toEqual([edgeB]);
     expect(state._history).toHaveLength(1);
@@ -113,9 +114,10 @@ describe("uiSlice applyAgentProposal", () => {
 
     mockApplyPipelineOperations.mockReturnValue(err(diagnostics));
 
-    store.getState().applyAgentProposal(proposal);
+    const applied = store.getState().applyAgentProposal(proposal);
 
     const state = store.getState();
+    expect(applied).toBe(false);
     expect(state.nodes).toEqual([nodeA]);
     expect(state.edges).toEqual([edgeA]);
     expect(state._history).toHaveLength(0);

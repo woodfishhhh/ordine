@@ -103,6 +103,20 @@ const validateNodeDataMatch = (
         ),
       ];
 
+const validateNodeTypeMatchesData = (
+  node: PipelineGraphNode,
+  operationIndex: number,
+): PipelineOperationDiagnostic[] =>
+  node.type === node.data.nodeType
+    ? []
+    : [
+        makeDiagnostic(
+          "INVALID_NODE_DATA",
+          `Node "${node.id}" type "${node.type}" must match data.nodeType "${node.data.nodeType}".`,
+          operationIndex,
+        ),
+      ];
+
 const applyOperation = (
   draft: PipelineGraphSnapshot,
   operation: PipelineOperation,
@@ -113,6 +127,11 @@ const applyOperation = (
       const unsupported = validateSupportedNode(operation.node, operationIndex);
       if (unsupported.length > 0) {
         return unsupported;
+      }
+
+      const nodeDataDiagnostics = validateNodeTypeMatchesData(operation.node, operationIndex);
+      if (nodeDataDiagnostics.length > 0) {
+        return nodeDataDiagnostics;
       }
 
       if (draft.nodes.some((node) => node.id === operation.node.id)) {

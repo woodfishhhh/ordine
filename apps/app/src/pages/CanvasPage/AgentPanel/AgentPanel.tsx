@@ -235,19 +235,24 @@ export const AgentPanel = () => {
     [doSend]
   );
 
+  const hasBlockingDiagnostics =
+    agentPanel.diagnostics?.some((diagnostic) => diagnostic.severity === "error") ?? false;
+
   const handleApply = useCallback(() => {
-    if (agentPanel.pendingProposal) {
-      applyAgentProposal(agentPanel.pendingProposal);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `system-${Date.now()}`,
-          role: "assistant",
-          content: t("canvas.agentPanel.applied"),
-        },
-      ]);
-    }
-  }, [agentPanel.pendingProposal, applyAgentProposal, t]);
+    if (!agentPanel.pendingProposal || hasBlockingDiagnostics) return;
+
+    const applied = applyAgentProposal(agentPanel.pendingProposal);
+    if (!applied) return;
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `system-${Date.now()}`,
+        role: "assistant",
+        content: t("canvas.agentPanel.applied"),
+      },
+    ]);
+  }, [agentPanel.pendingProposal, applyAgentProposal, hasBlockingDiagnostics, t]);
 
   const handleDiscard = useCallback(() => {
     clearPendingProposal();
@@ -363,6 +368,7 @@ export const AgentPanel = () => {
             <div className="flex items-center gap-2">
               <Button
                 className="h-8 flex-1 gap-1 text-xs"
+                disabled={hasBlockingDiagnostics}
                 size="sm"
                 variant="default"
                 onClick={handleApply}

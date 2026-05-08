@@ -141,6 +141,26 @@ describe("applyPipelineOperations", () => {
     );
   });
 
+  it("rejects added nodes whose React Flow type does not match data.nodeType", () => {
+    const mismatched = makeNode("operation-1", "operation", {
+      nodeType: "folder",
+      folderPath: "/tmp/source",
+    });
+    const operations: PipelineOperation[] = [{ type: "addNode", node: mismatched }];
+
+    const result = applyPipelineOperations(makeSnapshot(), operations);
+
+    expect(result.isErr()).toBe(true);
+    expect(result._unsafeUnwrapErr()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "INVALID_NODE_DATA",
+          operationIndex: 0,
+        }),
+      ]),
+    );
+  });
+
   it("keeps the graph unchanged when a later operation in the batch fails", () => {
     const snapshot = makeSnapshot([makeNode("folder-1", "folder")]);
     const operationNode = makeNode("operation-1", "operation", {

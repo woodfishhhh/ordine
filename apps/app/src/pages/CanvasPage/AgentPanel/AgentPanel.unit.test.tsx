@@ -6,7 +6,7 @@ import { AgentPanel } from "./AgentPanel";
 import { HarnessCanvasStoreProvider, useHarnessCanvasStore } from "../_store";
 import { useRef } from "react";
 import type { PipelineOperationProposal, PipelineOperationDiagnostic } from "@repo/pipeline-engine/schemas";
-import { ok } from "neverthrow";
+import { err, ok } from "neverthrow";
 import zh from "@/locales/zh.json";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
@@ -270,6 +270,51 @@ describe("AgentPanel", () => {
       proposal.operations
     );
     expect(screen.getByText("已应用操作建议。")).toBeInTheDocument();
+  });
+
+  it("does not show confirmation when proposal application fails", async () => {
+    const user = userEvent.setup();
+    const proposal = makeProposal();
+    const diagnostics: PipelineOperationDiagnostic[] = [
+      { code: "NODE_NOT_FOUND", severity: "error", message: "missing node", operationIndex: 0 },
+    ];
+    mockApplyPipelineOperations.mockReturnValue(err(diagnostics));
+
+    render(<AgentPanel />, {
+      wrapper: wrapperWithState({ pendingProposal: proposal }),
+    });
+
+    await user.click(screen.getByText("应用"));
+
+    expect(screen.queryByText("已应用操作建议。")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("missing node")).toBeInTheDocument();
+    });
+  });
+
+  it("does not apply proposals that already have error diagnostics", async () => {
+    const user = userEvent.setup();
+    const proposal = makeProposal();
+    const diagnostics: PipelineOperationDiagnostic[] = [
+      {
+        code: "INVALID_NODE_DATA",
+        severity: "error",
+        message: "unknown operation",
+        operationIndex: 0,
+      },
+    ];
+    mockApplyPipelineOperations.mockReturnValue(ok({ nodes: [], edges: [] }));
+
+    render(<AgentPanel />, {
+      wrapper: wrapperWithState({ pendingProposal: proposal, diagnostics }),
+    });
+
+    const applyButton = screen.getByText("应用").closest("button");
+    expect(applyButton).toBeDisabled();
+    await user.click(applyButton!);
+
+    expect(mockApplyPipelineOperations).not.toHaveBeenCalled();
+    expect(screen.queryByText("已应用操作建议。")).not.toBeInTheDocument();
   });
 
   it("discards proposal and shows confirmation", async () => {

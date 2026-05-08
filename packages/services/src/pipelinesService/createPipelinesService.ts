@@ -16,8 +16,10 @@ import {
   PipelineOperationProposalSchema,
   type PipelineData,
   type PipelineGraphSnapshot,
+  type PipelineOperation,
   type PipelineOperationProposal,
   type PipelineOperationDiagnostic,
+  type OperationNodeData,
 } from "@repo/pipeline-engine/schemas";
 import { validatePipelineOperations } from "@repo/pipeline-engine";
 import { runAgent } from "../pipelineRunnerService/agentRunner/agentRunner";
@@ -142,13 +144,83 @@ const PROPOSE_SYSTEM_PROMPT = [
   "- The 'summary' field must be a non-empty string explaining the proposed changes.",
   "- The 'operations' array must contain at least one operation.",
   "- All node IDs and edge IDs must be unique within the graph.",
+  "- When adding a node, the node 'type' MUST match the 'nodeType' inside its data payload.",
   "- When adding edges, both source and target nodes must already exist in the graph (or be added in a previous operation).",
   "- When replacing node data, the 'nodeType' inside 'data' MUST match the node's existing type.",
+  "- When adding or replacing operation nodes, use ONLY operationId values from the provided available operations list.",
+  "- For operation nodes, operationName MUST match the selected available operation's name.",
   "- Compound nodes (type === 'compound' or data.nodeType === 'compound') are NOT supported.",
   "- Child nodes (nodes with a 'parentId' field) are NOT supported.",
   "- Do NOT propose operations that create compound nodes or child nodes.",
   "- Return ONLY the JSON object. No markdown, no explanation, no code fences.",
 ].join("\n");
+
+const makeProposalDiagnostic = (
+  code: PipelineOperationDiagnostic["code"],
+  message: string,
+  operationIndex: number,
+): PipelineOperationDiagnostic => ({
+  code,
+  message,
+  operationIndex,
+  severity: "error",
+});
+
+const validateOperationNodeCatalog = (
+  nodeId: string,
+  data: OperationNodeData,
+  operationById: Map<string, { name: string }>,
+  operationIndex: number,
+): PipelineOperationDiagnostic[] => {
+  const catalogOperation = operationById.get(data.operationId);
+  if (!catalogOperation) {
+    return [
+      makeProposalDiagnostic(
+        "INVALID_NODE_DATA",
+        `Operation node "${nodeId}" references unknown operationId "${data.operationId}".`,
+        operationIndex,
+      ),
+    ];
+  }
+
+  if (catalogOperation.name !== data.operationName) {
+    return [
+      makeProposalDiagnostic(
+        "INVALID_NODE_DATA",
+        `Operation node "${nodeId}" operationName must match operation "${data.operationId}" (${catalogOperation.name}).`,
+        operationIndex,
+      ),
+    ];
+  }
+
+  return [];
+};
+
+const validateProposalOperationCatalog = (
+  operations: PipelineOperation[],
+  operationById: Map<string, { name: string }>,
+): PipelineOperationDiagnostic[] =>
+  operations.flatMap((operation, operationIndex) => {
+    if (operation.type === "addNode" && operation.node.data.nodeType === "operation") {
+      return validateOperationNodeCatalog(
+        operation.node.id,
+        operation.node.data,
+        operationById,
+        operationIndex,
+      );
+    }
+
+    if (operation.type === "replaceNodeData" && operation.data.nodeType === "operation") {
+      return validateOperationNodeCatalog(
+        operation.nodeId,
+        operation.data,
+        operationById,
+        operationIndex,
+      );
+    }
+
+    return [];
+  });
 
 export const createPipelinesService = (db: DbConnection) => {
   const dao = createPipelinesDao(db);
@@ -176,6 +248,16 @@ export const createPipelinesService = (db: DbConnection) => {
       diagnostics: PipelineOperationDiagnostic[];
     }> => {
       const settings = normalizeSettingsRecord(await settingsDao.get());
+      const operations = await operationsDao.findMany();
+      const operationCatalog = operations.map((operation) => ({
+        id: operation.id,
+        name: operation.name,
+        description: operation.description,
+        acceptedObjectTypes: operation.acceptedObjectTypes,
+      }));
+      const operationById = new Map(
+        operationCatalog.map((operation) => [operation.id, { name: operation.name }]),
+      );
 
       const userPromptText = [
         "=== PIPELINE CONTEXT ===",
@@ -184,6 +266,9 @@ export const createPipelinesService = (db: DbConnection) => {
         "",
         "=== CURRENT GRAPH ===",
         truncate(JSON.stringify(opts.snapshot, null, 2), MAX_SNAPSHOT_CHARS),
+        "",
+        `=== AVAILABLE OPERATIONS (${operationCatalog.length}) ===`,
+        truncate(JSON.stringify(operationCatalog, null, 2), MAX_SNAPSHOT_CHARS),
         "",
         "=== USER REQUEST ===",
         opts.message,
@@ -266,7 +351,12 @@ export const createPipelinesService = (db: DbConnection) => {
 
       // Validate operations against the snapshot to get diagnostics
       const validationResult = validatePipelineOperations(opts.snapshot, proposal.operations);
-      const diagnostics = validationResult.isErr() ? validationResult.error : [];
+      const graphDiagnostics = validationResult.isErr() ? validationResult.error : [];
+      const operationDiagnostics = validateProposalOperationCatalog(
+        proposal.operations,
+        operationById,
+      );
+      const diagnostics = [...graphDiagnostics, ...operationDiagnostics];
 
       return { proposal, diagnostics };
     },

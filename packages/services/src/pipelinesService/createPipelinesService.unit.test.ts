@@ -14,6 +14,16 @@ const mockSettingsDao = {
     defaultModel: "gpt-5.4-mini",
   }),
 };
+const mockOperationsDao = {
+  findMany: vi.fn().mockResolvedValue([
+    {
+      id: "op-known",
+      name: "Known Operation",
+      description: "Known operation description",
+      acceptedObjectTypes: ["folder"],
+    },
+  ]),
+};
 const mockRunAgent = vi.fn();
 const mockExtractJsonFromText = vi.fn((raw: string) => raw);
 
@@ -25,7 +35,7 @@ vi.mock("@repo/models", () => ({
   createJobTracesDao: () => ({}),
   createAgentRawExportsDao: () => ({}),
   createAgentSpansDao: () => ({}),
-  createOperationsDao: () => ({}),
+  createOperationsDao: () => mockOperationsDao,
   createSettingsDao: () => mockSettingsDao,
 }));
 vi.mock("@repo/agent", () => ({
@@ -69,6 +79,7 @@ describe("createPipelinesService", () => {
     mockDao.update.mockClear();
     mockDao.delete.mockClear();
     mockSettingsDao.get.mockClear();
+    mockOperationsDao.findMany.mockClear();
     mockRunAgent.mockReset();
     mockExtractJsonFromText.mockReset();
     mockExtractJsonFromText.mockImplementation((raw: string) => raw);
@@ -130,8 +141,10 @@ describe("createPipelinesService", () => {
       expect.objectContaining({
         allowedTools: [],
         agentId: "pipeline-propose-operations",
+        userPrompt: expect.stringContaining("op-known"),
       }),
     );
+    expect(mockOperationsDao.findMany).toHaveBeenCalled();
     expect(result.proposal).toEqual({
       summary: "remove stale node",
       operations: [{ type: "removeNode", nodeId: "folder-1" }],
@@ -140,6 +153,47 @@ describe("createPipelinesService", () => {
     expect(mockDao.create).not.toHaveBeenCalled();
     expect(mockDao.update).not.toHaveBeenCalled();
     expect(mockDao.delete).not.toHaveBeenCalled();
+  });
+
+  it("proposeOperations returns diagnostics for operation nodes with unknown operation IDs", async () => {
+    mockRunAgent.mockResolvedValue(
+      JSON.stringify({
+        summary: "add unknown operation",
+        operations: [
+          {
+            type: "addNode",
+            node: {
+              id: "operation-1",
+              type: "operation",
+              position: { x: 0, y: 100 },
+              data: {
+                nodeType: "operation",
+                label: "Unknown Operation",
+                operationId: "op-missing",
+                operationName: "Missing Operation",
+                status: "idle",
+              },
+            },
+          },
+        ],
+      }),
+    );
+    const svc = createPipelinesService({} as never);
+
+    const result = await svc.proposeOperations({
+      snapshot,
+      message: "add missing operation",
+    });
+
+    expect(result.proposal?.operations).toHaveLength(1);
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "INVALID_NODE_DATA",
+          operationIndex: 0,
+        }),
+      ]),
+    );
   });
 
   it("proposeOperations returns null proposal when extracted JSON is invalid", async () => {
