@@ -312,6 +312,70 @@ describe("CanvasFloatingMenu - save behavior", () => {
     expect(store.getState().edges).toEqual([initialEdge]);
   });
 
+  it("shows a toast and preserves canvas state for unsupported node types", async () => {
+    const initialNode = makeNode("existing");
+    const initialEdge = makeEdge("existing-edge");
+    const store = createHarnessCanvasStore([initialNode], [initialEdge], null, "Existing Pipeline");
+
+    render(
+      <HarnessCanvasStoreContext.Provider value={store}>
+        <CanvasFloatingMenu />
+      </HarnessCanvasStoreContext.Provider>
+    );
+
+    uploadJsonFile(
+      JSON.stringify({
+        name: "Invalid Type Pipeline",
+        nodes: [{ ...makeNode("bad-type"), type: "custom-plugin-node" }],
+        edges: [],
+      })
+    );
+
+    await expectImportFailedToast();
+    expect(store.getState().pipelineName).toBe("Existing Pipeline");
+    expect(store.getState().nodes).toEqual([initialNode]);
+    expect(store.getState().edges).toEqual([initialEdge]);
+  });
+
+  it("shows a toast and preserves canvas state for invalid operation runtime", async () => {
+    const initialNode = makeNode("existing");
+    const initialEdge = makeEdge("existing-edge");
+    const store = createHarnessCanvasStore([initialNode], [initialEdge], null, "Existing Pipeline");
+
+    render(
+      <HarnessCanvasStoreContext.Provider value={store}>
+        <CanvasFloatingMenu />
+      </HarnessCanvasStoreContext.Provider>
+    );
+
+    uploadJsonFile(
+      JSON.stringify({
+        name: "Invalid Runtime Pipeline",
+        nodes: [
+          {
+            id: "operation-invalid-runtime",
+            type: "operation",
+            position: { x: 0, y: 0 },
+            data: {
+              label: "Operation Node",
+              nodeType: "operation",
+              operationId: "op-1",
+              operationName: "Operation",
+              status: "idle",
+              agentRuntime: "unsupported-runtime",
+            },
+          },
+        ],
+        edges: [],
+      })
+    );
+
+    await expectImportFailedToast();
+    expect(store.getState().pipelineName).toBe("Existing Pipeline");
+    expect(store.getState().nodes).toEqual([initialNode]);
+    expect(store.getState().edges).toEqual([initialEdge]);
+  });
+
   it("shows a toast and preserves canvas state for bad JSON", async () => {
     const initialNode = makeNode("existing");
     const initialEdge = makeEdge("existing-edge");

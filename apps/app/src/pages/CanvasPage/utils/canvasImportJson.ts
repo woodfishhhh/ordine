@@ -1,7 +1,12 @@
 import { err, ok, Result } from "neverthrow";
 import { z } from "zod/v4";
-import { PipelineEdgeSchema, PipelineNodeSchema } from "@repo/pipeline-engine/schemas";
+import {
+  BuiltinNodeTypeSchema,
+  PipelineEdgeSchema,
+  PipelineNodeSchema,
+} from "@repo/pipeline-engine/schemas";
 import type { PipelineEdge, PipelineNode } from "../_store/canvasSlice";
+import { PipelineNodeDataSchema } from "../schemas/PipelineNodeDataSchema";
 
 export const MAX_CANVAS_IMPORT_BYTES = 2_000_000;
 export const MAX_CANVAS_IMPORT_NODES = 500;
@@ -17,6 +22,8 @@ const CanvasNodeMeasuredSchema = z.object({
   height: z.number().optional(),
 });
 const CanvasImportNodeSchema = PipelineNodeSchema.extend({
+  type: BuiltinNodeTypeSchema,
+  data: PipelineNodeDataSchema,
   parentId: z.string().optional(),
   extent: z.literal("parent").optional(),
   expandParent: z.boolean().optional(),
@@ -29,6 +36,9 @@ const CanvasImportNodeSchema = PipelineNodeSchema.extend({
   zIndex: z.number().optional(),
   ariaLabel: z.string().max(200).optional(),
   style: CanvasNodeStyleSchema.optional(),
+}).refine((node) => node.type === node.data.nodeType, {
+  message: "node type must match data.nodeType",
+  path: ["type"],
 });
 const CanvasImportEdgeSchema = PipelineEdgeSchema.extend({
   type: z.string().optional(),
