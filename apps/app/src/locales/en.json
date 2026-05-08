@@ -635,6 +635,32 @@
     "networkError": "Network error, please try again"
   },
   "nodes": {
+    "operation": {
+      "customDescription": "Custom operation",
+      "statusIdle": "Idle",
+      "statusRunning": "Running",
+      "statusPass": "Success",
+      "statusFail": "Failed",
+      "config": "Config",
+      "acceptedObjectTypes": "Accepted object types",
+      "objectTypes": {
+        "file": "File",
+        "folder": "Folder",
+        "project": "Project"
+      },
+      "agentRuntime": "Agent Runtime",
+      "runtime": "Runtime",
+      "runtimeSelectLabel": "Select Agent Runtime",
+      "defaultRuntime": "Default",
+      "inspectLlmOutput": "View LLM output",
+      "loopEnabled": "Loop enabled",
+      "enableLoop": "Enable loop",
+      "maxLoopCount": "Max rounds",
+      "maxLoopCountAria": "Maximum loop count",
+      "acceptanceCondition": "Acceptance condition",
+      "loopConditionAria": "Loop acceptance condition",
+      "loopConditionPlaceholder": "Describe what the output must satisfy..."
+    },
     "outputLocalPath": {
       "label": "Path",
       "selectFolder": "Select folder",

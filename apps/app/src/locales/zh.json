@@ -635,6 +635,32 @@
     "networkError": "网络错误，请稍后重试"
   },
   "nodes": {
+    "operation": {
+      "customDescription": "自定义操作",
+      "statusIdle": "待运行",
+      "statusRunning": "运行中",
+      "statusPass": "成功",
+      "statusFail": "失败",
+      "config": "配置",
+      "acceptedObjectTypes": "接受的对象类型",
+      "objectTypes": {
+        "file": "文件",
+        "folder": "文件夹",
+        "project": "项目"
+      },
+      "agentRuntime": "Agent 运行时",
+      "runtime": "运行时",
+      "runtimeSelectLabel": "选择 Agent Runtime",
+      "defaultRuntime": "默认",
+      "inspectLlmOutput": "点击查看 LLM 输出",
+      "loopEnabled": "循环已开启",
+      "enableLoop": "开启循环",
+      "maxLoopCount": "最大轮次",
+      "maxLoopCountAria": "最大循环次数",
+      "acceptanceCondition": "验收条件",
+      "loopConditionAria": "循环验收条件",
+      "loopConditionPlaceholder": "描述输出需要满足的条件..."
+    },
     "outputLocalPath": {
       "label": "路径",
       "selectFolder": "选择文件夹",
