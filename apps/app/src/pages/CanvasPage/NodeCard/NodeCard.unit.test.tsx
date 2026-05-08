@@ -20,12 +20,14 @@ vi.mock("@xyflow/react", () => ({
     position,
     style,
     type,
+    ...rest
   }: {
     className?: string;
     id?: string;
     position?: string;
     style?: React.CSSProperties;
     type?: string;
+    [key: `data-${string}`]: string | undefined;
   }) => (
     <div
       className={className}
@@ -33,6 +35,7 @@ vi.mock("@xyflow/react", () => ({
       data-offset={style?.["--node-port-offset" as keyof React.CSSProperties]}
       data-position={position}
       data-testid={`${type}-handle`}
+      {...rest}
     />
   ),
   Position: { Top: "top", Bottom: "bottom", Left: "left", Right: "right" },
@@ -136,6 +139,9 @@ describe("NodeCard", () => {
       "!w-5",
       "!bg-transparent",
       "before:!left-0",
+      "before:opacity-30",
+      "before:scale-75",
+      "group-hover/node-card:before:opacity-75",
       "before:!bg-orange-500"
     );
     expect(screen.getByTestId("source-handle")).toHaveClass(
@@ -144,12 +150,57 @@ describe("NodeCard", () => {
       "!w-5",
       "!bg-transparent",
       "before:!left-full",
+      "before:opacity-30",
+      "before:scale-75",
+      "group-hover/node-card:before:opacity-75",
       "before:!bg-orange-500"
     );
     expect(screen.getByTestId("target-handle")).toHaveAttribute("data-handleid", "left-port-0");
+    expect(screen.getByTestId("target-handle")).toHaveAttribute("data-port-state", "idle");
+    expect(screen.getByTestId("target-handle")).toHaveAttribute("data-connected", "false");
+    expect(screen.getByTestId("target-handle")).toHaveAttribute("data-active", "false");
     expect(screen.getByTestId("target-handle")).toHaveAttribute("data-offset", "0px");
     expect(screen.getByTestId("source-handle")).toHaveAttribute("data-handleid", "right-port-0");
+    expect(screen.getByTestId("source-handle")).toHaveAttribute("data-port-state", "idle");
+    expect(screen.getByTestId("source-handle")).toHaveAttribute("data-connected", "false");
+    expect(screen.getByTestId("source-handle")).toHaveAttribute("data-active", "false");
     expect(screen.getByTestId("source-handle")).toHaveAttribute("data-offset", "0px");
+  });
+
+  it("marks connected and active ports for stronger visual states", () => {
+    render(
+      <NodeCard
+        leftHandle
+        rightHandle
+        icon={Box}
+        label="Node"
+        leftActivePortCount={1}
+        leftActivePortMask={1}
+        leftConnectedPortCount={1}
+        leftConnectedPortMask={2}
+        leftHandleCount={2}
+        rightConnectedPortCount={1}
+        rightConnectedPortMask={1}
+        theme="teal"
+      />
+    );
+
+    const targetHandles = screen.getAllByTestId("target-handle");
+    const sourceHandle = screen.getByTestId("source-handle");
+
+    expect(targetHandles[0]).toHaveAttribute("data-port-state", "active");
+    expect(targetHandles[0]).toHaveAttribute("data-active", "true");
+    expect(targetHandles[1]).toHaveAttribute("data-port-state", "connected");
+    expect(targetHandles[1]).toHaveAttribute("data-connected", "true");
+    expect(sourceHandle).toHaveAttribute("data-port-state", "connected");
+    expect(sourceHandle).toHaveClass(
+      "data-[connected=true]:before:opacity-90",
+      "data-[connected=true]:before:scale-100"
+    );
+    expect(targetHandles[0]).toHaveClass(
+      "data-[active=true]:before:opacity-100",
+      "data-[active=true]:before:scale-125"
+    );
   });
 
   it("splits ports into multiple vertical slots", () => {

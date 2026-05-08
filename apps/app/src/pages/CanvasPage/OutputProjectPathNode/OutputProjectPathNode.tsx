@@ -19,7 +19,13 @@ export const OutputProjectPathNode = ({ id, data, selected }: OutputProjectPathN
   const store = useHarnessCanvasStore();
   const { runStatus, dimmed } = useStore(store, useShallow(selectNodeRunState(id)));
   const updateNodeData = useStore(store, (s) => s.updateNodeData);
-  const { leftPortCount } = useNodePortCounts(id);
+  const {
+    leftActivePortCount,
+    leftActivePortMask,
+    leftConnectedPortCount,
+    leftConnectedPortMask,
+    leftPortCount,
+  } = useNodePortCounts(id);
 
   const handleLabelChange = (v: string) => updateNodeData(id, { label: v });
   const handleProjectIdChange = (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -38,6 +44,10 @@ export const OutputProjectPathNode = ({ id, data, selected }: OutputProjectPathN
         dimmed={dimmed}
         icon={FolderOutput}
         label={data.label}
+        leftActivePortCount={leftActivePortCount}
+        leftActivePortMask={leftActivePortMask}
+        leftConnectedPortCount={leftConnectedPortCount}
+        leftConnectedPortMask={leftConnectedPortMask}
         leftHandleCount={leftPortCount}
         runStatus={runStatus}
         selected={selected}
