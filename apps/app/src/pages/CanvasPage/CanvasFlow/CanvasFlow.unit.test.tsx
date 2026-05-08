@@ -20,16 +20,19 @@ vi.mock("@xyflow/react", async (importOriginal) => {
       defaultViewport,
       fitView,
       onMove,
+      snapToGrid,
     }: React.PropsWithChildren<{
       defaultViewport?: { zoom: number };
       fitView?: boolean;
       onMove?: XyFlowReact.OnMove;
+      snapToGrid?: boolean;
     }>) => {
       const handleMouseMove = () => onMove?.(null, { x: 0, y: 0, zoom: 0.6 });
 
       return (
         <div
           data-auto-fit={String(fitView ?? false)}
+          data-snap-to-grid={String(snapToGrid ?? false)}
           data-testid="react-flow"
           data-zoom={defaultViewport?.zoom}
           onMouseMove={handleMouseMove}
@@ -38,6 +41,8 @@ vi.mock("@xyflow/react", async (importOriginal) => {
         </div>
       );
     },
+    Background: () => <div data-testid="flow-background" />,
+    Controls: () => <div data-testid="flow-controls" />,
     MiniMap: () => <div data-testid="mini-map" />,
   };
 });
@@ -86,6 +91,8 @@ describe("CanvasFlow", () => {
     renderWithStore([makeNode("a"), makeNode("b")]);
 
     expect(screen.getByTestId("mini-map")).toBeInTheDocument();
+    expect(screen.getByTestId("flow-background")).toBeInTheDocument();
+    expect(screen.getByTestId("flow-controls")).toBeInTheDocument();
     expect(screen.getByTestId("react-flow")).toHaveAttribute("data-auto-fit", "false");
   });
 
@@ -93,6 +100,31 @@ describe("CanvasFlow", () => {
     renderWithStore([makeNode("a")]);
 
     expect(screen.queryByTestId("mini-map")).not.toBeInTheDocument();
+  });
+
+  it("applies canvas view settings to React Flow", () => {
+    const store = createHarnessCanvasStore([makeNode("a"), makeNode("b")], []);
+    store.setState({
+      canvasSettings: {
+        showMiniMap: false,
+        showControls: false,
+        showBackground: false,
+        snapToGrid: true,
+      },
+    });
+
+    render(
+      <HarnessCanvasStoreContext.Provider value={store}>
+        <ReactFlowProvider>
+          <CanvasFlow />
+        </ReactFlowProvider>
+      </HarnessCanvasStoreContext.Provider>
+    );
+
+    expect(screen.queryByTestId("mini-map")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("flow-background")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("flow-controls")).not.toBeInTheDocument();
+    expect(screen.getByTestId("react-flow")).toHaveAttribute("data-snap-to-grid", "true");
   });
 
   it("hides MiniMap while the console is open", () => {

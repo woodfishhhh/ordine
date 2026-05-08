@@ -311,6 +311,29 @@
     "runSaveFailed": "Failed to save pipeline validation result",
     "runCompleted": "Pipeline run completed",
     "runTest": "Run Test",
+    "settingsDrawer": {
+      "menuLabel": "Settings",
+      "title": "Canvas Settings",
+      "description": "Tune this canvas view without leaving the current pipeline.",
+      "close": "Close Canvas settings",
+      "globalSettings": "Open global settings",
+      "showMiniMap": {
+        "label": "Show minimap",
+        "description": "Display the map when multiple nodes are on the canvas."
+      },
+      "showControls": {
+        "label": "Show viewport controls",
+        "description": "Keep zoom, fit view, and interaction controls visible."
+      },
+      "showBackground": {
+        "label": "Show grid background",
+        "description": "Use the dotted grid to align nodes visually."
+      },
+      "snapToGrid": {
+        "label": "Snap nodes to grid",
+        "description": "Align dragged nodes to the canvas grid."
+      }
+    },
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar",
     "nodeLibrary": "Node Library",

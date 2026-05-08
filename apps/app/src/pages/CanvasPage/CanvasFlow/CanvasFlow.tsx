@@ -33,6 +33,7 @@ const defaultEdgeOptions = {
 };
 
 const proOpts = { hideAttribution: false };
+const snapGrid: [number, number] = [24, 24];
 
 interface CanvasFlowProps {
   viewportRef?: Ref<HTMLDivElement>;
@@ -49,6 +50,7 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
     [connectStart, edges, nodes]
   );
   const isConsoleOpen = useStore(store, (s) => s.isConsoleOpen);
+  const canvasSettings = useStore(store, (s) => s.canvasSettings);
   const handleNodesChange = useStore(store, (s) => s.handleNodesChange);
   const handleEdgesChange = useStore(store, (s) => s.handleEdgesChange);
   const handleConnect = useStore(store, (s) => s.handleConnect);
@@ -94,6 +96,8 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
         nodes={nodes}
         nodeTypes={nodeTypes}
         proOptions={proOpts}
+        snapGrid={snapGrid}
+        snapToGrid={canvasSettings.snapToGrid}
         onConnect={handleConnect}
         onConnectEnd={handleFlowConnectEnd}
         onConnectStart={handleFlowConnectStart}
@@ -109,13 +113,17 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
         onPaneClick={handleFlowPaneClick}
         onPaneContextMenu={handleFlowPaneContextMenu}
       >
-        <Background color="#cbd5e1" gap={24} size={1.5} variant={BackgroundVariant.Dots} />
-        <Controls
-          showInteractive
-          className="border-gray-200! bg-white! shadow-sm!"
-          position="bottom-left"
-        />
-        {nodes.length > 1 && !isConsoleOpen && (
+        {canvasSettings.showBackground && (
+          <Background color="#cbd5e1" gap={24} size={1.5} variant={BackgroundVariant.Dots} />
+        )}
+        {canvasSettings.showControls && (
+          <Controls
+            showInteractive
+            className="border-gray-200! bg-white! shadow-sm!"
+            position="bottom-left"
+          />
+        )}
+        {canvasSettings.showMiniMap && nodes.length > 1 && !isConsoleOpen && (
           <MiniMap
             pannable
             zoomable

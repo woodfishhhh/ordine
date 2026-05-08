@@ -1,7 +1,11 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { CanvasFloatingMenu } from "./CanvasFloatingMenu";
-import { HarnessCanvasStoreProvider } from "../_store";
+import {
+  createHarnessCanvasStore,
+  HarnessCanvasStoreContext,
+  HarnessCanvasStoreProvider,
+} from "../_store";
 
 // ─── Mock @refinedev/core ─────────────────────────────────────────────────────
 
@@ -171,5 +175,19 @@ describe("CanvasFloatingMenu - save behavior", () => {
     const saveBtn = screen.getByText("保存").closest("button");
     expect(saveBtn).not.toBeDisabled();
     isPendingUpdate.mockRestore?.();
+  });
+
+  it("opens in-canvas settings from the menu", () => {
+    const store = createHarnessCanvasStore();
+    render(
+      <HarnessCanvasStoreContext.Provider value={store}>
+        <CanvasFloatingMenu />
+      </HarnessCanvasStoreContext.Provider>
+    );
+
+    openMenu();
+    fireEvent.click(screen.getByText(/Settings|设置/));
+
+    expect(store.getState().isCanvasSettingsOpen).toBe(true);
   });
 });

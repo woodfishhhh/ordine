@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { useHarnessCanvasStore } from "../_store";
 import { Menu, Home, Save, FileDown, FileUp, Settings, Undo, Redo } from "lucide-react";
@@ -9,6 +10,7 @@ import { ResourceName } from "@/integrations/refine/dataProvider";
 import type { PipelineNode, PipelineEdge } from "../_store/canvasSlice";
 
 export const CanvasFloatingMenu = () => {
+  const { t } = useTranslation();
   const store = useHarnessCanvasStore();
   const pipelineId = useStore(store, (state) => state.pipelineId);
   const pipelineName = useStore(store, (state) => state.pipelineName);
@@ -18,6 +20,7 @@ export const CanvasFloatingMenu = () => {
   const importCanvas = useStore(store, (state) => state.importCanvas);
   const handleUndo = useStore(store, (state) => state.handleUndo);
   const handleRedo = useStore(store, (state) => state.handleRedo);
+  const openCanvasSettings = useStore(store, (state) => state.openCanvasSettings);
   const handlePipelineIdChange = useStore(store, (state) => state.handlePipelineIdChange);
 
   const { mutate: updateCanvas, mutation: updateMutation } = useUpdate();
@@ -114,7 +117,7 @@ export const CanvasFloatingMenu = () => {
     { icon: FileUp, label: "导入", onClick: handleImport },
     { icon: Undo, label: "撤销", onClick: handleUndo, divider: true },
     { icon: Redo, label: "重做", onClick: handleRedo },
-    { icon: Settings, label: "设置", to: "/settings" },
+    { icon: Settings, label: t("canvas.settingsDrawer.menuLabel"), onClick: openCanvasSettings },
   ];
 
   const handleCloseMenu = () => setIsOpen(false);

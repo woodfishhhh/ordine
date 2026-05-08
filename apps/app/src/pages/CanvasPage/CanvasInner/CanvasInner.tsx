@@ -14,6 +14,7 @@ import { LlmContentCard } from "../LlmContentCard/LlmContentCard";
 import { CanvasEmptyState } from "../CanvasEmptyState";
 import { CanvasNodeCreationPalette } from "../CanvasNodeCreationPalette";
 import { CanvasStatusBar } from "../CanvasStatusBar";
+import { CanvasSettingsDrawer } from "../CanvasSettingsDrawer";
 import { getScreenViewportCenter, getViewportRectCenter } from "../utils/nodePosition";
 
 export const CanvasInner = () => {
@@ -64,6 +65,8 @@ export const CanvasInner = () => {
       )}
 
       <CanvasStatusBar />
+
+      <CanvasSettingsDrawer />
 
       {contextMenu && <CanvasContextMenu />}
 
