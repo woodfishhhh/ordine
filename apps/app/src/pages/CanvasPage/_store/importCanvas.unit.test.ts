@@ -2,13 +2,12 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { createHarnessCanvasStore } from "./harnessCanvasStore";
 import type { PipelineNode, PipelineEdge } from "./canvasSlice";
 
-const makeNode = (id: string): PipelineNode =>
-  ({
-    id,
-    type: "codeFile",
-    position: { x: 0, y: 0 },
-    data: { label: id, filePath: "" },
-  }) as unknown as PipelineNode;
+const makeNode = (id: string): PipelineNode => ({
+  id,
+  type: "code-file",
+  position: { x: 0, y: 0 },
+  data: { label: id, nodeType: "code-file", filePath: "" },
+});
 
 const makeEdge = (id: string): PipelineEdge =>
   ({
@@ -35,6 +34,31 @@ describe("importCanvas store action", () => {
 
     expect(ctx.store!.getState().nodes).toEqual(importedNodes);
     expect(ctx.store!.getState().edges).toEqual(importedEdges);
+  });
+
+  it("updates pipeline name from imported name", () => {
+    const importedNodes = [makeNode("n1")];
+    const importedEdges = [makeEdge("e1")];
+
+    ctx.store!.getState().importCanvas({
+      name: "Imported Pipeline",
+      nodes: importedNodes,
+      edges: importedEdges,
+    });
+
+    expect(ctx.store!.getState().pipelineName).toBe("Imported Pipeline");
+  });
+
+  it("uses imported title when name is absent", () => {
+    const importedNodes = [makeNode("n1")];
+
+    ctx.store!.getState().importCanvas({
+      title: "Legacy Title",
+      nodes: importedNodes,
+      edges: [],
+    });
+
+    expect(ctx.store!.getState().pipelineName).toBe("Legacy Title");
   });
 
   it("replaces existing canvas content", () => {

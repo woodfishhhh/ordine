@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { useHarnessCanvasStore } from "../_store";
 import { Menu, Home, Save, FileDown, FileUp, Settings, Undo, Redo } from "lucide-react";
@@ -6,9 +7,16 @@ import { Link } from "@tanstack/react-router";
 import { useCreate, useUpdate } from "@refinedev/core";
 import { Popover, PopoverContent, PopoverTrigger } from "@repo/ui/popover";
 import { ResourceName } from "@/integrations/refine/dataProvider";
-import type { PipelineNode, PipelineEdge } from "../_store/canvasSlice";
+import { toastStore } from "@/store/toastStore";
+import { ResultAsync } from "neverthrow";
+import {
+  isCanvasImportFileTooLarge,
+  parseCanvasImportJson,
+  type CanvasImportError,
+} from "../utils/canvasImportJson";
 
 export const CanvasFloatingMenu = () => {
+  const { t } = useTranslation();
   const store = useHarnessCanvasStore();
   const pipelineId = useStore(store, (state) => state.pipelineId);
   const pipelineName = useStore(store, (state) => state.pipelineName);
@@ -85,21 +93,36 @@ export const CanvasFloatingMenu = () => {
     fileInputRef.current?.click();
   };
 
+  const showImportError = (error: CanvasImportError) => {
+    const description =
+      error === "invalid-json"
+        ? t("canvas.importInvalidJson")
+        : error === "file-too-large"
+          ? t("canvas.importFileTooLarge")
+          : t("canvas.importInvalidPipelineJson");
+
+    toastStore.getState().addToast({
+      type: "error",
+      title: t("canvas.importFailed"),
+      description,
+    });
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    void file.text().then((text) => {
-      const parsed = JSON.parse(text) as {
-        nodes?: PipelineNode[];
-        edges?: PipelineEdge[];
-      };
-      importCanvas({
-        nodes: parsed.nodes ?? [],
-        edges: parsed.edges ?? [],
-      });
-    });
     e.target.value = "";
     setIsOpen(false);
+
+    if (isCanvasImportFileTooLarge(file)) {
+      showImportError("file-too-large");
+
+      return;
+    }
+
+    void ResultAsync.fromPromise(file.text(), () => "invalid-json" as const)
+      .andThen((text) => parseCanvasImportJson(text))
+      .match(importCanvas, showImportError);
   };
 
   const menuItems = [
