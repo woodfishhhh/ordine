@@ -275,9 +275,11 @@ export const getNodePortVisualCounts = (
   nodes: PipelineNode[],
   edges: PipelineEdge[],
   nodeId: string,
-  pendingConnection?: PendingNodePortConnection | null
+  pendingConnection?: PendingNodePortConnection | null,
+  decoratedEdgesOverride?: PipelineEdge[]
 ): NodePortVisualCounts => {
-  const decoratedEdges = decorateEdgesWithPortHandles(nodes, edges, pendingConnection);
+  const decoratedEdges =
+    decoratedEdgesOverride ?? decorateEdgesWithPortHandles(nodes, edges, pendingConnection);
   const counts = getNodePortCounts(decoratedEdges, nodeId, pendingConnection);
   const pendingSide = getPendingPortSide(pendingConnection, nodeId);
   const leftConnectedPortMask = getConnectedPortMask(decoratedEdges, nodeId, "left");
