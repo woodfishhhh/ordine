@@ -33,20 +33,34 @@ interface Message {
 
 const getOperationLabel = (op: PipelineOperation): string => {
   switch (op.type) {
-    case "addNode":
+    case "addNode": {
+
       return `添加节点: ${op.node.type}`;
-    case "removeNode":
+    }
+    case "removeNode": {
+
       return `删除节点: ${op.nodeId}`;
-    case "addEdge":
+    }
+    case "addEdge": {
+
       return `添加连线: ${op.edge.source} → ${op.edge.target}`;
-    case "removeEdge":
+    }
+    case "removeEdge": {
+
       return `删除连线: ${op.edgeId}`;
-    case "reconnectEdge":
+    }
+    case "reconnectEdge": {
+
       return `重连连线: ${op.edgeId}`;
-    case "replaceNodeData":
+    }
+    case "replaceNodeData": {
+
       return `替换节点数据: ${op.nodeId}`;
-    default:
+    }
+    default: {
+
       return (op as { type: string }).type;
+    }
   }
 };
 
@@ -55,7 +69,7 @@ export const AgentPanel = () => {
   const store = useHarnessCanvasStore();
 
   const agentPanel = useStore(store, (state) => state.agentPanel);
-  const toggleAgentPanel = useStore(store, (state) => state.toggleAgentPanel);
+  const handleToggleAgentPanel = useStore(store, (state) => state.toggleAgentPanel);
   const setPendingProposal = useStore(store, (state) => state.setPendingProposal);
   const clearPendingProposal = useStore(store, (state) => state.clearPendingProposal);
   const applyAgentProposal = useStore(store, (state) => state.applyAgentProposal);
@@ -86,13 +100,17 @@ export const AgentPanel = () => {
 
   const doSend = useCallback(async () => {
     const text = inputValue.trim();
-    if (!text) return;
+    if (!text) {
+
+      return;
+    }
     if (!pipelineId) {
       toastStore.getState().addToast({
         type: "error",
         title: t("canvas.runFailed"),
         description: t("canvas.noPipelineId"),
       });
+
       return;
     }
 
@@ -134,6 +152,7 @@ export const AgentPanel = () => {
       });
       setIsSending(false);
       scrollToBottom();
+
       return;
     }
 
@@ -154,6 +173,7 @@ export const AgentPanel = () => {
       setMessages((prev) => [...prev, assistantMessage]);
       setIsSending(false);
       scrollToBottom();
+
       return;
     }
 
@@ -187,6 +207,7 @@ export const AgentPanel = () => {
       });
       setIsSending(false);
       scrollToBottom();
+
       return;
     }
 
@@ -235,14 +256,31 @@ export const AgentPanel = () => {
     [doSend]
   );
 
+  const handleInputValueChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setInputValue(event.target.value);
+    },
+    []
+  );
+
+  const handleSendClick = useCallback(() => {
+    void doSend();
+  }, [doSend]);
+
   const hasBlockingDiagnostics =
     agentPanel.diagnostics?.some((diagnostic) => diagnostic.severity === "error") ?? false;
 
   const handleApply = useCallback(() => {
-    if (!agentPanel.pendingProposal || hasBlockingDiagnostics) return;
+    if (!agentPanel.pendingProposal || hasBlockingDiagnostics) {
+
+      return;
+    }
 
     const applied = applyAgentProposal(agentPanel.pendingProposal);
-    if (!applied) return;
+    if (!applied) {
+
+      return;
+    }
 
     setMessages((prev) => [
       ...prev,
@@ -281,7 +319,7 @@ export const AgentPanel = () => {
           className="h-7 w-7"
           size="icon"
           variant="ghost"
-          onClick={toggleAgentPanel}
+          onClick={handleToggleAgentPanel}
         >
           <X className="h-4 w-4" />
         </Button>
@@ -409,18 +447,18 @@ export const AgentPanel = () => {
       <div className="flex items-center gap-2 border-t p-3">
         <Input
           className="h-9 flex-1 text-sm"
+          disabled={isSending || agentPanel.isLoading}
           placeholder={t("canvas.agentPanel.inputPlaceholder")}
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={handleInputValueChange}
           onKeyDown={handleKeyDown}
-          disabled={isSending || agentPanel.isLoading}
         />
         <Button
           className="h-9 w-9"
+          disabled={isSending || agentPanel.isLoading || !inputValue.trim()}
           size="icon"
           variant="ghost"
-          disabled={isSending || agentPanel.isLoading || !inputValue.trim()}
-          onClick={() => void doSend()}
+          onClick={handleSendClick}
         >
           {isSending || agentPanel.isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />

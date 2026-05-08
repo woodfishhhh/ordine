@@ -6,26 +6,28 @@ import { AgentPanel } from "./AgentPanel";
 import { HarnessCanvasStoreProvider, useHarnessCanvasStore } from "../_store";
 import { useRef } from "react";
 import type { PipelineOperationProposal, PipelineOperationDiagnostic } from "@repo/pipeline-engine/schemas";
+import type * as ReactI18Next from "react-i18next";
 import { err, ok } from "neverthrow";
 import zh from "@/locales/zh.json";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
 vi.mock("react-i18next", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("react-i18next")>();
+  const actual = await importOriginal<typeof ReactI18Next>();
+
   return {
     ...actual,
     useTranslation: () => ({
       t: (key: string) => {
         const keys = key.split(".");
-        let value: unknown = zh;
-        for (const k of keys) {
-          if (value && typeof value === "object" && k in value) {
-            value = (value as Record<string, unknown>)[k];
-          } else {
-            return key;
-          }
-        }
+        const value = keys.reduce<unknown>(
+          (current, k) =>
+            current && typeof current === "object" && k in current
+              ? (current as Record<string, unknown>)[k]
+              : key,
+          zh,
+        );
+
         return typeof value === "string" ? value : key;
       },
       i18n: { changeLanguage: vi.fn() },
@@ -63,11 +65,22 @@ vi.mock("@repo/ui/button", () => ({
     className,
     variant,
     size,
-  }: React.ComponentProps<"button"> & { variant?: string; size?: string }) => (
-    <button className={className} disabled={disabled} title={title} onClick={onClick} data-variant={variant} data-size={size}>
-      {children}
-    </button>
-  ),
+  }: React.ComponentProps<"button"> & { variant?: string; size?: string }) => {
+    const handleClick = onClick;
+
+    return (
+      <button
+        className={className}
+        data-size={size}
+        data-variant={variant}
+        disabled={disabled}
+        title={title}
+        onClick={handleClick}
+      >
+        {children}
+      </button>
+    );
+  },
 }));
 
 vi.mock("@repo/ui/scroll-area", () => ({
@@ -110,6 +123,7 @@ const PanelActivator = ({
       },
     });
   }
+
   return <>{children}</>;
 };
 
@@ -123,6 +137,7 @@ const wrapperWithState = (props: {
       <PanelActivator {...props}>{children}</PanelActivator>
     </HarnessCanvasStoreProvider>
   );
+
   return Wrapper;
 };
 

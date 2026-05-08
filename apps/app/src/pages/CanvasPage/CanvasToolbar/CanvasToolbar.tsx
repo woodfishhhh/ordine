@@ -35,7 +35,7 @@ export const CanvasToolbar = () => {
   const handleRedo = useStore(store, (state) => state.handleRedo);
   const handleFormatLayout = useStore(store, (state) => state.formatLayout);
   const handleRunTest = useStore(store, (state) => state.handleRunTest);
-  const toggleAgentPanel = useStore(store, (state) => state.toggleAgentPanel);
+  const handleToggleAgentPanel = useStore(store, (state) => state.toggleAgentPanel);
 
   return (
     <div className="absolute left-1/2 top-3 z-10 -translate-x-1/2">
@@ -142,7 +142,7 @@ export const CanvasToolbar = () => {
                 size="icon"
                 title={t("canvas.agentPanel.toggle")}
                 variant="ghost"
-                onClick={toggleAgentPanel}
+                onClick={handleToggleAgentPanel}
               />
             }
           >
