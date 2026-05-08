@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryObj } from "@storybook/react";
 import { HarnessCanvasStoreProvider } from "../_store";
 import { CanvasTopChrome } from "./CanvasTopChrome";
 
