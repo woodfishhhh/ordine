@@ -20,24 +20,46 @@ vi.mock("@xyflow/react", async (importOriginal) => {
       defaultViewport,
       fitView,
       onMove,
+      elementsSelectable,
+      nodesConnectable,
+      nodesDraggable,
+      panOnDrag,
+      zoomOnDoubleClick,
+      zoomOnPinch,
+      zoomOnScroll,
     }: React.PropsWithChildren<{
       defaultViewport?: { zoom: number };
       fitView?: boolean;
       onMove?: XyFlowReact.OnMove;
+      elementsSelectable?: boolean;
+      nodesConnectable?: boolean;
+      nodesDraggable?: boolean;
+      panOnDrag?: boolean;
+      zoomOnDoubleClick?: boolean;
+      zoomOnPinch?: boolean;
+      zoomOnScroll?: boolean;
     }>) => {
       const handleMouseMove = () => onMove?.(null, { x: 0, y: 0, zoom: 0.6 });
 
       return (
         <div
           data-auto-fit={String(fitView ?? false)}
+          data-elements-selectable={String(elementsSelectable ?? true)}
+          data-nodes-connectable={String(nodesConnectable ?? true)}
+          data-nodes-draggable={String(nodesDraggable ?? true)}
+          data-pan-on-drag={String(panOnDrag ?? true)}
           data-testid="react-flow"
           data-zoom={defaultViewport?.zoom}
+          data-zoom-on-double-click={String(zoomOnDoubleClick ?? true)}
+          data-zoom-on-pinch={String(zoomOnPinch ?? true)}
+          data-zoom-on-scroll={String(zoomOnScroll ?? true)}
           onMouseMove={handleMouseMove}
         >
           {children}
         </div>
       );
     },
+    Controls: () => <div data-testid="react-flow-controls" />,
     MiniMap: () => <div data-testid="mini-map" />,
   };
 });
@@ -80,6 +102,26 @@ describe("CanvasFlow", () => {
     const { container } = render(<CanvasFlow />, { wrapper });
     expect(container.firstChild).toBeTruthy();
     expect(screen.getByTestId("react-flow")).toHaveAttribute("data-zoom", "1.25");
+    expect(screen.queryByTestId("react-flow-controls")).not.toBeInTheDocument();
+  });
+
+  it("uses custom toolbar state instead of React Flow built-in interactivity controls", () => {
+    const store = createHarnessCanvasStore([], []);
+    store.setState({ isCanvasInteractive: false });
+
+    render(
+      <HarnessCanvasStoreContext.Provider value={store}>
+        <ReactFlowProvider>
+          <CanvasFlow />
+        </ReactFlowProvider>
+      </HarnessCanvasStoreContext.Provider>
+    );
+
+    expect(screen.getByTestId("react-flow")).toHaveAttribute("data-nodes-draggable", "false");
+    expect(screen.getByTestId("react-flow")).toHaveAttribute("data-nodes-connectable", "false");
+    expect(screen.getByTestId("react-flow")).toHaveAttribute("data-elements-selectable", "false");
+    expect(screen.getByTestId("react-flow")).toHaveAttribute("data-pan-on-drag", "false");
+    expect(screen.getByTestId("react-flow")).toHaveAttribute("data-zoom-on-scroll", "false");
   });
 
   it("shows MiniMap when multiple nodes exist and the console is closed", () => {

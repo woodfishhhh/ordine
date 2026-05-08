@@ -335,6 +335,8 @@
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "fitView": "Fit view",
+    "enableInteractivity": "Enable canvas interactions",
+    "disableInteractivity": "Disable canvas interactions",
     "formatLayout": "Format layout",
     "undo": "Undo",
     "redo": "Redo",

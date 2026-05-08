@@ -1,4 +1,5 @@
 import { render } from "@/test/test-wrapper";
+import i18n from "@/lib/i18n";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
@@ -24,8 +25,15 @@ vi.mock("@repo/ui/button", () => ({
     disabled,
     title,
     className,
+    ...props
   }: React.ComponentProps<"button">) => (
-    <button className={className} disabled={disabled} title={title} onClick={handleClick}>
+    <button
+      {...props}
+      className={className}
+      disabled={disabled}
+      title={title}
+      onClick={handleClick}
+    >
       {children}
     </button>
   ),
@@ -62,6 +70,10 @@ const wrapperWithPipeline = ({ children }: React.PropsWithChildren) => (
   </HarnessCanvasStoreProvider>
 );
 
+beforeEach(async () => {
+  await i18n.changeLanguage("en");
+});
+
 describe("CanvasToolbar - export removed", () => {
   it("does NOT render 导出 tooltip/button in the toolbar", () => {
     render(<CanvasToolbar />, { wrapper });
@@ -69,6 +81,16 @@ describe("CanvasToolbar - export removed", () => {
       .queryAllByTestId("tooltip")
       .filter((el) => el.textContent === "导出");
     expect(exportTooltips).toHaveLength(0);
+  });
+});
+
+describe("CanvasToolbar - viewport controls", () => {
+  it("keeps zoom and fit view available through accessible custom controls", () => {
+    render(<CanvasToolbar />, { wrapper });
+
+    expect(screen.getByRole("button", { name: "Zoom out" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Zoom in" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Fit view" })).toBeInTheDocument();
   });
 });
 
@@ -148,5 +170,19 @@ describe("CanvasToolbar - Run Test button", () => {
         expect.arrayContaining([expect.objectContaining({ type: "error" })])
       );
     });
+  });
+});
+
+describe("CanvasToolbar - interactive state", () => {
+  it("toggles the custom canvas interactivity control", async () => {
+    const user = userEvent.setup();
+    render(<CanvasToolbar />, { wrapper });
+
+    await user.click(screen.getByRole("button", { name: "Disable canvas interactions" }));
+
+    expect(screen.getByRole("button", { name: "Enable canvas interactions" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
   });
 });

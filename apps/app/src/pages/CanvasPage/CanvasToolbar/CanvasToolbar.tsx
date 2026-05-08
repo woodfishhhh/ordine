@@ -10,6 +10,8 @@ import {
   Play,
   AlignLeft,
   Plus,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@repo/ui/button";
@@ -25,6 +27,11 @@ export const CanvasToolbar = () => {
   const handleFitView = useStore(store, (state) => state.handleFitView);
   const handleZoomIn = useStore(store, (state) => state.handleZoomIn);
   const handleZoomOut = useStore(store, (state) => state.handleZoomOut);
+  const isCanvasInteractive = useStore(store, (state) => state.isCanvasInteractive);
+  const handleToggleCanvasInteractive = useStore(
+    store,
+    (state) => state.handleToggleCanvasInteractive
+  );
   const isQuickAddOpen = useStore(store, (state) => state.isQuickAddOpen);
   const handleToggleQuickAdd = useStore(store, (state) => state.handleToggleQuickAdd);
   const pipelineId = useStore(store, (state) => state.pipelineId);
@@ -34,6 +41,10 @@ export const CanvasToolbar = () => {
   const handleRedo = useStore(store, (state) => state.handleRedo);
   const handleFormatLayout = useStore(store, (state) => state.formatLayout);
   const handleRunTest = useStore(store, (state) => state.handleRunTest);
+  const interactivityLabel = isCanvasInteractive
+    ? t("canvas.disableInteractivity")
+    : t("canvas.enableInteractivity");
+  const InteractivityIcon = isCanvasInteractive ? Unlock : Lock;
 
   return (
     <div className="absolute left-1/2 top-3 z-10 -translate-x-1/2">
@@ -42,7 +53,14 @@ export const CanvasToolbar = () => {
         <Tooltip>
           <TooltipTrigger
             render={
-              <Button className="h-7 w-7" size="icon" variant="ghost" onClick={handleZoomOut} />
+              <Button
+                aria-label={t("canvas.zoomOut")}
+                className="h-7 w-7"
+                size="icon"
+                title={t("canvas.zoomOut")}
+                variant="ghost"
+                onClick={handleZoomOut}
+              />
             }
           >
             <ZoomOut className="h-4 w-4" />
@@ -52,7 +70,14 @@ export const CanvasToolbar = () => {
         <Tooltip>
           <TooltipTrigger
             render={
-              <Button className="h-7 w-7" size="icon" variant="ghost" onClick={handleZoomIn} />
+              <Button
+                aria-label={t("canvas.zoomIn")}
+                className="h-7 w-7"
+                size="icon"
+                title={t("canvas.zoomIn")}
+                variant="ghost"
+                onClick={handleZoomIn}
+              />
             }
           >
             <ZoomIn className="h-4 w-4" />
@@ -62,7 +87,14 @@ export const CanvasToolbar = () => {
         <Tooltip>
           <TooltipTrigger
             render={
-              <Button className="h-7 w-7" size="icon" variant="ghost" onClick={handleFitView} />
+              <Button
+                aria-label={t("canvas.fitView")}
+                className="h-7 w-7"
+                size="icon"
+                title={t("canvas.fitView")}
+                variant="ghost"
+                onClick={handleFitView}
+              />
             }
           >
             <Maximize2 className="h-4 w-4" />
@@ -73,8 +105,28 @@ export const CanvasToolbar = () => {
           <TooltipTrigger
             render={
               <Button
+                aria-label={interactivityLabel}
+                aria-pressed={!isCanvasInteractive}
                 className="h-7 w-7"
                 size="icon"
+                title={interactivityLabel}
+                variant="ghost"
+                onClick={handleToggleCanvasInteractive}
+              />
+            }
+          >
+            <InteractivityIcon className="h-4 w-4" />
+          </TooltipTrigger>
+          <TooltipContent>{interactivityLabel}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                aria-label={t("canvas.formatLayout")}
+                className="h-7 w-7"
+                size="icon"
+                title={t("canvas.formatLayout")}
                 variant="ghost"
                 onClick={handleFormatLayout}
               />
