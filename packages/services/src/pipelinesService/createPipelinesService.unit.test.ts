@@ -54,7 +54,7 @@ describe("createPipelinesService", () => {
         id: "folder-1",
         type: "folder",
         position: { x: 0, y: 0 },
-        data: { nodeType: "folder", label: "Folder 1" },
+        data: { nodeType: "folder", label: "Folder 1", folderPath: "/tmp/source" },
       },
     ],
     edges: [],
@@ -194,6 +194,18 @@ describe("createPipelinesService", () => {
         }),
       ]),
     );
+  });
+
+  it("proposeOperations returns null proposal when snapshot is invalid at runtime", async () => {
+    const svc = createPipelinesService({} as never);
+
+    const result = await svc.proposeOperations({
+      snapshot: undefined as never,
+      message: "invalid snapshot",
+    });
+
+    expect(result).toEqual({ proposal: null, diagnostics: [] });
+    expect(mockRunAgent).not.toHaveBeenCalled();
   });
 
   it("proposeOperations returns null proposal when extracted JSON is invalid", async () => {

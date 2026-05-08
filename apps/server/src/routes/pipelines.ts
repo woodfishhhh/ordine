@@ -1,8 +1,16 @@
 import { Hono } from "hono";
 import { ResultAsync } from "neverthrow";
+import { z } from "zod/v4";
+import { PipelineGraphSnapshotSchema } from "@repo/schemas";
 import { pipelinesService, pipelineRunnerService } from "../services.js";
 
 export const pipelinesRoutes = new Hono();
+
+const ProposeOperationsBodySchema = z.object({
+  snapshot: PipelineGraphSnapshotSchema,
+  message: z.string().min(1),
+  pipelineName: z.string().optional(),
+});
 
 pipelinesRoutes.get("/", async (c) => {
   const pipelines = await pipelinesService.getAll();
@@ -58,12 +66,21 @@ pipelinesRoutes.delete("/:id", async (c) => {
 
 pipelinesRoutes.post("/:id/propose-operations", async (c) => {
   const id = c.req.param("id");
-  const body = await c.req.json();
+  const bodyResult = await ResultAsync.fromPromise(
+    c.req.json() as Promise<unknown>,
+    () => undefined,
+  );
+  const body = bodyResult.unwrapOr(undefined);
+  const parsed = ProposeOperationsBodySchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid request body" }, 400);
+  }
+
   const result = await pipelinesService.proposeOperations({
     pipelineId: id,
-    snapshot: body.snapshot,
-    message: body.message,
-    pipelineName: body.pipelineName,
+    snapshot: parsed.data.snapshot,
+    message: parsed.data.message,
+    pipelineName: parsed.data.pipelineName,
   });
 
   return c.json(result);
@@ -74,10 +91,11 @@ pipelinesRoutes.post("/:id/run", async (c) => {
   const pipeline = await pipelinesService.getById(id);
   if (!pipeline) return c.json({ error: "Pipeline not found" }, 404);
 
-  const body = (await ResultAsync.fromPromise(
+  const bodyResult = await ResultAsync.fromPromise(
     c.req.json() as Promise<Record<string, unknown>>,
     () => undefined,
-  )).unwrapOr({});
+  );
+  const body = bodyResult.unwrapOr({});
   const inputPath = (body as Record<string, unknown>).inputPath as string | undefined;
   const githubToken = (body as Record<string, unknown>).githubToken as string | undefined;
 

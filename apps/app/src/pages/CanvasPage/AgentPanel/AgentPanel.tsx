@@ -88,13 +88,11 @@ export const AgentPanel = () => {
   const [inputValue, setInputValue] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [needsRuntimeSetup, setNeedsRuntimeSetup] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
+      messagesEndRef.current?.scrollIntoView({ block: "end" });
     });
   }, []);
 
@@ -327,7 +325,7 @@ export const AgentPanel = () => {
 
       {/* Messages */}
       <ScrollArea className="flex-1">
-        <div ref={scrollRef} className="flex flex-col gap-3 p-3">
+        <div className="flex flex-col gap-3 p-3">
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -348,6 +346,7 @@ export const AgentPanel = () => {
               {t("canvas.agentPanel.thinking")}
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 

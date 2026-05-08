@@ -13,6 +13,7 @@ import { extractJsonFromText } from "@repo/agent";
 import { logger } from "@repo/logger";
 import {
   PipelineSchema,
+  PipelineGraphSnapshotSchema,
   PipelineOperationProposalSchema,
   type PipelineData,
   type PipelineGraphSnapshot,
@@ -247,6 +248,17 @@ export const createPipelinesService = (db: DbConnection) => {
       proposal: PipelineOperationProposal | null;
       diagnostics: PipelineOperationDiagnostic[];
     }> => {
+      const parsedSnapshot = PipelineGraphSnapshotSchema.safeParse(opts.snapshot);
+      if (!parsedSnapshot.success) {
+        logger.warn(
+          { error: parsedSnapshot.error },
+          "proposeOperations: invalid pipeline graph snapshot",
+        );
+
+        return { proposal: null, diagnostics: [] };
+      }
+
+      const snapshot = parsedSnapshot.data;
       const settings = normalizeSettingsRecord(await settingsDao.get());
       const operations = await operationsDao.findMany();
       const operationCatalog = operations.map((operation) => ({
@@ -265,7 +277,7 @@ export const createPipelinesService = (db: DbConnection) => {
         `Pipeline Name: ${opts.pipelineName ?? "(unnamed)"}`,
         "",
         "=== CURRENT GRAPH ===",
-        truncate(JSON.stringify(opts.snapshot, null, 2), MAX_SNAPSHOT_CHARS),
+        truncate(JSON.stringify(snapshot, null, 2), MAX_SNAPSHOT_CHARS),
         "",
         `=== AVAILABLE OPERATIONS (${operationCatalog.length}) ===`,
         truncate(JSON.stringify(operationCatalog, null, 2), MAX_SNAPSHOT_CHARS),
@@ -350,7 +362,7 @@ export const createPipelinesService = (db: DbConnection) => {
       const proposal = parsed.data;
 
       // Validate operations against the snapshot to get diagnostics
-      const validationResult = validatePipelineOperations(opts.snapshot, proposal.operations);
+      const validationResult = validatePipelineOperations(snapshot, proposal.operations);
       const graphDiagnostics = validationResult.isErr() ? validationResult.error : [];
       const operationDiagnostics = validateProposalOperationCatalog(
         proposal.operations,

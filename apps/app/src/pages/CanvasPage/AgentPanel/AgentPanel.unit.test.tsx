@@ -36,6 +36,7 @@ vi.mock("react-i18next", async (importOriginal) => {
 });
 
 const mockApplyPipelineOperations = vi.fn();
+const mockScrollIntoView = vi.fn();
 
 vi.mock("@repo/pipeline-engine/operations", () => ({
   applyPipelineOperations: (...args: unknown[]) => mockApplyPipelineOperations(...args),
@@ -165,6 +166,11 @@ describe("AgentPanel", () => {
     mockGetOne.mockReset();
     mockGetList.mockReset();
     mockApplyPipelineOperations.mockReset();
+    mockScrollIntoView.mockReset();
+    Object.defineProperty(globalThis.HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: mockScrollIntoView,
+    });
     mockGetOne.mockResolvedValue({
       data: { defaultAgentRuntime: "codex" },
     });
@@ -219,6 +225,9 @@ describe("AgentPanel", () => {
     );
     await waitFor(() => {
       expect(screen.getByText("已处理")).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(mockScrollIntoView).toHaveBeenCalled();
     });
   });
 
