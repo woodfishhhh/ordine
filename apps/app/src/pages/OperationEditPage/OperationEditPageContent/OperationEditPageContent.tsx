@@ -233,7 +233,7 @@ export const OperationEditPageContent = ({ operation, skills }: Props) => {
 
   const handleCancel = () => {
     void navigate({
-      to: "/operations/$operationId",
+      to: "/pipelines/operations/$operationId",
       params: { operationId: operation.id },
     });
   };
@@ -250,14 +250,17 @@ export const OperationEditPageContent = ({ operation, skills }: Props) => {
       },
     });
     void navigate({
-      to: "/operations/$operationId",
+      to: "/pipelines/operations/$operationId",
       params: { operationId: operation.id },
     });
   };
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <PageHeader backTo={`/operations/${operation.id}`} title={t("operations.editOperation")} />
+      <PageHeader
+        backTo={`/pipelines/operations/${operation.id}`}
+        title={t("operations.editOperation")}
+      />
 
       <div className="flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-2xl rounded-xl border border-border bg-card p-6">

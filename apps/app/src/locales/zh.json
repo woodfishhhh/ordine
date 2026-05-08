@@ -55,7 +55,22 @@
     "workspace": "工作区",
     "library": "库",
     "knowledge": "知识",
+    "search": "搜索...",
+    "newPipeline": "新建流水线",
+    "plugins": "插件",
     "logout": "退出登录"
+  },
+  "plugins": {
+    "title": "插件",
+    "subtitle": "已安装的插件及其贡献的对象类型。",
+    "version": "版本",
+    "objectTypes": "对象类型",
+    "noPlugins": "暂无已安装的插件"
+  },
+  "objects": {
+    "title": "对象",
+    "subtitle": "由已安装插件贡献的对象类型。",
+    "noObjects": "暂无已注册的对象类型"
   },
   "sidebar": {
     "user": "Ordine 用户"
@@ -273,11 +288,14 @@
       "operation": "操作",
       "code-file": "代码文件",
       "folder": "文件夹",
-      "github-project": "GitHub",
+      "github-projects": "GitHub",
       "output-local-path": "本地输出",
       "output-project-path": "项目输出",
       "condition": "条件"
     }
+  },
+  "newPipelineDialog": {
+    "descriptionPlaceholder": "描述这个流水线要做什么..."
   },
   "canvas": {
     "title": "画布",

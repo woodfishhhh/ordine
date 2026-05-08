@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Activity, ArrowRight, LayoutDashboard, Lightbulb, Sparkles, Workflow } from "lucide-react";
+import { Activity, ArrowRight, FolderGit2, LayoutDashboard, Sparkles, Workflow } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
 import { DashboardActivityChart } from "../DashboardActivityChart";
@@ -20,7 +20,7 @@ const QUICK_ACTIONS = [
   {
     icon: Activity,
     key: "monitor",
-    to: "/jobs",
+    to: "/pipelines/jobs",
   },
   {
     icon: Sparkles,
@@ -28,9 +28,9 @@ const QUICK_ACTIONS = [
     to: "/distillations",
   },
   {
-    icon: Lightbulb,
-    key: "bestPractices",
-    to: "/best-practices",
+    icon: FolderGit2,
+    key: "projects",
+    to: "/projects",
   },
 ] as const;
 
@@ -100,7 +100,7 @@ export const DashboardPageContent = () => {
               actions={
                 <Link
                   className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                  to="/jobs"
+                  to="/pipelines/jobs"
                 >
                   {t("dashboard.viewAll")}
                   <ArrowRight className="h-3.5 w-3.5" />
