@@ -41,9 +41,10 @@ export const CanvasToolbar = () => {
   const handleRedo = useStore(store, (state) => state.handleRedo);
   const handleFormatLayout = useStore(store, (state) => state.formatLayout);
   const handleRunTest = useStore(store, (state) => state.handleRunTest);
-  const interactivityLabel = isCanvasInteractive
+  const interactivityActionLabel = isCanvasInteractive
     ? t("canvas.disableInteractivity")
     : t("canvas.enableInteractivity");
+  const interactivityLabel = t("canvas.interactivity");
   const InteractivityIcon = isCanvasInteractive ? Unlock : Lock;
 
   return (
@@ -106,7 +107,7 @@ export const CanvasToolbar = () => {
             render={
               <Button
                 aria-label={interactivityLabel}
-                aria-pressed={!isCanvasInteractive}
+                aria-pressed={isCanvasInteractive}
                 className="h-7 w-7"
                 size="icon"
                 title={interactivityLabel}
@@ -117,7 +118,7 @@ export const CanvasToolbar = () => {
           >
             <InteractivityIcon className="h-4 w-4" />
           </TooltipTrigger>
-          <TooltipContent>{interactivityLabel}</TooltipContent>
+          <TooltipContent>{interactivityActionLabel}</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger
@@ -210,10 +211,11 @@ export const CanvasToolbar = () => {
           <TooltipTrigger
             render={
               <Button
+                aria-label={t("canvas.runTest")}
                 className="h-7 gap-1.5 px-2 text-xs text-green-600 hover:bg-green-50 hover:text-green-700 disabled:text-muted-foreground/30"
                 disabled={isRunning || !pipelineId}
                 size="sm"
-                title="运行测试"
+                title={t("canvas.runTest")}
                 variant="ghost"
                 onClick={handleRunTest}
               />
@@ -222,7 +224,7 @@ export const CanvasToolbar = () => {
             <Play className="h-3.5 w-3.5" />
             <span>{t("canvas.run")}</span>
           </TooltipTrigger>
-          <TooltipContent>{t("canvas.run")}</TooltipContent>
+          <TooltipContent>{t("canvas.runTest")}</TooltipContent>
         </Tooltip>
       </div>
     </div>
