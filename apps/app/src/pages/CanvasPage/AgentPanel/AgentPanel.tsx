@@ -97,6 +97,11 @@ export const AgentPanel = () => {
   }, []);
 
   const doSend = useCallback(async () => {
+    if (isSending) {
+
+      return;
+    }
+    clearPendingProposal();
     const text = inputValue.trim();
     if (!text) {
 
@@ -235,6 +240,8 @@ export const AgentPanel = () => {
     scrollToBottom();
   }, [
     inputValue,
+    isSending,
+    clearPendingProposal,
     pipelineId,
     t,
     setPendingProposal,
@@ -288,7 +295,8 @@ export const AgentPanel = () => {
         content: t("canvas.agentPanel.applied"),
       },
     ]);
-  }, [agentPanel.pendingProposal, applyAgentProposal, hasBlockingDiagnostics, t]);
+    scrollToBottom();
+  }, [agentPanel.pendingProposal, applyAgentProposal, hasBlockingDiagnostics, scrollToBottom, t]);
 
   const handleDiscard = useCallback(() => {
     clearPendingProposal();
@@ -300,7 +308,8 @@ export const AgentPanel = () => {
         content: t("canvas.agentPanel.discarded"),
       },
     ]);
-  }, [clearPendingProposal, t]);
+    scrollToBottom();
+  }, [clearPendingProposal, scrollToBottom, t]);
 
   const proposal = agentPanel.pendingProposal as PipelineOperationProposal | null;
   const hasProposal = proposal !== null;
@@ -405,7 +414,7 @@ export const AgentPanel = () => {
             <div className="flex items-center gap-2">
               <Button
                 className="h-8 flex-1 gap-1 text-xs"
-                disabled={hasBlockingDiagnostics}
+                disabled={isSending || agentPanel.isLoading || hasBlockingDiagnostics}
                 size="sm"
                 variant="default"
                 onClick={handleApply}
@@ -415,6 +424,7 @@ export const AgentPanel = () => {
               </Button>
               <Button
                 className="h-8 flex-1 gap-1 text-xs"
+                disabled={isSending || agentPanel.isLoading}
                 size="sm"
                 variant="outline"
                 onClick={handleDiscard}

@@ -371,7 +371,13 @@ export const createUISlice = (
   toggleAgentPanel: () => {
     set((state) => ({
       sidebarPanel: state.agentPanel.isOpen ? null : "ai-assistant",
-      agentPanel: { ...state.agentPanel, isOpen: !state.agentPanel.isOpen },
+      agentPanel: {
+        ...state.agentPanel,
+        isOpen: !state.agentPanel.isOpen,
+        ...(state.agentPanel.isOpen
+          ? { pendingProposal: null, diagnostics: null }
+          : {}),
+      },
     }));
   },
 

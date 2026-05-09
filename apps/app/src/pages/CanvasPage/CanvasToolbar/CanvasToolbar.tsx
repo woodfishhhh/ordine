@@ -36,6 +36,7 @@ export const CanvasToolbar = () => {
   const handleFormatLayout = useStore(store, (state) => state.formatLayout);
   const handleRunTest = useStore(store, (state) => state.handleRunTest);
   const handleToggleAgentPanel = useStore(store, (state) => state.toggleAgentPanel);
+  const agentPanelIsOpen = useStore(store, (state) => state.agentPanel.isOpen);
 
   return (
     <div className="absolute left-1/2 top-3 z-10 -translate-x-1/2">
@@ -138,6 +139,8 @@ export const CanvasToolbar = () => {
           <TooltipTrigger
             render={
               <Button
+                aria-label={t("canvas.agentPanel.toggle")}
+                aria-pressed={agentPanelIsOpen}
                 className="h-7 w-7 text-primary hover:bg-primary/10"
                 size="icon"
                 title={t("canvas.agentPanel.toggle")}
