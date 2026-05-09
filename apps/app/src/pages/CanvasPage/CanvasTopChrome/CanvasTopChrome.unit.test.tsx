@@ -1,4 +1,5 @@
 import { render } from "@/test/test-wrapper";
+import i18n from "@/lib/i18n";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -59,7 +60,7 @@ describe("CanvasTopChrome", () => {
   it("preserves pipeline title editing", async () => {
     const user = userEvent.setup();
     const store = renderTopChrome();
-    const [desktopTitleInput] = screen.getAllByRole("textbox", { name: "Pipeline title" });
+    const [desktopTitleInput] = screen.getAllByRole("textbox", { name: i18n.t("canvas.pipelineTitle") });
 
     await user.clear(desktopTitleInput);
     await user.type(desktopTitleInput, "Aligned pipeline");
