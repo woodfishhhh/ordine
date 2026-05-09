@@ -12,6 +12,7 @@ import {
   Group,
   Ungroup,
   GitBranch,
+  MessageSquareText,
 } from "lucide-react";
 import {
   ContextMenu,
@@ -42,6 +43,7 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
   "code-file": FileCode,
   folder: Folder,
   "github-projects": SiGitHubIcon,
+  prompt: MessageSquareText,
   "output-project-path": FolderOutput,
   "output-local-path": HardDrive,
 };
@@ -92,12 +94,13 @@ export const NodeContextMenu = () => {
       "code-file": "file",
       folder: "folder",
       "github-projects": "project",
+      prompt: "prompt",
     };
     const objectType = objectTypeMap[node.type];
     if (!objectType) return operations;
 
     return operations.filter((op) =>
-      op.acceptedObjectTypes?.includes(objectType as "file" | "folder" | "project")
+      op.acceptedObjectTypes?.includes(objectType as "file" | "folder" | "project" | "prompt")
     );
   })();
 
@@ -173,12 +176,12 @@ export const NodeContextMenu = () => {
             </ContextMenuGroup>
 
             {/* Object types */}
-            {["code-file", "folder", "github-projects"].some((t) =>
+            {["code-file", "folder", "github-projects", "prompt"].some((t) =>
               availableTypes.includes(t as BuiltinNodeType)
             ) && (
               <ContextMenuGroup>
                 <ContextMenuLabel>{t("canvas.contextMenu.processingObject")}</ContextMenuLabel>
-                {["code-file", "folder", "github-projects"]
+                {["code-file", "folder", "github-projects", "prompt"]
                   .filter((t) => availableTypes.includes(t as BuiltinNodeType))
                   .map((type) => {
                     const Icon = TYPE_ICONS[type as NodeType];

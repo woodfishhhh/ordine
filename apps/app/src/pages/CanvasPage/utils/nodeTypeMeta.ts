@@ -30,6 +30,10 @@ const nodeTypeI18nKeys = {
     label: "canvas.nodeTypes.compound.label",
     shortLabel: "canvas.nodeTypes.compound.shortLabel",
   },
+  prompt: {
+    label: "canvas.nodeTypes.prompt.label",
+    shortLabel: "canvas.nodeTypes.prompt.shortLabel",
+  },
 } as const satisfies Record<BuiltinNodeType, { label: string; shortLabel: string }>;
 
 export const nodeTypeMeta = {
@@ -109,6 +113,17 @@ export const nodeTypeMeta = {
     iconBg: "bg-indigo-500",
     handle: "!border-indigo-400",
     plusBg: "bg-indigo-100 text-indigo-700 hover:bg-indigo-200",
+  },
+  prompt: {
+    label: "提示词",
+    shortLabel: "提示",
+    border: "border-sky-200",
+    selectedBorder: "border-sky-500",
+    header: "bg-sky-50",
+    headerText: "text-sky-700",
+    iconBg: "bg-sky-500",
+    handle: "!border-sky-400",
+    plusBg: "bg-sky-100 text-sky-700 hover:bg-sky-200",
   },
 } as const satisfies Record<BuiltinNodeType, object>;
 

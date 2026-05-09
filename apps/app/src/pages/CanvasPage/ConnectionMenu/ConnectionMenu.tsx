@@ -9,6 +9,7 @@ import {
   BookOpen,
   Group,
   GitBranch,
+  MessageSquareText,
 } from "lucide-react";
 import {
   ContextMenu,
@@ -36,6 +37,7 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
   "code-file": FileCode,
   folder: Folder,
   "github-projects": SiGitHubIcon,
+  prompt: MessageSquareText,
   "output-project-path": FolderOutput,
   "output-local-path": HardDrive,
 };
@@ -71,12 +73,13 @@ export const ConnectionMenu = () => {
       "code-file": "file",
       folder: "folder",
       "github-projects": "project",
+      prompt: "prompt",
     };
     const objectType = objectTypeMap[sourceNode.type];
     if (!objectType) return operations;
 
     return operations.filter((op) =>
-      op.acceptedObjectTypes?.includes(objectType as "file" | "folder" | "project")
+      op.acceptedObjectTypes?.includes(objectType as "file" | "folder" | "project" | "prompt")
     );
   })();
 
