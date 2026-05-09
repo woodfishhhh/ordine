@@ -34,31 +34,24 @@ interface Message {
 const getOperationLabel = (op: PipelineOperation): string => {
   switch (op.type) {
     case "addNode": {
-
       return `添加节点: ${op.node.type}`;
     }
     case "removeNode": {
-
       return `删除节点: ${op.nodeId}`;
     }
     case "addEdge": {
-
       return `添加连线: ${op.edge.source} → ${op.edge.target}`;
     }
     case "removeEdge": {
-
       return `删除连线: ${op.edgeId}`;
     }
     case "reconnectEdge": {
-
       return `重连连线: ${op.edgeId}`;
     }
     case "replaceNodeData": {
-
       return `替换节点数据: ${op.nodeId}`;
     }
     default: {
-
       return (op as { type: string }).type;
     }
   }
@@ -69,10 +62,22 @@ export const AgentPanel = () => {
   const store = useHarnessCanvasStore();
 
   const agentPanel = useStore(store, (state) => state.agentPanel);
-  const handleToggleAgentPanel = useStore(store, (state) => state.toggleAgentPanel);
-  const setPendingProposal = useStore(store, (state) => state.setPendingProposal);
-  const clearPendingProposal = useStore(store, (state) => state.clearPendingProposal);
-  const applyAgentProposal = useStore(store, (state) => state.applyAgentProposal);
+  const handleToggleAgentPanel = useStore(
+    store,
+    (state) => state.toggleAgentPanel,
+  );
+  const setPendingProposal = useStore(
+    store,
+    (state) => state.setPendingProposal,
+  );
+  const clearPendingProposal = useStore(
+    store,
+    (state) => state.clearPendingProposal,
+  );
+  const applyAgentProposal = useStore(
+    store,
+    (state) => state.applyAgentProposal,
+  );
   const pipelineId = useStore(store, (state) => state.pipelineId);
   const pipelineName = useStore(store, (state) => state.pipelineName);
   const nodes = useStore(store, (state) => state.nodes);
@@ -98,13 +103,11 @@ export const AgentPanel = () => {
 
   const doSend = useCallback(async () => {
     if (isSending) {
-
       return;
     }
     clearPendingProposal();
     const text = inputValue.trim();
     if (!text) {
-
       return;
     }
     if (!pipelineId) {
@@ -138,7 +141,7 @@ export const AgentPanel = () => {
           resource: ResourceName.agentRuntimes,
         }),
       ]),
-      (error) => (error instanceof Error ? error : new Error(String(error)))
+      (error) => (error instanceof Error ? error : new Error(String(error))),
     );
 
     if (runtimeSetupResult.isErr()) {
@@ -163,7 +166,7 @@ export const AgentPanel = () => {
     const settings = settingsResult.data as { defaultAgentRuntime?: string };
     const runtimeConfigs = runtimesResult.data as Array<{ type?: string }>;
     const hasConfiguredRuntime = runtimeConfigs.some(
-      (runtime) => runtime.type === settings.defaultAgentRuntime
+      (runtime) => runtime.type === settings.defaultAgentRuntime,
     );
 
     if (!hasConfiguredRuntime) {
@@ -193,7 +196,7 @@ export const AgentPanel = () => {
           pipelineName,
         },
       }),
-      (error) => (error instanceof Error ? error : new Error(String(error)))
+      (error) => (error instanceof Error ? error : new Error(String(error))),
     );
 
     if (result.isErr()) {
@@ -258,14 +261,14 @@ export const AgentPanel = () => {
         void doSend();
       }
     },
-    [doSend]
+    [doSend],
   );
 
   const handleInputValueChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       setInputValue(event.target.value);
     },
-    []
+    [],
   );
 
   const handleSendClick = useCallback(() => {
@@ -273,17 +276,17 @@ export const AgentPanel = () => {
   }, [doSend]);
 
   const hasBlockingDiagnostics =
-    agentPanel.diagnostics?.some((diagnostic) => diagnostic.severity === "error") ?? false;
+    agentPanel.diagnostics?.some(
+      (diagnostic) => diagnostic.severity === "error",
+    ) ?? false;
 
   const handleApply = useCallback(() => {
     if (!agentPanel.pendingProposal || hasBlockingDiagnostics) {
-
       return;
     }
 
     const applied = applyAgentProposal(agentPanel.pendingProposal);
     if (!applied) {
-
       return;
     }
 
@@ -296,7 +299,13 @@ export const AgentPanel = () => {
       },
     ]);
     scrollToBottom();
-  }, [agentPanel.pendingProposal, applyAgentProposal, hasBlockingDiagnostics, scrollToBottom, t]);
+  }, [
+    agentPanel.pendingProposal,
+    applyAgentProposal,
+    hasBlockingDiagnostics,
+    scrollToBottom,
+    t,
+  ]);
 
   const handleDiscard = useCallback(() => {
     clearPendingProposal();
@@ -311,7 +320,8 @@ export const AgentPanel = () => {
     scrollToBottom();
   }, [clearPendingProposal, scrollToBottom, t]);
 
-  const proposal = agentPanel.pendingProposal as PipelineOperationProposal | null;
+  const proposal =
+    agentPanel.pendingProposal as PipelineOperationProposal | null;
   const hasProposal = proposal !== null;
 
   return (
@@ -326,8 +336,7 @@ export const AgentPanel = () => {
           className="h-7 w-7"
           size="icon"
           variant="ghost"
-          onClick={handleToggleAgentPanel}
-        >
+          onClick={handleToggleAgentPanel}>
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -342,9 +351,8 @@ export const AgentPanel = () => {
                 "max-w-[90%] rounded-lg px-3 py-2 text-sm",
                 msg.role === "user"
                   ? "ml-auto bg-primary text-primary-foreground"
-                  : "mr-auto bg-muted"
-              )}
-            >
+                  : "mr-auto bg-muted",
+              )}>
               {msg.content}
             </div>
           ))}
@@ -373,9 +381,8 @@ export const AgentPanel = () => {
                   "flex items-start gap-2 rounded-md px-2.5 py-2 text-xs",
                   d.severity === "error"
                     ? "border border-red-200 bg-red-50 text-red-700"
-                    : "border border-amber-200 bg-amber-50 text-amber-700"
-                )}
-              >
+                    : "border border-amber-200 bg-amber-50 text-amber-700",
+                )}>
                 {d.severity === "error" ? (
                   <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 ) : (
@@ -396,15 +403,12 @@ export const AgentPanel = () => {
               {t("canvas.agentPanel.proposal")}
             </span>
             <div className="rounded-md border bg-muted/50 p-2.5">
-              <p className="mb-2 text-xs font-medium">
-                {proposal.summary}
-              </p>
+              <p className="mb-2 text-xs font-medium">{proposal.summary}</p>
               <ul className="flex flex-col gap-1">
                 {proposal.operations.map((op, i) => (
                   <li
                     key={i}
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground"
-                  >
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
                     {getOperationLabel(op)}
                   </li>
@@ -414,11 +418,12 @@ export const AgentPanel = () => {
             <div className="flex items-center gap-2">
               <Button
                 className="h-8 flex-1 gap-1 text-xs"
-                disabled={isSending || agentPanel.isLoading || hasBlockingDiagnostics}
+                disabled={
+                  isSending || agentPanel.isLoading || hasBlockingDiagnostics
+                }
                 size="sm"
                 variant="default"
-                onClick={handleApply}
-              >
+                onClick={handleApply}>
                 <Check className="h-3.5 w-3.5" />
                 {t("canvas.agentPanel.apply")}
               </Button>
@@ -427,8 +432,7 @@ export const AgentPanel = () => {
                 disabled={isSending || agentPanel.isLoading}
                 size="sm"
                 variant="outline"
-                onClick={handleDiscard}
-              >
+                onClick={handleDiscard}>
                 <Trash2 className="h-3.5 w-3.5" />
                 {t("canvas.agentPanel.discard")}
               </Button>
@@ -444,8 +448,7 @@ export const AgentPanel = () => {
             <span>{t("canvas.agentPanel.runtimeNotConfigured")}</span>
             <a
               className="font-medium underline underline-offset-2"
-              href="/runtimes"
-            >
+              href="/runtimes">
               {t("canvas.agentPanel.goToRuntimeSettings")}
             </a>
           </div>
@@ -467,8 +470,7 @@ export const AgentPanel = () => {
           disabled={isSending || agentPanel.isLoading || !inputValue.trim()}
           size="icon"
           variant="ghost"
-          onClick={handleSendClick}
-        >
+          onClick={handleSendClick}>
           {isSending || agentPanel.isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (

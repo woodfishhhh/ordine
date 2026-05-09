@@ -27,15 +27,24 @@ export const CanvasToolbar = () => {
   const handleZoomIn = useStore(store, (state) => state.handleZoomIn);
   const handleZoomOut = useStore(store, (state) => state.handleZoomOut);
   const isQuickAddOpen = useStore(store, (state) => state.isQuickAddOpen);
-  const handleToggleQuickAdd = useStore(store, (state) => state.handleToggleQuickAdd);
+  const handleToggleQuickAdd = useStore(
+    store,
+    (state) => state.handleToggleQuickAdd,
+  );
   const pipelineId = useStore(store, (state) => state.pipelineId);
   const isRunning = useStore(store, (state) => state.isRunning);
-  const handleDeleteSelected = useStore(store, (state) => state.handleDeleteSelected);
+  const handleDeleteSelected = useStore(
+    store,
+    (state) => state.handleDeleteSelected,
+  );
   const handleUndo = useStore(store, (state) => state.handleUndo);
   const handleRedo = useStore(store, (state) => state.handleRedo);
   const handleFormatLayout = useStore(store, (state) => state.formatLayout);
   const handleRunTest = useStore(store, (state) => state.handleRunTest);
-  const handleToggleAgentPanel = useStore(store, (state) => state.toggleAgentPanel);
+  const handleToggleAgentPanel = useStore(
+    store,
+    (state) => state.toggleAgentPanel,
+  );
   const agentPanelIsOpen = useStore(store, (state) => state.agentPanel.isOpen);
 
   return (
@@ -45,9 +54,13 @@ export const CanvasToolbar = () => {
         <Tooltip>
           <TooltipTrigger
             render={
-              <Button className="h-7 w-7" size="icon" variant="ghost" onClick={handleZoomOut} />
-            }
-          >
+              <Button
+                className="h-7 w-7"
+                size="icon"
+                variant="ghost"
+                onClick={handleZoomOut}
+              />
+            }>
             <ZoomOut className="h-4 w-4" />
           </TooltipTrigger>
           <TooltipContent>{t("canvas.zoomOut")}</TooltipContent>
@@ -55,9 +68,13 @@ export const CanvasToolbar = () => {
         <Tooltip>
           <TooltipTrigger
             render={
-              <Button className="h-7 w-7" size="icon" variant="ghost" onClick={handleZoomIn} />
-            }
-          >
+              <Button
+                className="h-7 w-7"
+                size="icon"
+                variant="ghost"
+                onClick={handleZoomIn}
+              />
+            }>
             <ZoomIn className="h-4 w-4" />
           </TooltipTrigger>
           <TooltipContent>{t("canvas.zoomIn")}</TooltipContent>
@@ -65,9 +82,13 @@ export const CanvasToolbar = () => {
         <Tooltip>
           <TooltipTrigger
             render={
-              <Button className="h-7 w-7" size="icon" variant="ghost" onClick={handleFitView} />
-            }
-          >
+              <Button
+                className="h-7 w-7"
+                size="icon"
+                variant="ghost"
+                onClick={handleFitView}
+              />
+            }>
             <Maximize2 className="h-4 w-4" />
           </TooltipTrigger>
           <TooltipContent>{t("canvas.fitView")}</TooltipContent>
@@ -81,8 +102,7 @@ export const CanvasToolbar = () => {
                 variant="ghost"
                 onClick={handleFormatLayout}
               />
-            }
-          >
+            }>
             <AlignLeft className="h-4 w-4" />
           </TooltipTrigger>
           <TooltipContent>{t("canvas.formatLayout")}</TooltipContent>
@@ -97,8 +117,7 @@ export const CanvasToolbar = () => {
           size="icon"
           title={t("canvas.undo")}
           variant="ghost"
-          onClick={handleUndo}
-        >
+          onClick={handleUndo}>
           <Undo2 className="h-4 w-4" />
         </Button>
         <Button
@@ -107,8 +126,7 @@ export const CanvasToolbar = () => {
           size="icon"
           title={t("canvas.redo")}
           variant="ghost"
-          onClick={handleRedo}
-        >
+          onClick={handleRedo}>
           <Redo2 className="h-4 w-4" />
         </Button>
 
@@ -127,8 +145,7 @@ export const CanvasToolbar = () => {
                 variant="ghost"
                 onClick={handleToggleQuickAdd}
               />
-            }
-          >
+            }>
             <Plus className="h-4 w-4" />
           </TooltipTrigger>
           <TooltipContent>{t("canvas.quickAdd.open")}</TooltipContent>
@@ -147,8 +164,7 @@ export const CanvasToolbar = () => {
                 variant="ghost"
                 onClick={handleToggleAgentPanel}
               />
-            }
-          >
+            }>
             <Bot className="h-4 w-4" />
           </TooltipTrigger>
           <TooltipContent>{t("canvas.agentPanel.toggle")}</TooltipContent>
@@ -167,8 +183,7 @@ export const CanvasToolbar = () => {
                 variant="ghost"
                 onClick={handleDeleteSelected}
               />
-            }
-          >
+            }>
             <Trash2 className="h-4 w-4" />
           </TooltipTrigger>
           <TooltipContent>{t("canvas.deleteNode")}</TooltipContent>
@@ -188,8 +203,7 @@ export const CanvasToolbar = () => {
                 variant="ghost"
                 onClick={handleRunTest}
               />
-            }
-          >
+            }>
             <Play className="h-3.5 w-3.5" />
             <span>{t("canvas.run")}</span>
           </TooltipTrigger>

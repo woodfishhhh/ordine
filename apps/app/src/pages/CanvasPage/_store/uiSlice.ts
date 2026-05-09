@@ -458,13 +458,13 @@ export const createUISlice = (
 
 export const selectNodeRunState =
   (nodeId: string) =>
-  (state: UISlice): NodeRunState => {
-    const runStatus = state.nodeRunStatuses[nodeId];
-    const dimmed =
-      state.isTestRunning &&
-      state.runningNodeId !== null &&
-      state.runningNodeId !== nodeId &&
-      runStatus !== "running";
+    (state: UISlice): NodeRunState => {
+      const runStatus = state.nodeRunStatuses[nodeId];
+      const dimmed =
+        state.isTestRunning &&
+        state.runningNodeId !== null &&
+        state.runningNodeId !== nodeId &&
+        runStatus !== "running";
 
-    return { runStatus, dimmed };
-  };
+      return { runStatus, dimmed };
+    };
