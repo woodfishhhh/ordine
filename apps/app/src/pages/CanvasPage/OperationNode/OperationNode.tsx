@@ -17,7 +17,7 @@ import { useHarnessCanvasStore, selectNodeRunState } from "../_store";
 import type { OperationNodeData, NodeRunStatus } from "@repo/pipeline-engine/schemas";
 import { useList } from "@refinedev/core";
 import { ResourceName } from "@/integrations/refine/dataProvider";
-import { type Operation, AgentRuntimeSchema } from "@repo/schemas";
+import { type Operation, AgentRuntimeSchema, type AgentRuntime } from "@repo/schemas";
 import { NodeCard, useNodePortCounts } from "../NodeCard";
 
 export interface OperationNodeProps {
@@ -42,7 +42,7 @@ const statusConfig: Record<
 
 const stopCanvasInteraction = (event: SyntheticEvent) => event.stopPropagation();
 
-const RUNTIME_LABELS: Record<string, string> = {
+const RUNTIME_LABELS: Record<AgentRuntime, string> = {
   "claude-code": "Claude",
   codex: "Codex",
   mastra: "Mastra",
@@ -110,7 +110,7 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
   const canInspect = isTestRunning || hasLlmContent;
   const handleCardClick = canInspect ? () => setInspectingNodeId(id) : undefined;
   const runtimeValueLabel = selectedRuntime
-    ? (RUNTIME_LABELS[selectedRuntime] ?? selectedRuntime)
+    ? (RUNTIME_LABELS[selectedRuntime as AgentRuntime] ?? selectedRuntime)
     : t("nodes.operation.defaultRuntime");
   const objectTypeLabels: Record<string, string> = {
     file: t("nodes.operation.objectTypes.file"),
