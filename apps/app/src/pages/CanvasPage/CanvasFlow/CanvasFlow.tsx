@@ -72,7 +72,6 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
         onConnectEnd: handleFlowConnectEnd,
         onConnectStart: handleFlowConnectStart,
         onEdgeClick: handleFlowEdgeClick,
-        onMove: (_event: unknown, viewport: { zoom: number }) => handleFlowMove(viewport.zoom),
         onNodeClick: handleFlowNodeClick,
         onNodeContextMenu: handleFlowNodeContextMenu,
         onNodeDrag: handleFlowNodeDrag,
@@ -119,6 +118,7 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
         zoomOnScroll={isCanvasInteractive}
         onEdgesChange={handleEdgesChange}
         onInit={handleFlowInit}
+        onMove={(_event, viewport) => handleFlowMove(viewport.zoom)}
         onNodesChange={handleNodesChange}
         {...interactiveHandlers}
       >
