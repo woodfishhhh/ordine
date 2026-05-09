@@ -37,10 +37,13 @@ const getNodePortStyle = (offset: number) =>
 const getNodePortPosition = (side: NodePortSide) =>
   side === "left" ? Position.Left : Position.Right;
 
-const makeLeadingPortMask = (count: number): number => (count <= 0 ? 0 : 2 ** count - 1);
+const MAX_SAFE_PORT_INDEX = 52;
+
+const makeLeadingPortMask = (count: number): number =>
+  count <= 0 || count > MAX_SAFE_PORT_INDEX ? 0 : 2 ** count - 1;
 
 const hasPortIndex = (mask: number, index: number): boolean =>
-  Math.floor(mask / 2 ** index) % 2 === 1;
+  index < 0 || index > MAX_SAFE_PORT_INDEX ? false : Math.floor(mask / 2 ** index) % 2 === 1;
 
 const getNodePortVisualState = (
   side: NodePortSide,
