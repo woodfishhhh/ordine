@@ -299,6 +299,8 @@
   },
   "canvas": {
     "title": "Canvas",
+    "menu": "Menu",
+    "backToWorkspace": "Back to workspace",
     "pipelineTitle": "Pipeline title",
     "pipelineTitlePlaceholder": "Untitled Pipeline",
     "unsavedPipeline": "Unsaved Pipeline",

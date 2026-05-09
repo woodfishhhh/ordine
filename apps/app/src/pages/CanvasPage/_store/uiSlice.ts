@@ -126,7 +126,7 @@ export const createUISlice = (
   pipelineId,
   pipelineName,
   viewportZoom: DEFAULT_CANVAS_VIEWPORT.zoom,
-  canvasSettings: DEFAULT_CANVAS_SETTINGS,
+  canvasSettings: { ...DEFAULT_CANVAS_SETTINGS },
   sidebarPanel: "components",
   isSidebarOpen: true,
   isPropertiesPanelOpen: false,

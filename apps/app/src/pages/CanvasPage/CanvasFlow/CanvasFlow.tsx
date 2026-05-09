@@ -114,7 +114,7 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
         onPaneContextMenu={handleFlowPaneContextMenu}
       >
         {canvasSettings.showBackground && (
-          <Background color="#cbd5e1" gap={24} size={1.5} variant={BackgroundVariant.Dots} />
+          <Background color="#cbd5e1" gap={snapGrid[0]} size={1.5} variant={BackgroundVariant.Dots} />
         )}
         {canvasSettings.showControls && (
           <Controls

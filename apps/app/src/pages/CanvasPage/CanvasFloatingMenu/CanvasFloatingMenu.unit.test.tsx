@@ -39,12 +39,12 @@ vi.mock("@tanstack/react-router", () => ({
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const openMenu = () => {
-  fireEvent.click(screen.getByTitle("菜单"));
+  fireEvent.click(screen.getByTitle("Menu"));
 };
 
 const clickSave = () => {
   openMenu();
-  fireEvent.click(screen.getByText("保存"));
+  fireEvent.click(screen.getByText("Save"));
 };
 
 const wrapperWithPipeline = ({ children }: React.PropsWithChildren) => (
@@ -141,7 +141,7 @@ describe("CanvasFloatingMenu - save behavior", () => {
       mockCreate.mockClear();
       mockUpdate.mockClear();
       openMenu();
-      fireEvent.click(screen.getByText("保存"));
+      fireEvent.click(screen.getByText("Save"));
 
       expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ id: generatedId }));
       expect(mockCreate).not.toHaveBeenCalled();
@@ -149,16 +149,16 @@ describe("CanvasFloatingMenu - save behavior", () => {
   });
 
   describe("menu items", () => {
-    it("renders 导入 item in the menu", () => {
+    it("renders Import item in the menu", () => {
       render(<CanvasFloatingMenu />, { wrapper: wrapperWithNullPipeline });
       openMenu();
-      expect(screen.getByText("导入")).toBeInTheDocument();
+      expect(screen.getByText("Import")).toBeInTheDocument();
     });
 
-    it("renders 导出 item in the menu", () => {
+    it("renders Export item in the menu", () => {
       render(<CanvasFloatingMenu />, { wrapper: wrapperWithNullPipeline });
       openMenu();
-      expect(screen.getByText("导出")).toBeInTheDocument();
+      expect(screen.getByText("Export")).toBeInTheDocument();
     });
   });
   it("save button is disabled while a mutation is pending", () => {
@@ -172,7 +172,7 @@ describe("CanvasFloatingMenu - save behavior", () => {
     // the disabled prop is wired to the button element.
     render(<CanvasFloatingMenu />, { wrapper: wrapperWithTestPipeline });
     openMenu();
-    const saveBtn = screen.getByText("保存").closest("button");
+    const saveBtn = screen.getByText("Save").closest("button");
     expect(saveBtn).not.toBeDisabled();
     isPendingUpdate.mockRestore?.();
   });

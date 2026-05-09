@@ -299,6 +299,8 @@
   },
   "canvas": {
     "title": "画布",
+    "menu": "菜单",
+    "backToWorkspace": "回到工作区",
     "pipelineTitle": "Pipeline 标题",
     "pipelineTitlePlaceholder": "无标题 Pipeline",
     "unsavedPipeline": "未保存的 Pipeline",

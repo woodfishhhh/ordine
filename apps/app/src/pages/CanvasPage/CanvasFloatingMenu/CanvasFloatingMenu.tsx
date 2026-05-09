@@ -106,17 +106,17 @@ export const CanvasFloatingMenu = () => {
   };
 
   const menuItems = [
-    { icon: Home, label: "回到工作区", to: "/" },
+    { icon: Home, label: t("canvas.backToWorkspace"), to: "/" },
     {
       icon: Save,
-      label: "保存",
+      label: t("common.save"),
       onClick: handleSave,
       disabled: isPending,
     },
-    { icon: FileDown, label: "导出", onClick: exportCanvas },
-    { icon: FileUp, label: "导入", onClick: handleImport },
-    { icon: Undo, label: "撤销", onClick: handleUndo, divider: true },
-    { icon: Redo, label: "重做", onClick: handleRedo },
+    { icon: FileDown, label: t("common.export"), onClick: exportCanvas },
+    { icon: FileUp, label: t("common.import"), onClick: handleImport },
+    { icon: Undo, label: t("canvas.undo"), onClick: handleUndo, divider: true },
+    { icon: Redo, label: t("canvas.redo"), onClick: handleRedo },
     { icon: Settings, label: t("canvas.settingsDrawer.menuLabel"), onClick: openCanvasSettings },
   ];
 
@@ -132,7 +132,7 @@ export const CanvasFloatingMenu = () => {
       <Popover open={isOpen} onOpenChange={handleOpenChange}>
         <PopoverTrigger
           className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white shadow-md transition-all hover:bg-gray-50 hover:shadow-lg active:scale-95"
-          title="菜单"
+          title={t("canvas.menu")}
         >
           <Menu className="h-5 w-5 text-gray-700" />
         </PopoverTrigger>

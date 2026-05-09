@@ -15,18 +15,11 @@ import {
 import { cn } from "@repo/ui/lib/utils";
 import { useHarnessCanvasStore, type CanvasSettingsState } from "../_store";
 
-const settingIcons: Record<keyof CanvasSettingsState, React.ElementType> = {
-  showMiniMap: Map,
-  showControls: MousePointer2,
-  showBackground: Grid3X3,
-  snapToGrid: Magnet,
-};
-
-const settingIds: Array<keyof CanvasSettingsState> = [
-  "showMiniMap",
-  "showControls",
-  "showBackground",
-  "snapToGrid",
+const settingEntries = [
+  { id: "showMiniMap" as const, icon: Map },
+  { id: "showControls" as const, icon: MousePointer2 },
+  { id: "showBackground" as const, icon: Grid3X3 },
+  { id: "snapToGrid" as const, icon: Magnet },
 ];
 
 export const CanvasSettingsDrawer = () => {
@@ -85,9 +78,12 @@ export const CanvasSettingsDrawer = () => {
           </SheetClose>
         </SheetHeader>
 
-        <div className="flex-1 space-y-3 overflow-y-auto p-4" role="group">
-          {settingIds.map((id) => {
-            const Icon = settingIcons[id];
+        <div
+          aria-label={t("canvas.settingsDrawer.title")}
+          className="flex-1 space-y-3 overflow-y-auto p-4"
+          role="group"
+        >
+          {settingEntries.map(({ id, icon: Icon }) => {
             const inputId = `canvas-setting-${id}`;
             const descriptionId = `${inputId}-description`;
 
