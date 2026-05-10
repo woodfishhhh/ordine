@@ -132,7 +132,7 @@ export const CanvasFloatingMenu = () => {
   };
 
   return (
-    <div className="fixed left-4 top-4 z-50">
+    <div className="pointer-events-auto" data-testid="canvas-floating-menu">
       <Popover open={isOpen} onOpenChange={handleOpenChange}>
         <PopoverTrigger
           className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white shadow-md transition-all hover:bg-gray-50 hover:shadow-lg active:scale-95"
