@@ -27,6 +27,7 @@ vi.mock("@xyflow/react", async (importOriginal) => {
       zoomOnDoubleClick,
       zoomOnPinch,
       zoomOnScroll,
+      deleteKeyCode,
       onConnect,
       onConnectEnd,
       onConnectStart,
@@ -48,6 +49,7 @@ vi.mock("@xyflow/react", async (importOriginal) => {
       zoomOnDoubleClick?: boolean;
       zoomOnPinch?: boolean;
       zoomOnScroll?: boolean;
+      deleteKeyCode?: string[] | null;
       onConnect?: unknown;
       onConnectEnd?: unknown;
       onConnectStart?: unknown;
@@ -63,6 +65,9 @@ vi.mock("@xyflow/react", async (importOriginal) => {
 
       return (
         <div
+          data-auto-fit={String(fitView ?? false)}
+          data-delete-key-code={JSON.stringify(deleteKeyCode)}
+          data-elements-selectable={String(elementsSelectable ?? true)}
           data-has-on-connect={String(typeof onConnect === "function")}
           data-has-on-connect-end={String(typeof onConnectEnd === "function")}
           data-has-on-connect-start={String(typeof onConnectStart === "function")}
@@ -73,8 +78,6 @@ vi.mock("@xyflow/react", async (importOriginal) => {
           data-has-on-node-drag-stop={String(typeof onNodeDragStop === "function")}
           data-has-on-pane-click={String(typeof onPaneClick === "function")}
           data-has-on-pane-context-menu={String(typeof onPaneContextMenu === "function")}
-          data-auto-fit={String(fitView ?? false)}
-          data-elements-selectable={String(elementsSelectable ?? true)}
           data-nodes-connectable={String(nodesConnectable ?? true)}
           data-nodes-draggable={String(nodesDraggable ?? true)}
           data-pan-on-drag={String(panOnDrag ?? true)}
@@ -156,6 +159,7 @@ describe("CanvasFlow", () => {
     expect(screen.getByTestId("react-flow")).toHaveAttribute("data-has-on-edge-click", "false");
     expect(screen.getByTestId("react-flow")).toHaveAttribute("data-has-on-pane-click", "false");
     expect(screen.getByTestId("react-flow")).toHaveAttribute("data-has-on-connect", "false");
+    expect(screen.getByTestId("react-flow")).toHaveAttribute("data-delete-key-code", "null");
   });
 
   it("shows MiniMap when multiple nodes exist and the console is closed", () => {

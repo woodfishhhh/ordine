@@ -104,7 +104,7 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
         className="bg-slate-50/50"
         defaultEdgeOptions={defaultEdgeOptions}
         defaultViewport={DEFAULT_CANVAS_VIEWPORT}
-        deleteKeyCode={["Backspace", "Delete"]}
+        deleteKeyCode={isCanvasInteractive ? ["Backspace", "Delete"] : null}
         edges={portRoutedEdges}
         elementsSelectable={isCanvasInteractive}
         nodes={nodes}

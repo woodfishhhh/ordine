@@ -44,7 +44,6 @@ export const CanvasToolbar = () => {
   const interactivityActionLabel = isCanvasInteractive
     ? t("canvas.disableInteractivity")
     : t("canvas.enableInteractivity");
-  const interactivityLabel = t("canvas.interactivity");
   const InteractivityIcon = isCanvasInteractive ? Unlock : Lock;
 
   return (
@@ -106,11 +105,11 @@ export const CanvasToolbar = () => {
           <TooltipTrigger
             render={
               <Button
-                aria-label={interactivityLabel}
+                aria-label={interactivityActionLabel}
                 aria-pressed={isCanvasInteractive}
                 className="h-7 w-7"
                 size="icon"
-                title={interactivityLabel}
+                title={interactivityActionLabel}
                 variant="ghost"
                 onClick={handleToggleCanvasInteractive}
               />

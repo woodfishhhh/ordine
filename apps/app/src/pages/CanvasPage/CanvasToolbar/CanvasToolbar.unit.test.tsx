@@ -176,15 +176,14 @@ describe("CanvasToolbar - interactive state", () => {
     const user = userEvent.setup();
     render(<CanvasToolbar />, { wrapper });
 
-    const toggle = screen.getByRole("button", { name: i18n.t("canvas.interactivity") });
+    const toggle = screen.getByRole("button", { name: i18n.t("canvas.disableInteractivity") });
 
     expect(toggle).toHaveAttribute("aria-pressed", "true");
 
     await user.click(toggle);
 
-    expect(screen.getByRole("button", { name: i18n.t("canvas.interactivity") })).toHaveAttribute(
-      "aria-pressed",
-      "false"
-    );
+    expect(
+      screen.getByRole("button", { name: i18n.t("canvas.enableInteractivity") })
+    ).toHaveAttribute("aria-pressed", "false");
   });
 });
