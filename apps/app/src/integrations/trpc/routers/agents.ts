@@ -10,16 +10,14 @@ export const agentsRouter = router({
     .input(z.object({ id: AgentIdSchema }))
     .query(({ input }) => agentsService.getById(input.id)),
 
-  create: authedProcedure
-    .input(AgentSchema)
-    .mutation(({ input }) => agentsService.create(input)),
+  create: authedProcedure.input(AgentSchema).mutation(({ input }) => agentsService.create(input)),
 
   update: authedProcedure
     .input(
       z.object({
         id: AgentIdSchema,
         patch: AgentPatchSchema,
-      }),
+      })
     )
     .mutation(({ input }) => agentsService.update(input.id, input.patch)),
 

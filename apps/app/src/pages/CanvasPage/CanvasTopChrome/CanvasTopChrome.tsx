@@ -47,10 +47,7 @@ export const CanvasTopChrome = () => {
         <div className="hidden min-[700px]:block" />
       </div>
 
-      {renderPipelineTitle(
-        "mt-2 flex w-full min-w-0 min-[700px]:hidden",
-        "canvas-title-narrow"
-      )}
+      {renderPipelineTitle("mt-2 flex w-full min-w-0 min-[700px]:hidden", "canvas-title-narrow")}
     </div>
   );
 };

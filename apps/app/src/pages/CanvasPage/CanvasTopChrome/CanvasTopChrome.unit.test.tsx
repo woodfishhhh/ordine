@@ -47,20 +47,16 @@ describe("CanvasTopChrome", () => {
       "overflow-x-auto",
       "max-[420px]:justify-self-start"
     );
-    expect(screen.getByTestId("canvas-title-desktop")).toHaveClass(
-      "hidden",
-      "min-[700px]:flex"
-    );
-    expect(screen.getByTestId("canvas-title-narrow")).toHaveClass(
-      "mt-2",
-      "min-[700px]:hidden"
-    );
+    expect(screen.getByTestId("canvas-title-desktop")).toHaveClass("hidden", "min-[700px]:flex");
+    expect(screen.getByTestId("canvas-title-narrow")).toHaveClass("mt-2", "min-[700px]:hidden");
   });
 
   it("preserves pipeline title editing", async () => {
     const user = userEvent.setup();
     const store = renderTopChrome();
-    const [desktopTitleInput] = screen.getAllByRole("textbox", { name: i18n.t("canvas.pipelineTitle") });
+    const [desktopTitleInput] = screen.getAllByRole("textbox", {
+      name: i18n.t("canvas.pipelineTitle"),
+    });
 
     await user.clear(desktopTitleInput);
     await user.type(desktopTitleInput, "Aligned pipeline");

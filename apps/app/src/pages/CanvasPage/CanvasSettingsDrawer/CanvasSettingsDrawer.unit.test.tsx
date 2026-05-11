@@ -74,7 +74,9 @@ describe("CanvasSettingsDrawer", () => {
     await user.click(screen.getByLabelText(/Show grid background|显示网格背景/));
     expect(store.getState().canvasSettings.showBackground).toBe(false);
 
-    await user.click(screen.getByRole("button", { name: /Close Canvas settings|关闭 Canvas 设置/ }));
+    await user.click(
+      screen.getByRole("button", { name: /Close Canvas settings|关闭 Canvas 设置/ })
+    );
     expect(store.getState().isCanvasSettingsOpen).toBe(false);
     expect(store.getState().nodes).toHaveLength(1);
     expect(store.getState().nodes[0]?.data.label).toBe("User Label");

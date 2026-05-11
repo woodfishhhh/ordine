@@ -16,18 +16,28 @@ vi.mock("@xyflow/react", () => ({
 }));
 
 vi.mock("@refinedev/core", () => ({
-  useList: () => ({
-    result: {
-      data: [
-        {
-          id: "review-code",
-          name: "Review Code",
-          description: "Review code with an agent",
-          acceptedObjectTypes: ["file", "project"],
+  useList: ({ resource }: { resource: string }) => {
+    if (resource === "agents") {
+      return {
+        result: {
+          data: [{ id: "agent-claude", name: "Claude" }],
         },
-      ],
-    },
-  }),
+      };
+    }
+
+    return {
+      result: {
+        data: [
+          {
+            id: "review-code",
+            name: "Review Code",
+            description: "Review code with an agent",
+            acceptedObjectTypes: ["file", "project"],
+          },
+        ],
+      },
+    };
+  },
 }));
 
 const nodeId = "operation-node";
@@ -84,9 +94,9 @@ describe("OperationNode", () => {
   it("renders localized embedded-control labels and accessible names", () => {
     renderOperationNode();
 
-    expect(screen.getByText("Agent 运行时")).toBeInTheDocument();
+    expect(screen.getByText("Agent")).toBeInTheDocument();
     expect(screen.getByText("最大轮次")).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "选择 Agent Runtime" })).toHaveClass(
+    expect(screen.getByRole("combobox", { name: "Agent" })).toHaveClass(
       "h-8",
       "w-full",
       "nodrag",
@@ -105,7 +115,7 @@ describe("OperationNode", () => {
       handleParentMouseDown: parentMouseDown,
     });
 
-    await user.click(screen.getByRole("combobox", { name: "选择 Agent Runtime" }));
+    await user.click(screen.getByRole("combobox", { name: "Agent" }));
 
     expect(parentClick).not.toHaveBeenCalled();
     expect(parentMouseDown).not.toHaveBeenCalled();
@@ -114,7 +124,7 @@ describe("OperationNode", () => {
 
     await waitFor(() => {
       expect(store.getState().nodes[0]?.data).toMatchObject({
-        agentRuntime: "claude-code",
+        agentId: "agent-claude",
       });
     });
     expect(parentClick).not.toHaveBeenCalled();

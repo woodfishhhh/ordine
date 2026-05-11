@@ -5,10 +5,7 @@ import { auth } from "@/integrations/better-auth";
 import { appRouter } from "@/integrations/trpc/router";
 
 const getSession = (request: Request) =>
-  ResultAsync.fromPromise(
-    auth.api.getSession({ headers: request.headers }),
-    () => undefined,
-  );
+  ResultAsync.fromPromise(auth.api.getSession({ headers: request.headers }), () => undefined);
 
 const handleRequest = (request: Request) =>
   fetchRequestHandler({

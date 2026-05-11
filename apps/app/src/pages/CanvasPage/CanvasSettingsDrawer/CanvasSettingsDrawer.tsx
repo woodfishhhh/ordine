@@ -41,7 +41,10 @@ export const CanvasSettingsDrawer = () => {
     closeCanvasSettings();
   };
 
-  const handleSettingChange = (id: keyof CanvasSettingsState, event: ChangeEvent<HTMLInputElement>) => {
+  const handleSettingChange = (
+    id: keyof CanvasSettingsState,
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
     updateCanvasSettings({ [id]: event.target.checked } as Partial<CanvasSettingsState>);
   };
 
