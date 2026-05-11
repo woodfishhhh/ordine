@@ -194,7 +194,7 @@ describe("NodeCard", () => {
       />
     );
 
-    const input = screen.getByLabelText("Node label");
+    const input = screen.getByLabelText(/Node label|节点标签/);
     expect(input).toHaveAttribute("readonly");
 
     fireEvent.click(input);
@@ -215,7 +215,7 @@ describe("NodeCard", () => {
       />
     );
 
-    const input = screen.getByLabelText("Node label");
+    const input = screen.getByLabelText(/Node label|节点标签/);
     expect(input).toHaveAttribute("readonly");
 
     fireEvent.focus(input);

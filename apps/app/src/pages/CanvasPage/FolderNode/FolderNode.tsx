@@ -60,7 +60,7 @@ export const FolderNode = ({ id, data, selected }: FolderNodeProps) => {
       <NodeCard
         rightHandle
         bodyClassName="space-y-2"
-        description="Folder"
+        description={t("canvas.nodeTypes.folder.label")}
         dimmed={dimmed}
         icon={Folder}
         label={data.label}
@@ -82,7 +82,7 @@ export const FolderNode = ({ id, data, selected }: FolderNodeProps) => {
           />
           <Button
             className="nodrag nopan shrink-0 rounded p-0.5 text-orange-400 hover:bg-orange-100 hover:text-orange-700 transition-colors h-auto"
-            title="浏览文件夹"
+            title={t("canvas.browseFolder")}
             type="button"
             variant="ghost"
             onClick={handleFolderButtonClick}
@@ -101,7 +101,7 @@ export const FolderNode = ({ id, data, selected }: FolderNodeProps) => {
               >
                 {ep}
                 <Button
-                  aria-label={`移除排除 ${ep}`}
+                  aria-label={`${t("canvas.removeExclude")} ${ep}`}
                   className="nodrag nopan rounded-sm p-0 hover:bg-red-200 transition-colors h-auto"
                   size="icon-xs"
                   type="button"

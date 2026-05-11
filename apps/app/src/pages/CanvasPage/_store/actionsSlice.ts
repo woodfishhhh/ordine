@@ -37,6 +37,14 @@ const getConnectStartHandleType = (
   connectionState.fromHandle?.type ??
   (currentConnectStart?.nodeId === fromNodeId ? currentConnectStart.handleType : null);
 
+const makeLocalizedDefaultNodeData = (type: BuiltinNodeType) => {
+  const fallback = makeDefaultNodeData(type);
+
+  return makeDefaultNodeData(type, {
+    label: i18n.t(`canvas.nodeTypes.${type}.label`, { defaultValue: fallback.label }),
+  });
+};
+
 export interface ActionsSlice {
   exportCanvas: () => void;
   importCanvas: (data: { nodes: PipelineNode[]; edges: PipelineEdge[] }) => void;
@@ -395,7 +403,7 @@ export const createActionsSlice = (
         method: "post",
         payload: { id: pipelineId },
       }),
-      () => "Failed to start pipeline"
+      () => t("canvas.runStartFailed")
     );
 
     runResult.match(
@@ -405,7 +413,7 @@ export const createActionsSlice = (
         toastStore.getState().addToast({
           type: "success",
           title: t("canvas.runCompleted"),
-          description: `Job ${result.jobId} ${t("canvas.runSuccess")}`,
+          description: t("canvas.runSuccessDescription", { jobId: result.jobId }),
         });
       },
       (error) => {
@@ -456,7 +464,7 @@ export const createActionsSlice = (
       id: `${type}-${Date.now()}`,
       type,
       position: { x: contextMenu.flowX, y: contextMenu.flowY },
-      data: makeDefaultNodeData(type as BuiltinNodeType),
+      data: makeLocalizedDefaultNodeData(type as BuiltinNodeType),
     });
   },
 
@@ -494,7 +502,7 @@ export const createActionsSlice = (
       type,
       origin: QUICK_ADD_NODE_ORIGIN,
       position,
-      data: makeDefaultNodeData(type as BuiltinNodeType),
+      data: makeLocalizedDefaultNodeData(type as BuiltinNodeType),
     });
     set({ isQuickAddOpen: false, quickAddQuery: "" });
   },
@@ -549,7 +557,7 @@ export const createActionsSlice = (
         { x: connectionMenu.flowX, y: connectionMenu.flowY },
         CONNECTION_MENU_NODE_OFFSET
       ),
-      data: makeDefaultNodeData(type as BuiltinNodeType),
+      data: makeLocalizedDefaultNodeData(type as BuiltinNodeType),
     });
   },
 
@@ -655,7 +663,7 @@ export const createActionsSlice = (
       id: newId,
       type,
       position: offsetPosition(node.position, NODE_CONTEXT_CONNECT_OFFSET),
-      data: makeDefaultNodeData(type as BuiltinNodeType),
+      data: makeLocalizedDefaultNodeData(type as BuiltinNodeType),
     });
     get().handleConnect({
       source: nodeContextMenu.nodeId,
