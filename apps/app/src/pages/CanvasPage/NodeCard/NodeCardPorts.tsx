@@ -38,12 +38,26 @@ const getNodePortPosition = (side: NodePortSide) =>
   side === "left" ? Position.Left : Position.Right;
 
 const MAX_SAFE_PORT_INDEX = 52;
+const MAX_SAFE_PORT_COUNT = MAX_SAFE_PORT_INDEX + 1;
+
+const isSafePortIndex = (index: number): boolean =>
+  Number.isInteger(index) && index >= 0 && index <= MAX_SAFE_PORT_INDEX;
 
 const makeLeadingPortMask = (count: number): number =>
-  count <= 0 || count > MAX_SAFE_PORT_INDEX ? 0 : 2 ** count - 1;
+  count <= 0 ? 0 : 2 ** Math.min(count, MAX_SAFE_PORT_COUNT) - 1;
+
+const getPortIndexMask = (index: number): number => (isSafePortIndex(index) ? 2 ** index : 0);
+
+const makeSequentialPortMask = (count: number, startIndex: number): number => {
+  if (count <= 0 || !isSafePortIndex(startIndex)) {
+    return 0;
+  }
+
+  return makeLeadingPortMask(Math.min(count, MAX_SAFE_PORT_COUNT - startIndex)) * 2 ** startIndex;
+};
 
 const hasPortIndex = (mask: number, index: number): boolean =>
-  index < 0 || index > MAX_SAFE_PORT_INDEX ? false : Math.floor(mask / 2 ** index) % 2 === 1;
+  isSafePortIndex(index) ? Math.floor(mask / getPortIndexMask(index)) % 2 === 1 : false;
 
 const getNodePortVisualState = (
   side: NodePortSide,
@@ -65,8 +79,8 @@ const getNodePortVisualState = (
       : (rightConnectedPortMask ?? makeLeadingPortMask(connectedPortCount));
   const activePortMask =
     side === "left"
-      ? (leftActivePortMask ?? makeLeadingPortMask(activePortCount) * 2 ** connectedPortCount)
-      : (rightActivePortMask ?? makeLeadingPortMask(activePortCount) * 2 ** connectedPortCount);
+      ? (leftActivePortMask ?? makeSequentialPortMask(activePortCount, connectedPortCount))
+      : (rightActivePortMask ?? makeSequentialPortMask(activePortCount, connectedPortCount));
   const connected = hasPortIndex(connectedPortMask, index);
   const active = !connected && hasPortIndex(activePortMask, index);
 

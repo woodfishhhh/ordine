@@ -230,14 +230,22 @@ export const decorateEdgesWithPortHandles = (
 
 const MAX_SAFE_PORT_INDEX = 52;
 
-const getPortIndexMask = (index: number): number =>
-  index < 0 || index > MAX_SAFE_PORT_INDEX ? 0 : 2 ** index;
+const isSafePortIndex = (index: number): boolean =>
+  Number.isInteger(index) && index >= 0 && index <= MAX_SAFE_PORT_INDEX;
 
-const hasPortIndex = (mask: number, index: number): boolean =>
-  Math.floor(mask / getPortIndexMask(index)) % 2 === 1;
+const getPortIndexMask = (index: number): number => (isSafePortIndex(index) ? 2 ** index : 0);
 
-const addPortIndexToMask = (mask: number, index: number): number =>
-  hasPortIndex(mask, index) ? mask : mask + getPortIndexMask(index);
+const hasPortIndex = (mask: number, index: number): boolean => {
+  const indexMask = getPortIndexMask(index);
+
+  return indexMask > 0 && Math.floor(mask / indexMask) % 2 === 1;
+};
+
+const addPortIndexToMask = (mask: number, index: number): number => {
+  const indexMask = getPortIndexMask(index);
+
+  return indexMask === 0 || hasPortIndex(mask, index) ? mask : mask + indexMask;
+};
 
 const getConnectedPortMasks = (
   edges: PipelineEdge[],
@@ -255,6 +263,7 @@ const getConnectedPortMasks = (
         acc.right = addPortIndexToMask(acc.right, index);
         acc.rightCount += 1;
       }
+
       return acc;
     },
     { left: 0, right: 0, leftCount: 0, rightCount: 0 }
@@ -276,7 +285,8 @@ const getActivePortMask = (
     return getPortIndexMask(explicitIndex);
   }
 
-  const availableIndex = Array.from({ length: portCount }, (_item, index) => index).find(
+  const safePortCount = Math.min(portCount, MAX_SAFE_PORT_INDEX + 1);
+  const availableIndex = Array.from({ length: safePortCount }, (_item, index) => index).find(
     (index) => !hasPortIndex(connectedPortMask, index)
   );
 

@@ -8,10 +8,17 @@ import {
   type PendingNodePortConnection,
 } from "./nodePorts";
 
-let cachedNodesRef: PipelineNode[] | null = null;
-let cachedEdgesRef: PipelineEdge[] | null = null;
-let cachedConnectStartRef: PendingNodePortConnection | null = null;
-let cachedDecoratedEdges: PipelineEdge[] = [];
+const portRoutingCache: {
+  connectStartRef: PendingNodePortConnection | null;
+  decoratedEdges: PipelineEdge[];
+  edgesRef: PipelineEdge[] | null;
+  nodesRef: PipelineNode[] | null;
+} = {
+  connectStartRef: null,
+  decoratedEdges: [],
+  edgesRef: null,
+  nodesRef: null,
+};
 
 const getCachedDecoratedEdges = (
   nodes: PipelineNode[],
@@ -19,19 +26,19 @@ const getCachedDecoratedEdges = (
   connectStart: PendingNodePortConnection | null
 ) => {
   if (
-    cachedNodesRef === nodes &&
-    cachedEdgesRef === edges &&
-    cachedConnectStartRef === connectStart
+    portRoutingCache.nodesRef === nodes &&
+    portRoutingCache.edgesRef === edges &&
+    portRoutingCache.connectStartRef === connectStart
   ) {
-    return cachedDecoratedEdges;
+    return portRoutingCache.decoratedEdges;
   }
 
-  cachedNodesRef = nodes;
-  cachedEdgesRef = edges;
-  cachedConnectStartRef = connectStart;
-  cachedDecoratedEdges = decorateEdgesWithPortHandles(nodes, edges, connectStart);
+  portRoutingCache.nodesRef = nodes;
+  portRoutingCache.edgesRef = edges;
+  portRoutingCache.connectStartRef = connectStart;
+  portRoutingCache.decoratedEdges = decorateEdgesWithPortHandles(nodes, edges, connectStart);
 
-  return cachedDecoratedEdges;
+  return portRoutingCache.decoratedEdges;
 };
 
 export const useNodePortCounts = (nodeId: string) => {

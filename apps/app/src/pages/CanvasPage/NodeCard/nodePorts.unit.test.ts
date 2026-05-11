@@ -128,6 +128,21 @@ describe("node port helpers", () => {
     });
   });
 
+  it("ignores unsafe decorated handle indexes in visual masks", () => {
+    const nodes = [makeNode("source", 100), makeNode("target", 240)];
+    const edges = [
+      {
+        ...makeEdge("edge-existing", "source", "target"),
+        sourceHandle: "right-port-53",
+      },
+    ];
+
+    expect(getNodePortVisualCounts(nodes, edges, "source", null, edges)).toMatchObject({
+      rightConnectedPortCount: 1,
+      rightConnectedPortMask: 0,
+    });
+  });
+
   it("creates predictable split offsets", () => {
     expect(getNodePortOffsets(2)).toEqual([-28, 28]);
     expect(getNodePortOffsets(3)).toEqual([-36, 0, 36]);

@@ -203,6 +203,27 @@ describe("NodeCard", () => {
     );
   });
 
+  it("keeps fallback visual masks deterministic above the safe mask range", () => {
+    render(
+      <NodeCard
+        rightHandle
+        icon={Box}
+        label="Node"
+        rightActivePortCount={1}
+        rightConnectedPortCount={53}
+        rightHandleCount={54}
+        theme="teal"
+      />
+    );
+
+    const sourceHandles = screen.getAllByTestId("source-handle");
+
+    expect(sourceHandles[52]).toHaveAttribute("data-port-state", "connected");
+    expect(sourceHandles[53]).toHaveAttribute("data-port-state", "idle");
+    expect(sourceHandles[53]).toHaveAttribute("data-active", "false");
+    expect(sourceHandles[53]).toHaveAttribute("data-connected", "false");
+  });
+
   it("splits ports into multiple vertical slots", () => {
     render(
       <NodeCard
