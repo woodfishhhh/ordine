@@ -47,8 +47,8 @@ export const CanvasToolbar = () => {
   const InteractivityIcon = isCanvasInteractive ? Unlock : Lock;
 
   return (
-    <div className="absolute left-1/2 top-3 z-10 -translate-x-1/2">
-      <div className="flex items-center gap-0.5 rounded-xl border bg-background px-1.5 py-1 shadow-md">
+    <div className="pointer-events-auto w-max max-w-full" data-testid="canvas-toolbar">
+      <div className="flex h-10 w-max items-center gap-0.5 rounded-full border bg-background px-1.5 py-1 shadow-md max-[420px]:gap-0 max-[420px]:px-1">
         {/* Zoom controls */}
         <Tooltip>
           <TooltipTrigger
@@ -211,7 +211,7 @@ export const CanvasToolbar = () => {
             render={
               <Button
                 aria-label={t("canvas.runTest")}
-                className="h-7 gap-1.5 px-2 text-xs text-green-600 hover:bg-green-50 hover:text-green-700 disabled:text-muted-foreground/30"
+                className="h-7 gap-1.5 px-2 text-xs text-green-600 hover:bg-green-50 hover:text-green-700 disabled:text-muted-foreground/30 max-[420px]:w-7 max-[420px]:gap-0 max-[420px]:px-0"
                 disabled={isRunning || !pipelineId}
                 size="sm"
                 title={t("canvas.runTest")}
@@ -221,7 +221,7 @@ export const CanvasToolbar = () => {
             }
           >
             <Play className="h-3.5 w-3.5" />
-            <span>{t("canvas.run")}</span>
+            <span className="max-[420px]:hidden">{t("canvas.run")}</span>
           </TooltipTrigger>
           <TooltipContent>{t("canvas.runTest")}</TooltipContent>
         </Tooltip>

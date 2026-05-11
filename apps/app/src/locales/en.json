@@ -31,7 +31,8 @@
     "tags": "Tags",
     "new": "New",
     "clear": "Clear",
-    "noResults": "No matching results"
+    "noResults": "No matching results",
+    "generating": "Generating..."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -295,12 +296,27 @@
     }
   },
   "newPipelineDialog": {
-    "descriptionPlaceholder": "Describe what this pipeline should do..."
+    "descriptionPlaceholder": "Describe what this pipeline should do...",
+    "pipelineReady": "Pipeline Ready",
+    "pipelineCreatedDescription": "Your pipeline has been created successfully",
+    "openInCanvas": "Open in Canvas",
+    "runNow": "Run Now",
+    "createAnother": "Create Another",
+    "analyzing": "Analyzing intent...",
+    "analysisTitle": "Intent Analysis",
+    "analysisDescription": "We matched your description against available operations",
+    "matchedOperations": "Matched Operations",
+    "unmatchedSteps": "New Operations Needed",
+    "unmatchedStepsHint": "These steps will create new operations during pipeline generation",
+    "noMatchesFound": "No matching operations found. A new pipeline will be generated from scratch.",
+    "proceedWithGeneration": "Generate Pipeline",
+    "backToEdit": "Back"
   },
   "canvas": {
     "title": "Canvas",
     "pipelineTitle": "Pipeline title",
     "pipelineTitlePlaceholder": "Untitled Pipeline",
+    "nodeLabel": "Node label",
     "unsavedPipeline": "Unsaved Pipeline",
     "saveSuccess": "Pipeline saved",
     "saveFailed": "Save failed",
@@ -309,7 +325,9 @@
     "noPipelineId": "Pipeline has not been saved yet",
     "runFailed": "Pipeline validation failed, please retry",
     "runSaveFailed": "Failed to save pipeline validation result",
+    "runStartFailed": "Failed to start pipeline",
     "runCompleted": "Pipeline run completed",
+    "runSuccessDescription": "Job {{jobId}} completed pipeline validation",
     "runTest": "Run Test",
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar",
@@ -367,6 +385,7 @@
       "noSelection": "No node selected"
     },
     "contextMenu": {
+      "actions": "Actions",
       "addCodeFile": "Add Code File",
       "addFolder": "Add Folder",
       "addCondition": "Add Condition",
@@ -381,8 +400,96 @@
       "recipeNode": "Recipe",
       "outputEndpoint": "Output",
       "noOperationsForType": "No operations accept this type",
-      "newNode": "New Node"
+      "newNode": "New Node",
+      "group": "Group",
+      "newCompoundNode": "New compound node",
+      "groupSelected": "Group {{count}} selected nodes",
+      "ungroup": "Ungroup",
+      "detachFromGroup": "Remove from group",
+      "duplicate": "Duplicate",
+      "delete": "Delete"
     },
+    "floatingMenu": {
+      "menu": "Menu",
+      "backToWorkspace": "Back to workspace",
+      "save": "Save",
+      "export": "Export",
+      "import": "Import",
+      "settings": "Settings",
+      "importJson": "Import canvas JSON",
+      "saveSuccessDescription": "Pipeline \"{{name}}\" was saved",
+      "createSuccessDescription": "Pipeline \"{{name}}\" was created",
+      "saveFailedDescription": "Please try again later"
+    },
+    "nodeTypes": {
+      "operation": {
+        "label": "Operation",
+        "shortLabel": "OP"
+      },
+      "code-file": {
+        "label": "Code file",
+        "shortLabel": "File"
+      },
+      "folder": {
+        "label": "Folder",
+        "shortLabel": "Folder"
+      },
+      "github-projects": {
+        "label": "GitHub project",
+        "shortLabel": "GitHub"
+      },
+      "output-project-path": {
+        "label": "Project output",
+        "shortLabel": "Output"
+      },
+      "output-local-path": {
+        "label": "Local output",
+        "shortLabel": "Local"
+      },
+      "compound": {
+        "label": "Compound node",
+        "shortLabel": "Group"
+      },
+      "prompt": {
+        "label": "Prompt",
+        "shortLabel": "Prompt"
+      }
+    },
+    "compoundNode": {
+      "childCount": "{{count}} nodes"
+    },
+    "llmContent": {
+      "title": "{{label}} - Thought content",
+      "running": "LLM is thinking...",
+      "empty": "No LLM output yet"
+    },
+    "runConsole": {
+      "title": "Console",
+      "logs": "{{count}} logs",
+      "loading": "Loading...",
+      "statusQueued": "Queued",
+      "statusRunning": "Running",
+      "statusDone": "Done",
+      "statusFailed": "Failed",
+      "statusCancelled": "Cancelled",
+      "statusExpired": "Expired"
+    },
+    "history": {
+      "addEdge": "Connect {{source}} -> {{target}}",
+      "addNode": "Add node {{label}}",
+      "addNodeWithEdge": "Add {{label}} and connect",
+      "removeNode": "Delete node {{label}}",
+      "updateNode": "Edit {{label}}",
+      "duplicateNode": "Duplicate node {{label}}",
+      "clearCanvas": "Clear canvas",
+      "addToCompound": "Add {{node}} to {{compound}}",
+      "removeFromCompound": "Remove {{node}} from {{compound}}",
+      "groupNodes": "Group {{count}} nodes",
+      "ungroupCompound": "Ungroup {{label}}"
+    },
+    "unknownNode": "Unknown node",
+    "folderTreeLoading": "Loading...",
+    "excludePath": "Exclude {{name}}",
     "folderDescPlaceholder": "Folder description...",
     "clickToSwitchRepo": "Click to switch repo",
     "pickFromLibrary": "Pick from library",
@@ -654,8 +761,32 @@
       "selectThisFolder": "Select this folder"
     },
     "codeFile": {
+      "pathLabel": "Code file path",
+      "languageLabel": "Code file language",
+      "descriptionLabel": "Code file description",
       "descriptionPlaceholder": "File description...",
       "browseFile": "Browse file"
+    },
+    "operation": {
+      "description": "Custom operation",
+      "statusIdle": "Pending",
+      "statusRunning": "Running",
+      "statusPass": "Success",
+      "statusFail": "Failed",
+      "config": "Config",
+      "acceptedObjectTypes": "Accepted object types",
+      "objectTypeFile": "File",
+      "objectTypeFolder": "Folder",
+      "objectTypeProject": "Project",
+      "agentRuntime": "Agent Runtime",
+      "runtime": "Runtime",
+      "defaultRuntime": "Default",
+      "viewLlmOutput": "View LLM output",
+      "loopEnabled": "Loop enabled",
+      "enableLoop": "Enable loop",
+      "maxLoopCount": "Max count",
+      "loopAcceptanceCondition": "Acceptance condition",
+      "loopAcceptancePlaceholder": "Describe what the output needs to satisfy..."
     },
     "condition": {
       "expressionPlaceholder": "Expression not set",
@@ -666,11 +797,13 @@
       "statusFail": "Fail"
     },
     "outputProjectPath": {
+      "description": "Project output",
       "descriptionPlaceholder": "Describe this output...",
       "projectIdLabel": "Project ID",
       "pathLabel": "Path"
     },
     "outputLocalPathNode": {
+      "description": "Local output",
       "pathLabel": "Path",
       "filenameLabel": "Filename",
       "writeModeLabel": "Write mode",
@@ -702,11 +835,28 @@
     "defaultBranch": "Default Branch",
     "connectRepo": "Connect Repository",
     "back": "Back",
+    "private": "Private",
+    "public": "Public",
     "tokenConfigured": "Token configured (can access private repos)",
     "tokenMissing": "Token not configured (public repos only)",
     "configure": "Configure",
     "modify": "Modify",
-    "urlParseError": "Unable to parse GitHub URL, please enter a valid repository link"
+    "urlParseError": "Unable to parse GitHub URL, please enter a valid repository link",
+    "tokenTitle": "GitHub Personal Access Token",
+    "tokenStatusConfigured": "Token configured",
+    "tokenPrivateAccess": "Can access private repos",
+    "tokenStatusMissing": "Token not configured",
+    "tokenPrivateRequiresPat": "Private repository access requires a Personal Access Token",
+    "personalAccessToken": "Personal Access Token",
+    "showToken": "Show token",
+    "hideToken": "Hide token",
+    "verify": "Verify",
+    "verifySuccess": "Verified as {{login}}",
+    "tokenLocalOnly": "Token is stored only in your local browser and is not uploaded to the server.",
+    "createTokenLink": "Create a GitHub token with repo permission",
+    "clearToken": "Clear token",
+    "projectListEmpty": "Project library is empty. Connect a GitHub repository from the Projects page first.",
+    "projectListNoResults": "No matching projects"
   },
   "skills": {
     "pageStructure": "Page Structure",
