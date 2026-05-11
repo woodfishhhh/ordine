@@ -2,7 +2,7 @@ import { useMemo, type Ref } from "react";
 import { useStore } from "zustand";
 import { useHarnessCanvasStore } from "../_store";
 import { useHotkeys } from "react-hotkeys-hook";
-import { ReactFlow, Background, Controls, BackgroundVariant, MiniMap } from "@xyflow/react";
+import { ReactFlow, Background, BackgroundVariant, Controls, MiniMap } from "@xyflow/react";
 import { CompoundNode } from "../CompoundNode";
 import { CodeFileNode } from "../CodeFileNode";
 import { ErrorNode } from "../ErrorNode";
@@ -47,6 +47,7 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
   const nodes = useStore(store, (s) => s.nodes);
   const edges = useStore(store, (s) => s.edges);
   const connectStart = useStore(store, (s) => s.connectStart);
+  const isCanvasInteractive = useStore(store, (s) => s.isCanvasInteractive);
   const portRoutedEdges = useMemo(
     () => decorateEdgesWithPortHandles(nodes, edges, connectStart),
     [connectStart, edges, nodes]
@@ -69,6 +70,20 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
   const handleFlowNodeDrag = useStore(store, (s) => s.handleFlowNodeDrag);
   const handleFlowNodeDragStop = useStore(store, (s) => s.handleFlowNodeDragStop);
   const handleFlowMove = useStore(store, (s) => s.handleFlowMove);
+  const interactiveHandlers = isCanvasInteractive
+    ? {
+        onConnect: handleConnect,
+        onConnectEnd: handleFlowConnectEnd,
+        onConnectStart: handleFlowConnectStart,
+        onEdgeClick: handleFlowEdgeClick,
+        onNodeClick: handleFlowNodeClick,
+        onNodeContextMenu: handleFlowNodeContextMenu,
+        onNodeDrag: handleFlowNodeDrag,
+        onNodeDragStop: handleFlowNodeDragStop,
+        onPaneClick: handleFlowPaneClick,
+        onPaneContextMenu: handleFlowPaneContextMenu,
+      }
+    : {};
 
   useHotkeys(
     "mod+z",
@@ -93,27 +108,25 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
         className="bg-slate-50/50"
         defaultEdgeOptions={defaultEdgeOptions}
         defaultViewport={DEFAULT_CANVAS_VIEWPORT}
-        deleteKeyCode={["Backspace", "Delete"]}
+        deleteKeyCode={isCanvasInteractive ? ["Backspace", "Delete"] : null}
         edges={portRoutedEdges}
+        elementsSelectable={isCanvasInteractive}
         nodes={nodes}
+        nodesConnectable={isCanvasInteractive}
+        nodesDraggable={isCanvasInteractive}
         nodeTypes={nodeTypes}
+        panOnDrag={isCanvasInteractive}
         proOptions={proOpts}
         snapGrid={snapGrid}
         snapToGrid={canvasSettings.snapToGrid}
-        onConnect={handleConnect}
-        onConnectEnd={handleFlowConnectEnd}
-        onConnectStart={handleFlowConnectStart}
-        onEdgeClick={handleFlowEdgeClick}
+        zoomOnDoubleClick={isCanvasInteractive}
+        zoomOnPinch={isCanvasInteractive}
+        zoomOnScroll={isCanvasInteractive}
         onEdgesChange={handleEdgesChange}
         onInit={handleFlowInit}
         onMove={(_event, viewport) => handleFlowMove(viewport.zoom)}
-        onNodeClick={handleFlowNodeClick}
-        onNodeContextMenu={handleFlowNodeContextMenu}
-        onNodeDrag={handleFlowNodeDrag}
-        onNodeDragStop={handleFlowNodeDragStop}
         onNodesChange={handleNodesChange}
-        onPaneClick={handleFlowPaneClick}
-        onPaneContextMenu={handleFlowPaneContextMenu}
+        {...interactiveHandlers}
       >
         {canvasSettings.showBackground && (
           <Background color="#cbd5e1" gap={snapGrid[0]} size={1.5} variant={BackgroundVariant.Dots} />

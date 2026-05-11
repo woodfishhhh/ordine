@@ -1,4 +1,5 @@
 import { render } from "@/test/test-wrapper";
+import i18n from "@/lib/i18n";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
@@ -24,8 +25,15 @@ vi.mock("@repo/ui/button", () => ({
     disabled,
     title,
     className,
+    ...props
   }: React.ComponentProps<"button">) => (
-    <button className={className} disabled={disabled} title={title} onClick={handleClick}>
+    <button
+      {...props}
+      className={className}
+      disabled={disabled}
+      title={title}
+      onClick={handleClick}
+    >
       {children}
     </button>
   ),
@@ -63,12 +71,24 @@ const wrapperWithPipeline = ({ children }: React.PropsWithChildren) => (
 );
 
 describe("CanvasToolbar - export removed", () => {
-  it("does NOT render Export tooltip/button in the toolbar", () => {
+  it("does NOT render export tooltip/button in any locale", () => {
     render(<CanvasToolbar />, { wrapper });
     const exportTooltips = screen
       .queryAllByTestId("tooltip")
-      .filter((el) => el.textContent === "Export");
+      .filter((el) => /导出|export/i.test(el.textContent ?? ""));
+
+    expect(screen.queryByRole("button", { name: /导出|export/i })).not.toBeInTheDocument();
     expect(exportTooltips).toHaveLength(0);
+  });
+});
+
+describe("CanvasToolbar - viewport controls", () => {
+  it("keeps zoom and fit view available through accessible custom controls", () => {
+    render(<CanvasToolbar />, { wrapper });
+
+    expect(screen.getByRole("button", { name: i18n.t("canvas.zoomOut") })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: i18n.t("canvas.zoomIn") })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: i18n.t("canvas.fitView") })).toBeInTheDocument();
   });
 });
 
@@ -83,23 +103,23 @@ describe("CanvasToolbar - Run Test button", () => {
 
   it("renders the Run Test button", () => {
     render(<CanvasToolbar />, { wrapper });
-    expect(screen.getByTitle("Run Test")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: i18n.t("canvas.runTest") })).toBeInTheDocument();
   });
 
   it("Run Test button is disabled without pipelineId", () => {
     render(<CanvasToolbar />, { wrapper });
-    expect(screen.getByTitle("Run Test")).toBeDisabled();
+    expect(screen.getByRole("button", { name: i18n.t("canvas.runTest") })).toBeDisabled();
   });
 
   it("Run Test button is enabled when pipelineId exists", () => {
     render(<CanvasToolbar />, { wrapper: wrapperWithPipeline });
-    expect(screen.getByTitle("Run Test")).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: i18n.t("canvas.runTest") })).not.toBeDisabled();
   });
 
   it("clicking Run saves pipeline then calls run API", async () => {
     const user = userEvent.setup();
     render(<CanvasToolbar />, { wrapper: wrapperWithPipeline });
-    await user.click(screen.getByTitle("Run Test"));
+    await user.click(screen.getByRole("button", { name: i18n.t("canvas.runTest") }));
 
     await waitFor(() => {
       expect(mockTrpcUpdate).toHaveBeenCalledWith(
@@ -117,7 +137,7 @@ describe("CanvasToolbar - Run Test button", () => {
   it("shows success toast after successful run", async () => {
     const user = userEvent.setup();
     render(<CanvasToolbar />, { wrapper: wrapperWithPipeline });
-    await user.click(screen.getByTitle("Run Test"));
+    await user.click(screen.getByRole("button", { name: i18n.t("canvas.runTest") }));
     await waitFor(() => {
       expect(toastStore.getState().toasts).toEqual(
         expect.arrayContaining([expect.objectContaining({ type: "success" })])
@@ -129,7 +149,7 @@ describe("CanvasToolbar - Run Test button", () => {
     mockTrpcUpdate.mockRejectedValue(new Error("save failed"));
     const user = userEvent.setup();
     render(<CanvasToolbar />, { wrapper: wrapperWithPipeline });
-    await user.click(screen.getByTitle("Run Test"));
+    await user.click(screen.getByRole("button", { name: i18n.t("canvas.runTest") }));
     await waitFor(() => {
       expect(toastStore.getState().toasts).toEqual(
         expect.arrayContaining([expect.objectContaining({ type: "error" })])
@@ -142,11 +162,28 @@ describe("CanvasToolbar - Run Test button", () => {
     mockTrpcRun.mockRejectedValue(new Error("Internal Server Error"));
     const user = userEvent.setup();
     render(<CanvasToolbar />, { wrapper: wrapperWithPipeline });
-    await user.click(screen.getByTitle("Run Test"));
+    await user.click(screen.getByRole("button", { name: i18n.t("canvas.runTest") }));
     await waitFor(() => {
       expect(toastStore.getState().toasts).toEqual(
         expect.arrayContaining([expect.objectContaining({ type: "error" })])
       );
     });
+  });
+});
+
+describe("CanvasToolbar - interactive state", () => {
+  it("toggles the custom canvas interactivity control", async () => {
+    const user = userEvent.setup();
+    render(<CanvasToolbar />, { wrapper });
+
+    const toggle = screen.getByRole("button", { name: i18n.t("canvas.disableInteractivity") });
+
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(toggle);
+
+    expect(
+      screen.getByRole("button", { name: i18n.t("canvas.enableInteractivity") })
+    ).toHaveAttribute("aria-pressed", "false");
   });
 });

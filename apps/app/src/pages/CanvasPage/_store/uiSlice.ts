@@ -37,7 +37,7 @@ export interface CanvasSettingsState {
 
 export const DEFAULT_CANVAS_SETTINGS: CanvasSettingsState = {
   showMiniMap: true,
-  showControls: true,
+  showControls: false,
   showBackground: true,
   snapToGrid: false,
 };
@@ -61,6 +61,7 @@ export interface UISlice {
   isQuickAddOpen: boolean;
   quickAddQuery: string;
   isConsoleCollapsed: boolean;
+  isCanvasInteractive: boolean;
 
   // Pipeline test run state
   isTestRunning: boolean;
@@ -91,6 +92,7 @@ export interface UISlice {
   handleToggleQuickAdd: () => void;
   handleSetQuickAddQuery: (query: string) => void;
   handleToggleConsoleCollapse: () => void;
+  handleToggleCanvasInteractive: () => void;
   handleQuickAddKeyDown: (event: React.KeyboardEvent) => void;
   handleConnectStart: (state: ConnectStartState | null) => void;
   handlePipelineNameChange: (name: string) => void;
@@ -141,6 +143,7 @@ export const createUISlice = (
   isQuickAddOpen: false,
   quickAddQuery: "",
   isConsoleCollapsed: false,
+  isCanvasInteractive: true,
   // Pipeline test run state defaults
   isTestRunning: false,
   isRunning: false,
@@ -250,6 +253,10 @@ export const createUISlice = (
 
   handleToggleConsoleCollapse: () => {
     set((state) => ({ isConsoleCollapsed: !state.isConsoleCollapsed }));
+  },
+
+  handleToggleCanvasInteractive: () => {
+    set((state) => ({ isCanvasInteractive: !state.isCanvasInteractive }));
   },
 
   handleQuickAddKeyDown: (event) => {

@@ -10,6 +10,8 @@ import {
   Play,
   AlignLeft,
   Plus,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@repo/ui/button";
@@ -25,6 +27,11 @@ export const CanvasToolbar = () => {
   const handleFitView = useStore(store, (state) => state.handleFitView);
   const handleZoomIn = useStore(store, (state) => state.handleZoomIn);
   const handleZoomOut = useStore(store, (state) => state.handleZoomOut);
+  const isCanvasInteractive = useStore(store, (state) => state.isCanvasInteractive);
+  const handleToggleCanvasInteractive = useStore(
+    store,
+    (state) => state.handleToggleCanvasInteractive
+  );
   const isQuickAddOpen = useStore(store, (state) => state.isQuickAddOpen);
   const handleToggleQuickAdd = useStore(store, (state) => state.handleToggleQuickAdd);
   const pipelineId = useStore(store, (state) => state.pipelineId);
@@ -34,6 +41,10 @@ export const CanvasToolbar = () => {
   const handleRedo = useStore(store, (state) => state.handleRedo);
   const handleFormatLayout = useStore(store, (state) => state.formatLayout);
   const handleRunTest = useStore(store, (state) => state.handleRunTest);
+  const interactivityActionLabel = isCanvasInteractive
+    ? t("canvas.disableInteractivity")
+    : t("canvas.enableInteractivity");
+  const InteractivityIcon = isCanvasInteractive ? Unlock : Lock;
 
   return (
     <div className="pointer-events-auto w-max max-w-full" data-testid="canvas-toolbar">
@@ -42,7 +53,14 @@ export const CanvasToolbar = () => {
         <Tooltip>
           <TooltipTrigger
             render={
-              <Button className="h-7 w-7" size="icon" variant="ghost" onClick={handleZoomOut} />
+              <Button
+                aria-label={t("canvas.zoomOut")}
+                className="h-7 w-7"
+                size="icon"
+                title={t("canvas.zoomOut")}
+                variant="ghost"
+                onClick={handleZoomOut}
+              />
             }
           >
             <ZoomOut className="h-4 w-4" />
@@ -52,7 +70,14 @@ export const CanvasToolbar = () => {
         <Tooltip>
           <TooltipTrigger
             render={
-              <Button className="h-7 w-7" size="icon" variant="ghost" onClick={handleZoomIn} />
+              <Button
+                aria-label={t("canvas.zoomIn")}
+                className="h-7 w-7"
+                size="icon"
+                title={t("canvas.zoomIn")}
+                variant="ghost"
+                onClick={handleZoomIn}
+              />
             }
           >
             <ZoomIn className="h-4 w-4" />
@@ -62,7 +87,14 @@ export const CanvasToolbar = () => {
         <Tooltip>
           <TooltipTrigger
             render={
-              <Button className="h-7 w-7" size="icon" variant="ghost" onClick={handleFitView} />
+              <Button
+                aria-label={t("canvas.fitView")}
+                className="h-7 w-7"
+                size="icon"
+                title={t("canvas.fitView")}
+                variant="ghost"
+                onClick={handleFitView}
+              />
             }
           >
             <Maximize2 className="h-4 w-4" />
@@ -73,8 +105,28 @@ export const CanvasToolbar = () => {
           <TooltipTrigger
             render={
               <Button
+                aria-label={interactivityActionLabel}
+                aria-pressed={isCanvasInteractive}
                 className="h-7 w-7"
                 size="icon"
+                title={interactivityActionLabel}
+                variant="ghost"
+                onClick={handleToggleCanvasInteractive}
+              />
+            }
+          >
+            <InteractivityIcon className="h-4 w-4" />
+          </TooltipTrigger>
+          <TooltipContent>{interactivityActionLabel}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                aria-label={t("canvas.formatLayout")}
+                className="h-7 w-7"
+                size="icon"
+                title={t("canvas.formatLayout")}
                 variant="ghost"
                 onClick={handleFormatLayout}
               />
@@ -158,6 +210,7 @@ export const CanvasToolbar = () => {
           <TooltipTrigger
             render={
               <Button
+                aria-label={t("canvas.runTest")}
                 className="h-7 gap-1.5 px-2 text-xs text-green-600 hover:bg-green-50 hover:text-green-700 disabled:text-muted-foreground/30 max-[420px]:w-7 max-[420px]:gap-0 max-[420px]:px-0"
                 disabled={isRunning || !pipelineId}
                 size="sm"
@@ -170,7 +223,7 @@ export const CanvasToolbar = () => {
             <Play className="h-3.5 w-3.5" />
             <span className="max-[420px]:hidden">{t("canvas.run")}</span>
           </TooltipTrigger>
-          <TooltipContent>{t("canvas.run")}</TooltipContent>
+          <TooltipContent>{t("canvas.runTest")}</TooltipContent>
         </Tooltip>
       </div>
     </div>

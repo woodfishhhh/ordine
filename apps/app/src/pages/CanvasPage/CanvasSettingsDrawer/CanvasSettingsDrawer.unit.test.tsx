@@ -42,7 +42,7 @@ describe("CanvasSettingsDrawer", () => {
 
     expect(screen.getByText(/Canvas Settings|Canvas 设置/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Show minimap|显示 MiniMap/)).toBeChecked();
-    expect(screen.getByLabelText(/Show viewport controls|显示视图控制/)).toBeChecked();
+    expect(screen.getByLabelText(/Show viewport controls|显示视图控制/)).not.toBeChecked();
     expect(screen.getByLabelText(/Show grid background|显示网格背景/)).toBeChecked();
     expect(screen.getByLabelText(/Snap nodes to grid|节点吸附到网格/)).not.toBeChecked();
     expect(screen.getByRole("link", { name: /Open global settings|打开全局设置/ })).toHaveAttribute(
