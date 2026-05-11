@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
+import { useShallow } from "zustand/shallow";
 import { useForm } from "react-hook-form";
 import {
   ArrowLeft,
@@ -30,40 +31,33 @@ import type { NewPipelineFormValues } from "@/store/newPipelineDialogSlice";
 export const NewPipelineDialog = () => {
   const { t } = useTranslation();
   const store = useSidebarStore();
-  const open = useStore(store, (s) => s.newPipelineOpen);
-  const phase = useStore(store, (s) => s.newPipelinePhase);
-  const formControl = useStore(store, (s) => s.newPipelineFormControl);
-  const handleNewPipelineDialogOpenChange = useStore(
+  const {
+    newPipelineOpen: open,
+    newPipelinePhase: phase,
+    newPipelineFormControl: formControl,
+    handleNewPipelineDialogOpenChange,
+    handleNewPipelineCreateButtonClick,
+    handleNewPipelineProceedButtonClick,
+    handleNewPipelineCancelButtonClick,
+    handleNewPipelineBackButtonClick,
+    handleNewPipelineOpenInCanvasButtonClick,
+    handleNewPipelineRunNowButtonClick,
+    handleNewPipelineCreateAnotherButtonClick,
+  } = useStore(
     store,
-    (s) => s.handleNewPipelineDialogOpenChange
-  );
-  const handleNewPipelineCreateButtonClick = useStore(
-    store,
-    (s) => s.handleNewPipelineCreateButtonClick
-  );
-  const handleNewPipelineProceedButtonClick = useStore(
-    store,
-    (s) => s.handleNewPipelineProceedButtonClick
-  );
-  const handleNewPipelineCancelButtonClick = useStore(
-    store,
-    (s) => s.handleNewPipelineCancelButtonClick
-  );
-  const handleNewPipelineBackButtonClick = useStore(
-    store,
-    (s) => s.handleNewPipelineBackButtonClick
-  );
-  const handleNewPipelineOpenInCanvasButtonClick = useStore(
-    store,
-    (s) => s.handleNewPipelineOpenInCanvasButtonClick
-  );
-  const handleNewPipelineRunNowButtonClick = useStore(
-    store,
-    (s) => s.handleNewPipelineRunNowButtonClick
-  );
-  const handleNewPipelineCreateAnotherButtonClick = useStore(
-    store,
-    (s) => s.handleNewPipelineCreateAnotherButtonClick
+    useShallow((s) => ({
+      newPipelineOpen: s.newPipelineOpen,
+      newPipelinePhase: s.newPipelinePhase,
+      newPipelineFormControl: s.newPipelineFormControl,
+      handleNewPipelineDialogOpenChange: s.handleNewPipelineDialogOpenChange,
+      handleNewPipelineCreateButtonClick: s.handleNewPipelineCreateButtonClick,
+      handleNewPipelineProceedButtonClick: s.handleNewPipelineProceedButtonClick,
+      handleNewPipelineCancelButtonClick: s.handleNewPipelineCancelButtonClick,
+      handleNewPipelineBackButtonClick: s.handleNewPipelineBackButtonClick,
+      handleNewPipelineOpenInCanvasButtonClick: s.handleNewPipelineOpenInCanvasButtonClick,
+      handleNewPipelineRunNowButtonClick: s.handleNewPipelineRunNowButtonClick,
+      handleNewPipelineCreateAnotherButtonClick: s.handleNewPipelineCreateAnotherButtonClick,
+    }))
   );
 
   const form = useForm<NewPipelineFormValues>({
@@ -74,7 +68,7 @@ export const NewPipelineDialog = () => {
 
   return (
     <Dialog open={open} onOpenChange={handleNewPipelineDialogOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col overflow-hidden">
         {phase.step === "success" && (
           <>
             <div className="flex flex-col items-center gap-4 py-6">
@@ -127,7 +121,7 @@ export const NewPipelineDialog = () => {
               <DialogTitle>{t("newPipelineDialog.analysisTitle")}</DialogTitle>
               <DialogDescription>{t("newPipelineDialog.analysisDescription")}</DialogDescription>
             </DialogHeader>
-            <div className="animate-in fade-in slide-in-from-bottom-1 duration-200 py-2">
+            <div className="min-h-0 flex-1 overflow-y-auto py-2">
               <PipelinePreviewGraph
                 matchedOperations={phase.matchedOperations}
                 unmatchedSteps={phase.unmatchedSteps}
