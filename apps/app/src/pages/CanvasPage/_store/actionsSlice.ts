@@ -1,4 +1,4 @@
-import type { PipelineEdge, PipelineNode } from "./canvasSlice";
+import { sortParentBeforeChildren, type PipelineEdge, type PipelineNode } from "./canvasSlice";
 import type { HarnessCanvasStoreSlice } from "./harnessCanvasStore";
 import type { Operation, Recipe } from "@repo/schemas";
 import type { PickedProject } from "../GitHubProjectNode/PickProjectDialog";
@@ -141,9 +141,12 @@ export const createActionsSlice = (
   importCanvas: ({ name, title, nodes, edges }) => {
     const pipelineName =
       typeof name === "string" ? name : typeof title === "string" ? title : undefined;
+    const sortedNodes = [...nodes];
+    sortParentBeforeChildren(sortedNodes);
+    get().clearHistory();
 
     set({
-      nodes,
+      nodes: sortedNodes,
       edges,
       selectedNodeId: null,
       selectedEdgeId: null,

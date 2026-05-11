@@ -9,6 +9,12 @@ const makeNode = (id: string): PipelineNode => ({
   data: { label: id, nodeType: "code-file", filePath: "" },
 });
 
+const makeChildNode = (id: string, parentId: string): PipelineNode => ({
+  ...makeNode(id),
+  parentId,
+  extent: "parent",
+});
+
 const makeEdge = (id: string): PipelineEdge =>
   ({
     id,
@@ -69,5 +75,30 @@ describe("importCanvas store action", () => {
     ctx.store.getState().importCanvas({ nodes: [], edges: [] });
 
     expect(ctx.store.getState().nodes).toHaveLength(0);
+  });
+
+  it("sorts imported parent nodes before child nodes", () => {
+    const parentNode = makeNode("parent");
+    const childNode = makeChildNode("child", "parent");
+
+    ctx.store!.getState().importCanvas({ nodes: [childNode, parentNode], edges: [] });
+
+    expect(ctx.store!.getState().nodes.map((node) => node.id)).toEqual(["parent", "child"]);
+  });
+
+  it("clears stale undo and redo history after import", () => {
+    const importedNode = makeNode("imported");
+
+    ctx.store!.getState().addNode(makeNode("old"));
+    expect(ctx.store!.getState().canUndo).toBe(true);
+
+    ctx.store!.getState().importCanvas({ nodes: [importedNode], edges: [] });
+
+    expect(ctx.store!.getState().canUndo).toBe(false);
+    expect(ctx.store!.getState().canRedo).toBe(false);
+    expect(ctx.store!.getState()._history).toEqual([]);
+    expect(ctx.store!.getState()._future).toEqual([]);
+    ctx.store!.getState().handleUndo();
+    expect(ctx.store!.getState().nodes).toEqual([importedNode]);
   });
 });
