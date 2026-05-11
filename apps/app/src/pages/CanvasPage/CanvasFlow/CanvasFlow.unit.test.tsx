@@ -38,6 +38,7 @@ vi.mock("@xyflow/react", async (importOriginal) => {
       onNodeDragStop,
       onPaneClick,
       onPaneContextMenu,
+      snapToGrid,
     }: React.PropsWithChildren<{
       defaultViewport?: { zoom: number };
       fitView?: boolean;
@@ -60,6 +61,7 @@ vi.mock("@xyflow/react", async (importOriginal) => {
       onNodeDragStop?: unknown;
       onPaneClick?: unknown;
       onPaneContextMenu?: unknown;
+      snapToGrid?: boolean;
     }>) => {
       const handleMouseMove = () => onMove?.(null, { x: 0, y: 0, zoom: 0.6 });
 
@@ -81,6 +83,7 @@ vi.mock("@xyflow/react", async (importOriginal) => {
           data-nodes-connectable={String(nodesConnectable ?? true)}
           data-nodes-draggable={String(nodesDraggable ?? true)}
           data-pan-on-drag={String(panOnDrag ?? true)}
+          data-snap-to-grid={String(snapToGrid ?? false)}
           data-testid="react-flow"
           data-zoom={defaultViewport?.zoom}
           data-zoom-on-double-click={String(zoomOnDoubleClick ?? true)}
@@ -92,7 +95,8 @@ vi.mock("@xyflow/react", async (importOriginal) => {
         </div>
       );
     },
-    Controls: () => <div data-testid="react-flow-controls" />,
+    Background: () => <div data-testid="flow-background" />,
+    Controls: () => <div data-testid="flow-controls" />,
     MiniMap: () => <div data-testid="mini-map" />,
   };
 });
@@ -135,7 +139,7 @@ describe("CanvasFlow", () => {
     const { container } = render(<CanvasFlow />, { wrapper });
     expect(container.firstChild).toBeTruthy();
     expect(screen.getByTestId("react-flow")).toHaveAttribute("data-zoom", "1.25");
-    expect(screen.queryByTestId("react-flow-controls")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("flow-controls")).not.toBeInTheDocument();
   });
 
   it("uses custom toolbar state instead of React Flow built-in interactivity controls", () => {
@@ -166,6 +170,8 @@ describe("CanvasFlow", () => {
     renderWithStore([makeNode("a"), makeNode("b")]);
 
     expect(screen.getByTestId("mini-map")).toBeInTheDocument();
+    expect(screen.getByTestId("flow-background")).toBeInTheDocument();
+    expect(screen.queryByTestId("flow-controls")).not.toBeInTheDocument();
     expect(screen.getByTestId("react-flow")).toHaveAttribute("data-auto-fit", "false");
   });
 
@@ -173,6 +179,31 @@ describe("CanvasFlow", () => {
     renderWithStore([makeNode("a")]);
 
     expect(screen.queryByTestId("mini-map")).not.toBeInTheDocument();
+  });
+
+  it("applies canvas view settings to React Flow", () => {
+    const store = createHarnessCanvasStore([makeNode("a"), makeNode("b")], []);
+    store.setState({
+      canvasSettings: {
+        showMiniMap: false,
+        showControls: false,
+        showBackground: false,
+        snapToGrid: true,
+      },
+    });
+
+    render(
+      <HarnessCanvasStoreContext.Provider value={store}>
+        <ReactFlowProvider>
+          <CanvasFlow />
+        </ReactFlowProvider>
+      </HarnessCanvasStoreContext.Provider>
+    );
+
+    expect(screen.queryByTestId("mini-map")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("flow-background")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("flow-controls")).not.toBeInTheDocument();
+    expect(screen.getByTestId("react-flow")).toHaveAttribute("data-snap-to-grid", "true");
   });
 
   it("hides MiniMap while the console is open", () => {

@@ -2,7 +2,7 @@ import { useMemo, type Ref } from "react";
 import { useStore } from "zustand";
 import { useHarnessCanvasStore } from "../_store";
 import { useHotkeys } from "react-hotkeys-hook";
-import { ReactFlow, Background, BackgroundVariant, MiniMap } from "@xyflow/react";
+import { ReactFlow, Background, BackgroundVariant, Controls, MiniMap } from "@xyflow/react";
 import { CompoundNode } from "../CompoundNode";
 import { CodeFileNode } from "../CodeFileNode";
 import { ErrorNode } from "../ErrorNode";
@@ -35,6 +35,7 @@ const defaultEdgeOptions = {
 };
 
 const proOpts = { hideAttribution: false };
+const snapGrid: [number, number] = [24, 24];
 
 interface CanvasFlowProps {
   viewportRef?: Ref<HTMLDivElement>;
@@ -52,6 +53,7 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
     [connectStart, edges, nodes]
   );
   const isConsoleOpen = useStore(store, (s) => s.isConsoleOpen);
+  const canvasSettings = useStore(store, (s) => s.canvasSettings);
   const handleNodesChange = useStore(store, (s) => s.handleNodesChange);
   const handleEdgesChange = useStore(store, (s) => s.handleEdgesChange);
   const handleConnect = useStore(store, (s) => s.handleConnect);
@@ -115,6 +117,8 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
         nodeTypes={nodeTypes}
         panOnDrag={isCanvasInteractive}
         proOptions={proOpts}
+        snapGrid={snapGrid}
+        snapToGrid={canvasSettings.snapToGrid}
         zoomOnDoubleClick={isCanvasInteractive}
         zoomOnPinch={isCanvasInteractive}
         zoomOnScroll={isCanvasInteractive}
@@ -124,8 +128,17 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
         onNodesChange={handleNodesChange}
         {...interactiveHandlers}
       >
-        <Background color="#cbd5e1" gap={24} size={1.5} variant={BackgroundVariant.Dots} />
-        {nodes.length > 1 && !isConsoleOpen && (
+        {canvasSettings.showBackground && (
+          <Background color="#cbd5e1" gap={snapGrid[0]} size={1.5} variant={BackgroundVariant.Dots} />
+        )}
+        {canvasSettings.showControls && (
+          <Controls
+            showInteractive
+            className="border-gray-200! bg-white! shadow-sm!"
+            position="bottom-left"
+          />
+        )}
+        {canvasSettings.showMiniMap && nodes.length > 1 && !isConsoleOpen && (
           <MiniMap
             pannable
             zoomable

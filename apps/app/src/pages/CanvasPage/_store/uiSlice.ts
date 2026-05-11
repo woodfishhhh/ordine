@@ -28,13 +28,29 @@ export interface ConnectStartState {
   handleType: "source" | "target" | null;
 }
 
+export interface CanvasSettingsState {
+  showMiniMap: boolean;
+  showControls: boolean;
+  showBackground: boolean;
+  snapToGrid: boolean;
+}
+
+export const DEFAULT_CANVAS_SETTINGS: CanvasSettingsState = {
+  showMiniMap: true,
+  showControls: false,
+  showBackground: true,
+  snapToGrid: false,
+};
+
 export interface UISlice {
   pipelineId: string | null;
   pipelineName: string;
   viewportZoom: number;
+  canvasSettings: CanvasSettingsState;
   sidebarPanel: SidebarPanel;
   isSidebarOpen: boolean;
   isPropertiesPanelOpen: boolean;
+  isCanvasSettingsOpen: boolean;
   isConsoleOpen: boolean;
   activeJobId: string | null;
   contextMenu: ContextMenuState | null;
@@ -60,6 +76,9 @@ export interface UISlice {
   handleToggleSidebar: () => void;
   openPropertiesPanel: () => void;
   closePropertiesPanel: () => void;
+  openCanvasSettings: () => void;
+  closeCanvasSettings: () => void;
+  updateCanvasSettings: (settings: Partial<CanvasSettingsState>) => void;
   toggleConsole: () => void;
   setActiveJobId: (jobId: string | null) => void;
   openContextMenu: (state: ContextMenuState) => void;
@@ -109,9 +128,11 @@ export const createUISlice = (
   pipelineId,
   pipelineName,
   viewportZoom: DEFAULT_CANVAS_VIEWPORT.zoom,
+  canvasSettings: { ...DEFAULT_CANVAS_SETTINGS },
   sidebarPanel: "components",
   isSidebarOpen: true,
   isPropertiesPanelOpen: false,
+  isCanvasSettingsOpen: false,
   isConsoleOpen: false,
   activeJobId: null,
   contextMenu: null,
@@ -148,6 +169,24 @@ export const createUISlice = (
 
   closePropertiesPanel: () => {
     set({ isPropertiesPanelOpen: false });
+  },
+
+  openCanvasSettings: () => {
+    set({
+      isCanvasSettingsOpen: true,
+      contextMenu: null,
+      connectionMenu: null,
+      nodeContextMenu: null,
+      isQuickAddOpen: false,
+    });
+  },
+
+  closeCanvasSettings: () => {
+    set({ isCanvasSettingsOpen: false });
+  },
+
+  updateCanvasSettings: (settings) => {
+    set((state) => ({ canvasSettings: { ...state.canvasSettings, ...settings } }));
   },
 
   toggleConsole: () => {

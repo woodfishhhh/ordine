@@ -20,6 +20,7 @@ export const CanvasFloatingMenu = () => {
   const importCanvas = useStore(store, (state) => state.importCanvas);
   const handleUndo = useStore(store, (state) => state.handleUndo);
   const handleRedo = useStore(store, (state) => state.handleRedo);
+  const openCanvasSettings = useStore(store, (state) => state.openCanvasSettings);
   const handlePipelineIdChange = useStore(store, (state) => state.handlePipelineIdChange);
 
   const { mutate: updateCanvas, mutation: updateMutation } = useUpdate();
@@ -121,7 +122,7 @@ export const CanvasFloatingMenu = () => {
     { icon: FileUp, label: t("canvas.floatingMenu.import"), onClick: handleImport },
     { icon: Undo, label: t("canvas.undo"), onClick: handleUndo, divider: true },
     { icon: Redo, label: t("canvas.redo"), onClick: handleRedo },
-    { icon: Settings, label: t("canvas.floatingMenu.settings"), to: "/settings" },
+    { icon: Settings, label: t("canvas.settingsDrawer.menuLabel"), onClick: openCanvasSettings },
   ];
 
   const handleCloseMenu = () => setIsOpen(false);
