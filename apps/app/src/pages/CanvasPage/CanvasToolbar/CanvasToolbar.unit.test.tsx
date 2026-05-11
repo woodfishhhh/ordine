@@ -63,11 +63,11 @@ const wrapperWithPipeline = ({ children }: React.PropsWithChildren) => (
 );
 
 describe("CanvasToolbar - export removed", () => {
-  it("does NOT render 导出 tooltip/button in the toolbar", () => {
+  it("does NOT render Export tooltip/button in the toolbar", () => {
     render(<CanvasToolbar />, { wrapper });
     const exportTooltips = screen
       .queryAllByTestId("tooltip")
-      .filter((el) => el.textContent === "导出");
+      .filter((el) => el.textContent === "Export");
     expect(exportTooltips).toHaveLength(0);
   });
 });
@@ -83,23 +83,23 @@ describe("CanvasToolbar - Run Test button", () => {
 
   it("renders the Run Test button", () => {
     render(<CanvasToolbar />, { wrapper });
-    expect(screen.getByTitle("运行测试")).toBeInTheDocument();
+    expect(screen.getByTitle("Run Test")).toBeInTheDocument();
   });
 
   it("Run Test button is disabled without pipelineId", () => {
     render(<CanvasToolbar />, { wrapper });
-    expect(screen.getByTitle("运行测试")).toBeDisabled();
+    expect(screen.getByTitle("Run Test")).toBeDisabled();
   });
 
   it("Run Test button is enabled when pipelineId exists", () => {
     render(<CanvasToolbar />, { wrapper: wrapperWithPipeline });
-    expect(screen.getByTitle("运行测试")).not.toBeDisabled();
+    expect(screen.getByTitle("Run Test")).not.toBeDisabled();
   });
 
   it("clicking Run saves pipeline then calls run API", async () => {
     const user = userEvent.setup();
     render(<CanvasToolbar />, { wrapper: wrapperWithPipeline });
-    await user.click(screen.getByTitle("运行测试"));
+    await user.click(screen.getByTitle("Run Test"));
 
     await waitFor(() => {
       expect(mockTrpcUpdate).toHaveBeenCalledWith(
@@ -117,7 +117,7 @@ describe("CanvasToolbar - Run Test button", () => {
   it("shows success toast after successful run", async () => {
     const user = userEvent.setup();
     render(<CanvasToolbar />, { wrapper: wrapperWithPipeline });
-    await user.click(screen.getByTitle("运行测试"));
+    await user.click(screen.getByTitle("Run Test"));
     await waitFor(() => {
       expect(toastStore.getState().toasts).toEqual(
         expect.arrayContaining([expect.objectContaining({ type: "success" })])
@@ -129,7 +129,7 @@ describe("CanvasToolbar - Run Test button", () => {
     mockTrpcUpdate.mockRejectedValue(new Error("save failed"));
     const user = userEvent.setup();
     render(<CanvasToolbar />, { wrapper: wrapperWithPipeline });
-    await user.click(screen.getByTitle("运行测试"));
+    await user.click(screen.getByTitle("Run Test"));
     await waitFor(() => {
       expect(toastStore.getState().toasts).toEqual(
         expect.arrayContaining([expect.objectContaining({ type: "error" })])
@@ -142,7 +142,7 @@ describe("CanvasToolbar - Run Test button", () => {
     mockTrpcRun.mockRejectedValue(new Error("Internal Server Error"));
     const user = userEvent.setup();
     render(<CanvasToolbar />, { wrapper: wrapperWithPipeline });
-    await user.click(screen.getByTitle("运行测试"));
+    await user.click(screen.getByTitle("Run Test"));
     await waitFor(() => {
       expect(toastStore.getState().toasts).toEqual(
         expect.arrayContaining([expect.objectContaining({ type: "error" })])

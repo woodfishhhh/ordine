@@ -1,11 +1,14 @@
 import type { BuiltinNodeType } from "@repo/pipeline-engine/schemas";
 import type { PipelineNodeData } from "../schemas/PipelineNodeDataSchema";
 
-export const makeDefaultNodeData = (type: BuiltinNodeType): PipelineNodeData => {
+export const makeDefaultNodeData = (
+  type: BuiltinNodeType,
+  options?: { label?: string }
+): PipelineNodeData => {
   switch (type) {
     case "operation": {
       return {
-        label: "Operation",
+        label: options?.label ?? "Operation",
         nodeType: "operation",
         operationId: "",
         operationName: "",
@@ -15,7 +18,7 @@ export const makeDefaultNodeData = (type: BuiltinNodeType): PipelineNodeData => 
     }
     case "code-file": {
       return {
-        label: "代码文件",
+        label: options?.label ?? "Code file",
         nodeType: "code-file",
         filePath: "",
         language: "typescript",
@@ -24,7 +27,7 @@ export const makeDefaultNodeData = (type: BuiltinNodeType): PipelineNodeData => 
     }
     case "folder": {
       return {
-        label: "文件夹",
+        label: options?.label ?? "Folder",
         nodeType: "folder",
         folderPath: "",
         description: "",
@@ -32,7 +35,7 @@ export const makeDefaultNodeData = (type: BuiltinNodeType): PipelineNodeData => 
     }
     case "github-projects": {
       return {
-        label: "GitHub 项目",
+        label: options?.label ?? "GitHub project",
         nodeType: "github-projects",
         owner: "",
         repo: "",
@@ -42,7 +45,7 @@ export const makeDefaultNodeData = (type: BuiltinNodeType): PipelineNodeData => 
     }
     case "output-project-path": {
       return {
-        label: "项目路径输出",
+        label: options?.label ?? "Project output",
         nodeType: "output-project-path",
         projectId: "",
         path: "",
@@ -51,7 +54,7 @@ export const makeDefaultNodeData = (type: BuiltinNodeType): PipelineNodeData => 
     }
     case "output-local-path": {
       return {
-        label: "本地路径输出",
+        label: options?.label ?? "Local output",
         nodeType: "output-local-path",
         localPath: "",
         description: "",
@@ -59,10 +62,17 @@ export const makeDefaultNodeData = (type: BuiltinNodeType): PipelineNodeData => 
     }
     case "compound": {
       return {
-        label: "复合节点",
+        label: options?.label ?? "Compound node",
         nodeType: "compound",
         childNodeIds: [],
         description: "",
+      };
+    }
+    case "prompt": {
+      return {
+        label: "提示词",
+        nodeType: "prompt",
+        prompt: "",
       };
     }
   }
