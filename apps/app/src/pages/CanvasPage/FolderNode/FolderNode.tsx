@@ -3,9 +3,9 @@ import { Folder, FolderOpen, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/shallow";
-import { useHarnessCanvasStore, selectNodeRunState } from "../_store";
+import { useHarnessCanvasStore, selectNodeRunState, selectNodePortCounts } from "../_store";
 import type { FolderNodeData } from "@repo/pipeline-engine/schemas";
-import { NodeCard, useNodePortCounts } from "../NodeCard";
+import { NodeCard } from "../NodeCard";
 import { FolderBrowser } from "../OutputLocalPathNode/FolderBrowser";
 import { FolderTreePreview } from "./FolderTreePreview";
 import { Input } from "@repo/ui/input";
@@ -27,7 +27,7 @@ export const FolderNode = ({ id, data, selected }: FolderNodeProps) => {
   const updateNodeData = useStore(store, (s) => s.updateNodeData);
   const handleNodeAddExcludedPath = useStore(store, (s) => s.handleNodeAddExcludedPath);
   const handleNodeRemoveExcludedPath = useStore(store, (s) => s.handleNodeRemoveExcludedPath);
-  const { rightPortCount } = useNodePortCounts(id);
+  const { rightPortCount } = useStore(store, useShallow(selectNodePortCounts(id)));
   const [browserOpen, setBrowserOpen] = useState(false);
 
   const excludedPaths: string[] = Array.isArray(data.excludedPaths) ? data.excludedPaths : [];
@@ -60,7 +60,7 @@ export const FolderNode = ({ id, data, selected }: FolderNodeProps) => {
       <NodeCard
         rightHandle
         bodyClassName="space-y-2"
-        description="Folder"
+        description={t("canvas.nodeTypes.folder.label")}
         dimmed={dimmed}
         icon={Folder}
         label={data.label}
@@ -82,7 +82,7 @@ export const FolderNode = ({ id, data, selected }: FolderNodeProps) => {
           />
           <Button
             className="nodrag nopan shrink-0 rounded p-0.5 text-orange-400 hover:bg-orange-100 hover:text-orange-700 transition-colors h-auto"
-            title="浏览文件夹"
+            title={t("canvas.browseFolder")}
             type="button"
             variant="ghost"
             onClick={handleFolderButtonClick}
@@ -101,7 +101,7 @@ export const FolderNode = ({ id, data, selected }: FolderNodeProps) => {
               >
                 {ep}
                 <Button
-                  aria-label={`移除排除 ${ep}`}
+                  aria-label={`${t("canvas.removeExclude")} ${ep}`}
                   className="nodrag nopan rounded-sm p-0 hover:bg-red-200 transition-colors h-auto"
                   size="icon-xs"
                   type="button"

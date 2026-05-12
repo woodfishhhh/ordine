@@ -5,6 +5,7 @@ import {
   PipelineEdgeSchema,
   PipelineNodeSchema,
 } from "@repo/pipeline-engine/schemas";
+import { AgentRuntimeSchema } from "@repo/schemas";
 import type { PipelineEdge, PipelineNode } from "../_store/canvasSlice";
 import { PipelineNodeDataSchema } from "../schemas/PipelineNodeDataSchema";
 
@@ -21,9 +22,19 @@ const CanvasNodeMeasuredSchema = z.object({
   width: z.number().optional(),
   height: z.number().optional(),
 });
+const CanvasPipelineNodeDataSchema = PipelineNodeDataSchema.refine(
+  (data) =>
+    data.nodeType !== "operation" ||
+    data.agentRuntime === undefined ||
+    AgentRuntimeSchema.safeParse(data.agentRuntime).success,
+  {
+    message: "operation agentRuntime must be supported",
+    path: ["agentRuntime"],
+  }
+);
 const CanvasImportNodeSchema = PipelineNodeSchema.extend({
   type: BuiltinNodeTypeSchema,
-  data: PipelineNodeDataSchema,
+  data: CanvasPipelineNodeDataSchema,
   parentId: z.string().optional(),
   extent: z.literal("parent").optional(),
   expandParent: z.boolean().optional(),

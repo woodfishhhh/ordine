@@ -9,6 +9,7 @@ import {
 import { cn } from "@repo/ui/lib/utils";
 import type { NodeRunStatus } from "@repo/pipeline-engine/schemas";
 import { memo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { themeMap, type NodeTheme } from "./nodeCardTheme";
 
 export interface NodeCardFrameProps {
@@ -41,6 +42,7 @@ export const NodeCardFrame = memo(
     runStatus,
     dimmed,
   }: NodeCardFrameProps) => {
+    const { t: translate } = useTranslation();
     const t = themeMap[theme] ?? themeMap.emerald;
     const [isLabelEditing, setIsLabelEditing] = useState(false);
     const handleChange = onLabelChange
@@ -76,7 +78,7 @@ export const NodeCardFrame = memo(
             <div className="flex min-h-8 flex-1 min-w-0 flex-col justify-center">
               {handleChange ? (
                 <input
-                  aria-label="Node label"
+                  aria-label={translate("canvas.nodeLabel")}
                   className={cn(
                     "nodrag nopan w-auto max-w-full bg-transparent text-xs font-semibold leading-tight [field-sizing:content] focus:outline-none",
                     isLabelEditing ? "select-text" : "cursor-default select-none"

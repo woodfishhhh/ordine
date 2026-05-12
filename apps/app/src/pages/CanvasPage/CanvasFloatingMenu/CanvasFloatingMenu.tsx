@@ -26,12 +26,14 @@ export const CanvasFloatingMenu = () => {
   const importCanvas = useStore(store, (state) => state.importCanvas);
   const handleUndo = useStore(store, (state) => state.handleUndo);
   const handleRedo = useStore(store, (state) => state.handleRedo);
+  const openCanvasSettings = useStore(store, (state) => state.openCanvasSettings);
   const handlePipelineIdChange = useStore(store, (state) => state.handlePipelineIdChange);
 
   const { mutate: updateCanvas, mutation: updateMutation } = useUpdate();
   const { mutate: createCanvas, mutation: createMutation } = useCreate();
 
   const [isOpen, setIsOpen] = useState(false);
+  const displayPipelineName = pipelineName || t("canvas.pipelineTitlePlaceholder");
 
   const handleSave = () => {
     if (pipelineId) {
@@ -41,13 +43,15 @@ export const CanvasFloatingMenu = () => {
         values: { nodes, edges },
         successNotification: {
           type: "success",
-          message: "保存成功",
-          description: `Pipeline「${pipelineName || "无标题"}」已保存`,
+          message: t("canvas.saveSuccess"),
+          description: t("canvas.floatingMenu.saveSuccessDescription", {
+            name: displayPipelineName,
+          }),
         },
         errorNotification: {
           type: "error",
-          message: "保存失败",
-          description: "请稍后重试",
+          message: t("canvas.saveFailed"),
+          description: t("canvas.floatingMenu.saveFailedDescription"),
         },
       });
     } else {
@@ -57,7 +61,7 @@ export const CanvasFloatingMenu = () => {
           resource: ResourceName.pipelines,
           values: {
             id: newId,
-            name: pipelineName || "无标题",
+            name: displayPipelineName,
             description: "",
             tags: [],
             createdAt: Date.now(),
@@ -67,13 +71,15 @@ export const CanvasFloatingMenu = () => {
           },
           successNotification: {
             type: "success",
-            message: "保存成功",
-            description: `Pipeline「${pipelineName || "无标题"}」已创建`,
+            message: t("canvas.saveSuccess"),
+            description: t("canvas.floatingMenu.createSuccessDescription", {
+              name: displayPipelineName,
+            }),
           },
           errorNotification: {
             type: "error",
-            message: "保存失败",
-            description: "请稍后重试",
+            message: t("canvas.saveFailed"),
+            description: t("canvas.floatingMenu.saveFailedDescription"),
           },
         },
         {
@@ -126,18 +132,18 @@ export const CanvasFloatingMenu = () => {
   };
 
   const menuItems = [
-    { icon: Home, label: "回到工作区", to: "/" },
+    { icon: Home, label: t("canvas.floatingMenu.backToWorkspace"), to: "/" },
     {
       icon: Save,
-      label: "保存",
+      label: t("canvas.floatingMenu.save"),
       onClick: handleSave,
       disabled: isPending,
     },
-    { icon: FileDown, label: "导出", onClick: exportCanvas },
-    { icon: FileUp, label: "导入", onClick: handleImport },
-    { icon: Undo, label: "撤销", onClick: handleUndo, divider: true },
-    { icon: Redo, label: "重做", onClick: handleRedo },
-    { icon: Settings, label: "设置", to: "/settings" },
+    { icon: FileDown, label: t("canvas.floatingMenu.export"), onClick: exportCanvas },
+    { icon: FileUp, label: t("canvas.floatingMenu.import"), onClick: handleImport },
+    { icon: Undo, label: t("canvas.undo"), onClick: handleUndo, divider: true },
+    { icon: Redo, label: t("canvas.redo"), onClick: handleRedo },
+    { icon: Settings, label: t("canvas.settingsDrawer.menuLabel"), onClick: openCanvasSettings },
   ];
 
   const handleCloseMenu = () => setIsOpen(false);
@@ -148,11 +154,11 @@ export const CanvasFloatingMenu = () => {
   };
 
   return (
-    <div className="fixed left-4 top-4 z-50">
+    <div className="pointer-events-auto" data-testid="canvas-floating-menu">
       <Popover open={isOpen} onOpenChange={handleOpenChange}>
         <PopoverTrigger
           className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white shadow-md transition-all hover:bg-gray-50 hover:shadow-lg active:scale-95"
-          title="菜单"
+          title={t("canvas.floatingMenu.menu")}
         >
           <Menu className="h-5 w-5 text-gray-700" />
         </PopoverTrigger>
@@ -187,7 +193,7 @@ export const CanvasFloatingMenu = () => {
       <input
         ref={fileInputRef}
         accept=".json"
-        aria-label="Import canvas JSON"
+        aria-label={t("canvas.floatingMenu.importJson")}
         className="hidden"
         name="canvasImportFile"
         type="file"
