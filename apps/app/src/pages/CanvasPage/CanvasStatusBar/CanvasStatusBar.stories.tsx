@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import type { PipelineEdge, PipelineNode } from "../_store";
-import { createHarnessCanvasStore, HarnessCanvasStoreContext } from "../_store";
+import {
+  createHarnessCanvasStore,
+  HarnessCanvasStoreContext,
+  type PipelineEdge,
+  type PipelineNode,
+} from "../_store";
 import { CanvasStatusBar } from "./CanvasStatusBar";
 
 const sourceNode = {

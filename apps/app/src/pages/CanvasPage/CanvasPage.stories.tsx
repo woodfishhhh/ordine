@@ -1,12 +1,13 @@
 import { useRef } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { Refine } from "@refinedev/core";
-import type { PipelineEdge, PipelineNode } from "./_store";
 import { CanvasPageContent } from "./CanvasPageContent";
 import {
   HarnessCanvasStoreContext,
   createHarnessCanvasStore,
   type HarnessCanvasStore,
+  type PipelineEdge,
+  type PipelineNode,
 } from "./_store";
 import { canvasStoryDataProvider } from "./storybookData";
 

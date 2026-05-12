@@ -333,6 +333,10 @@
     "runCompleted": "Pipeline 运行完成提醒",
     "runSuccessDescription": "Job {{jobId}} 已完成 Pipeline 验证",
     "runTest": "运行测试",
+    "importFailed": "导入失败",
+    "importInvalidJson": "所选文件不是有效 JSON。",
+    "importInvalidPipelineJson": "所选 JSON 不是有效的 Pipeline 导出文件。",
+    "importFileTooLarge": "所选 JSON 文件过大。",
     "settingsDrawer": {
       "menuLabel": "设置",
       "title": "Canvas 设置",

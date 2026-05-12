@@ -333,6 +333,10 @@
     "runCompleted": "Pipeline run completed",
     "runSuccessDescription": "Job {{jobId}} completed pipeline validation",
     "runTest": "Run Test",
+    "importFailed": "Import failed",
+    "importInvalidJson": "The selected file is not valid JSON.",
+    "importInvalidPipelineJson": "The selected JSON is not a valid pipeline export.",
+    "importFileTooLarge": "The selected JSON file is too large.",
     "settingsDrawer": {
       "menuLabel": "Settings",
       "title": "Canvas Settings",

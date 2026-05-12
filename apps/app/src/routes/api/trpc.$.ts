@@ -12,9 +12,13 @@ const handleRequest = (request: Request) =>
     endpoint: "/api/trpc",
     req: request,
     router: appRouter,
-    createContext: async () => ({
-      session: (await getSession(request)).unwrapOr(null),
-    }),
+    createContext: async () => {
+      const sessionResult = await getSession(request);
+
+      return {
+        session: sessionResult.unwrapOr(null),
+      };
+    },
   });
 
 export const Route = createFileRoute("/api/trpc/$")({

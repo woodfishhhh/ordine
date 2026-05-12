@@ -1,4 +1,4 @@
-import type { PipelineEdge, PipelineNode } from "./canvasSlice";
+import { sortParentBeforeChildren, type PipelineEdge, type PipelineNode } from "./canvasSlice";
 import type { HarnessCanvasStoreSlice } from "./harnessCanvasStore";
 import type { Operation, Recipe } from "@repo/schemas";
 import type { PickedProject } from "../GitHubProjectNode/PickProjectDialog";
@@ -20,6 +20,7 @@ import {
   offsetPosition,
 } from "../utils/nodePosition";
 import type { ConnectStartState } from "./uiSlice";
+import type { CanvasImportPayload } from "../utils/canvasImportJson";
 
 const getConnectStartHandleId = (
   connectionState: FinalConnectionState,
@@ -47,7 +48,7 @@ const makeLocalizedDefaultNodeData = (type: BuiltinNodeType) => {
 
 export interface ActionsSlice {
   exportCanvas: () => void;
-  importCanvas: (data: { nodes: PipelineNode[]; edges: PipelineEdge[] }) => void;
+  importCanvas: (data: CanvasImportPayload) => void;
   fitView: (options?: { padding?: number }) => void;
   screenToFlowPosition: (pos: XYPosition) => XYPosition;
   handleFitView: () => void;
@@ -157,8 +158,20 @@ export const createActionsSlice = (
     a.remove();
     URL.revokeObjectURL(url);
   },
-  importCanvas: ({ nodes, edges }) => {
-    set({ nodes, edges, selectedNodeId: null, selectedEdgeId: null });
+  importCanvas: ({ name, title, nodes, edges }) => {
+    const pipelineName =
+      typeof name === "string" ? name : typeof title === "string" ? title : undefined;
+    const sortedNodes = [...nodes];
+    sortParentBeforeChildren(sortedNodes);
+    get().clearHistory();
+
+    set({
+      nodes: sortedNodes,
+      edges,
+      selectedNodeId: null,
+      selectedEdgeId: null,
+      ...(pipelineName === undefined ? {} : { pipelineName }),
+    });
   },
   fitView: () => {},
   screenToFlowPosition: (pos) => pos,
