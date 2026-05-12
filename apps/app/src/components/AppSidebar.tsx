@@ -3,6 +3,7 @@ import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useStore } from "zustand";
 import {
   ArrowLeft,
+  Bot,
   LayoutDashboard,
   Workflow,
   BookOpen,
@@ -15,6 +16,7 @@ import {
   Box,
   Puzzle,
   ExternalLink,
+  Eye,
   ChevronRight,
   Server,
   LogOut,
@@ -54,16 +56,18 @@ interface NavItem {
   icon: ElementType;
   to: string;
   badge?: string;
+  exact?: boolean;
 }
 
 const mainItems: NavItem[] = [{ labelKey: "nav.dashboard", icon: LayoutDashboard, to: "/" }];
 
 const mainPeerItems: NavItem[] = [
   { labelKey: "nav.distillations", icon: FlaskConical, to: "/distillations" },
-  { labelKey: "nav.skills", icon: BookOpen, to: "/pipelines/skills" },
+  { labelKey: "nav.skills", icon: BookOpen, to: "/skills" },
 ];
 
 const pipelineItems: NavItem[] = [
+  { labelKey: "nav.preview", icon: Eye, to: "/pipelines", exact: true },
   { labelKey: "nav.objects", icon: Box, to: "/pipelines/objects" },
   { labelKey: "nav.operations", icon: Zap, to: "/pipelines/operations" },
   { labelKey: "nav.recipes", icon: ChefHat, to: "/pipelines/recipes" },
@@ -71,6 +75,7 @@ const pipelineItems: NavItem[] = [
 ];
 
 const configItems: NavItem[] = [
+  { labelKey: "nav.agents", icon: Bot, to: "/agents" },
   { labelKey: "nav.plugins", icon: Puzzle, to: "/plugins" },
   { labelKey: "nav.runtimes", icon: Server, to: "/runtimes" },
   { labelKey: "nav.settings", icon: Settings, to: "/settings" },
@@ -105,8 +110,9 @@ const NavGroup = ({
           {items.map((item) => {
             const Icon = item.icon;
             const labelText = t(item.labelKey);
-            const isActive =
-              currentPath === item.to || (item.to !== "/" && currentPath.startsWith(item.to));
+            const isActive = item.exact
+              ? currentPath === item.to
+              : currentPath === item.to || (item.to !== "/" && currentPath.startsWith(item.to));
 
             return (
               <SidebarMenuItem key={item.to}>

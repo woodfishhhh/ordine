@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Refine } from "@refinedev/core";
-import type { PipelineNode } from "../_store";
-import { createHarnessCanvasStore, HarnessCanvasStoreContext } from "../_store";
+import { createHarnessCanvasStore, HarnessCanvasStoreContext, type PipelineNode } from "../_store";
 import { canvasStoryDataProvider } from "../storybookData";
 import { ConnectionMenu } from "./ConnectionMenu";
 

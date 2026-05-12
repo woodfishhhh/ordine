@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FileCode, FolderOpen } from "lucide-react";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/shallow";
-import { useHarnessCanvasStore, selectNodeRunState } from "../_store";
+import { useHarnessCanvasStore, selectNodeRunState, selectNodePortCounts } from "../_store";
 import type { CodeFileNodeData } from "@repo/pipeline-engine/schemas";
-import { NodeCard, useNodePortCounts } from "../NodeCard";
+import { NodeCard } from "../NodeCard";
 import { FolderBrowser } from "../OutputLocalPathNode/FolderBrowser";
 
 export interface CodeFileNodeProps {
@@ -16,6 +17,7 @@ export interface CodeFileNodeProps {
 const handleStopPropagation = (e: React.SyntheticEvent) => e.stopPropagation();
 
 export const CodeFileNode = ({ id, data, selected }: CodeFileNodeProps) => {
+  const { t } = useTranslation();
   const store = useHarnessCanvasStore();
   const { runStatus, dimmed } = useStore(store, useShallow(selectNodeRunState(id)));
   const updateNodeData = useStore(store, (s) => s.updateNodeData);
@@ -25,7 +27,7 @@ export const CodeFileNode = ({ id, data, selected }: CodeFileNodeProps) => {
     rightConnectedPortCount,
     rightConnectedPortMask,
     rightPortCount,
-  } = useNodePortCounts(id);
+  } = useStore(store, useShallow(selectNodePortCounts(id)));
   const [browserOpen, setBrowserOpen] = useState(false);
 
   const handleLabelChange = (v: string) => updateNodeData(id, { label: v });
@@ -54,7 +56,7 @@ export const CodeFileNode = ({ id, data, selected }: CodeFileNodeProps) => {
       <NodeCard
         rightHandle
         bodyClassName="space-y-2"
-        description="Code File"
+        description={t("canvas.nodeTypes.code-file.label")}
         dimmed={dimmed}
         icon={FileCode}
         label={data.label}
@@ -70,7 +72,7 @@ export const CodeFileNode = ({ id, data, selected }: CodeFileNodeProps) => {
       >
         <div className="flex items-center gap-1 rounded-md border border-slate-100 bg-slate-50 px-2 py-1">
           <input
-            aria-label="Code file path"
+            aria-label={t("nodes.codeFile.pathLabel")}
             className="nodrag nopan font-mono text-[11px] font-semibold text-slate-700 bg-transparent focus:outline-none flex-1 min-w-0"
             name={`${id}-filePath`}
             placeholder="src/file.tsx"
@@ -82,7 +84,7 @@ export const CodeFileNode = ({ id, data, selected }: CodeFileNodeProps) => {
           />
           <button
             className="nodrag nopan shrink-0 rounded p-0.5 text-orange-400 hover:bg-orange-100 hover:text-orange-700 transition-colors"
-            title="浏览文件"
+            title={t("nodes.codeFile.browseFile")}
             type="button"
             onClick={handleBrowseButtonClick}
             onMouseDown={handleStopPropagation}
@@ -90,7 +92,7 @@ export const CodeFileNode = ({ id, data, selected }: CodeFileNodeProps) => {
             <FolderOpen className="h-3.5 w-3.5" />
           </button>
           <input
-            aria-label="Code file language"
+            aria-label={t("nodes.codeFile.languageLabel")}
             className="nodrag nopan w-12 shrink-0 rounded bg-orange-100 px-1 py-0.5 font-mono text-[10px] font-medium text-orange-700 focus:outline-none focus:bg-orange-50 text-right"
             name={`${id}-language`}
             placeholder="ts"
@@ -102,10 +104,10 @@ export const CodeFileNode = ({ id, data, selected }: CodeFileNodeProps) => {
           />
         </div>
         <textarea
-          aria-label="Code file description"
+          aria-label={t("nodes.codeFile.descriptionLabel")}
           className="nodrag nopan text-[11px] text-slate-500 bg-transparent w-full resize-none focus:outline-none focus:bg-slate-50 focus:ring-1 focus:ring-slate-200 rounded px-1"
           name={`${id}-description`}
-          placeholder="文件描述..."
+          placeholder={t("nodes.codeFile.descriptionPlaceholder")}
           rows={2}
           value={data.description ?? ""}
           onChange={handleDescriptionChange}

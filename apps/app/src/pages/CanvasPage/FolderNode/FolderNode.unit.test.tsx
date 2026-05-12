@@ -77,7 +77,7 @@ describe("FolderNode", () => {
       wrapper,
     });
 
-    const removeButtons = screen.getAllByRole("button", { name: /移除排除/ });
+    const removeButtons = screen.getAllByRole("button", { name: /Remove exclude/ });
     await user.click(removeButtons[0]);
 
     // Simulate re-render with updated data (store would trigger this in real app)

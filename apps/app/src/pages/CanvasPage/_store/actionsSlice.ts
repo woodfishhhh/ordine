@@ -37,6 +37,14 @@ const getConnectStartHandleType = (
   connectionState.fromHandle?.type ??
   (currentConnectStart?.nodeId === fromNodeId ? currentConnectStart.handleType : null);
 
+const makeLocalizedDefaultNodeData = (type: BuiltinNodeType) => {
+  const fallback = makeDefaultNodeData(type);
+
+  return makeDefaultNodeData(type, {
+    label: i18n.t(`canvas.nodeTypes.${type}.label`, { defaultValue: fallback.label }),
+  });
+};
+
 export interface ActionsSlice {
   exportCanvas: () => void;
   importCanvas: (data: { nodes: PipelineNode[]; edges: PipelineEdge[] }) => void;
@@ -110,6 +118,18 @@ export interface ActionsSlice {
   handleGitHubProjectLocalFolder: (nodeId: string, info: LocalFolderInfo) => void;
   handleNodeAddExcludedPath: (nodeId: string, path: string) => void;
   handleNodeRemoveExcludedPath: (nodeId: string, path: string) => void;
+
+  // Operation node actions
+  handleOperationLabelChange: (nodeId: string, label: string) => void;
+  handleOperationAgentChange: (nodeId: string, agentId: string | null) => void;
+  handleOperationLoopToggle: (nodeId: string) => void;
+  handleOperationMaxLoopChange: (nodeId: string, value: number) => void;
+  handleOperationConditionChange: (nodeId: string, prompt: string) => void;
+  handleOperationCardClick: (nodeId: string) => void;
+  handleOperationAgentDropdownOpen: (nodeId: string) => void;
+  handleOperationAgentDropdownClose: () => void;
+  handleOperationAgentDropdownToggle: (nodeId: string) => void;
+  handleOperationAgentDropdownOpenChange: (nodeId: string, open: boolean) => void;
 }
 
 export const createActionsSlice = (
@@ -395,7 +415,7 @@ export const createActionsSlice = (
         method: "post",
         payload: { id: pipelineId },
       }),
-      () => "Failed to start pipeline"
+      () => t("canvas.runStartFailed")
     );
 
     runResult.match(
@@ -405,7 +425,7 @@ export const createActionsSlice = (
         toastStore.getState().addToast({
           type: "success",
           title: t("canvas.runCompleted"),
-          description: `Job ${result.jobId} ${t("canvas.runSuccess")}`,
+          description: t("canvas.runSuccessDescription", { jobId: result.jobId }),
         });
       },
       (error) => {
@@ -456,7 +476,7 @@ export const createActionsSlice = (
       id: `${type}-${Date.now()}`,
       type,
       position: { x: contextMenu.flowX, y: contextMenu.flowY },
-      data: makeDefaultNodeData(type as BuiltinNodeType),
+      data: makeLocalizedDefaultNodeData(type as BuiltinNodeType),
     });
   },
 
@@ -494,7 +514,7 @@ export const createActionsSlice = (
       type,
       origin: QUICK_ADD_NODE_ORIGIN,
       position,
-      data: makeDefaultNodeData(type as BuiltinNodeType),
+      data: makeLocalizedDefaultNodeData(type as BuiltinNodeType),
     });
     set({ isQuickAddOpen: false, quickAddQuery: "" });
   },
@@ -549,7 +569,7 @@ export const createActionsSlice = (
         { x: connectionMenu.flowX, y: connectionMenu.flowY },
         CONNECTION_MENU_NODE_OFFSET
       ),
-      data: makeDefaultNodeData(type as BuiltinNodeType),
+      data: makeLocalizedDefaultNodeData(type as BuiltinNodeType),
     });
   },
 
@@ -655,7 +675,7 @@ export const createActionsSlice = (
       id: newId,
       type,
       position: offsetPosition(node.position, NODE_CONTEXT_CONNECT_OFFSET),
-      data: makeDefaultNodeData(type as BuiltinNodeType),
+      data: makeLocalizedDefaultNodeData(type as BuiltinNodeType),
     });
     get().handleConnect({
       source: nodeContextMenu.nodeId,
@@ -772,5 +792,59 @@ export const createActionsSlice = (
     get().updateNodeData(nodeId, {
       excludedPaths: current.filter((p) => p !== path),
     });
+  },
+
+  handleOperationLabelChange: (nodeId, label) => {
+    get().updateNodeData(nodeId, { label, operationName: label });
+  },
+
+  handleOperationAgentChange: (nodeId, agentId) => {
+    if (!agentId || agentId === "__default__") {
+      get().updateNodeData(nodeId, { agentId: undefined, agentRuntime: undefined });
+    } else {
+      get().updateNodeData(nodeId, { agentId, agentRuntime: undefined });
+    }
+    set({ operationAgentDropdownNodeId: null });
+  },
+
+  handleOperationLoopToggle: (nodeId) => {
+    const node = get().nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+    const data = node.data as Record<string, unknown>;
+    get().updateNodeData(nodeId, { loopEnabled: !data.loopEnabled });
+  },
+
+  handleOperationMaxLoopChange: (nodeId, value) => {
+    if (value >= 1 && value <= 20) {
+      get().updateNodeData(nodeId, { maxLoopCount: value });
+    }
+  },
+
+  handleOperationConditionChange: (nodeId, prompt) => {
+    get().updateNodeData(nodeId, { loopConditionPrompt: prompt });
+  },
+
+  handleOperationCardClick: (nodeId) => {
+    const { isTestRunning, nodeLlmContent } = get();
+    if (isTestRunning || nodeLlmContent[nodeId]) {
+      get().setInspectingNodeId(nodeId);
+    }
+  },
+
+  handleOperationAgentDropdownOpen: (nodeId) => {
+    set({ operationAgentDropdownNodeId: nodeId });
+  },
+
+  handleOperationAgentDropdownClose: () => {
+    set({ operationAgentDropdownNodeId: null });
+  },
+
+  handleOperationAgentDropdownToggle: (nodeId) => {
+    const current = get().operationAgentDropdownNodeId;
+    set({ operationAgentDropdownNodeId: current === nodeId ? null : nodeId });
+  },
+
+  handleOperationAgentDropdownOpenChange: (nodeId, open) => {
+    set({ operationAgentDropdownNodeId: open ? nodeId : null });
   },
 });

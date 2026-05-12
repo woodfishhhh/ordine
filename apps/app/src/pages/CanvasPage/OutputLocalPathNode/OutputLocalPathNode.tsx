@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle, FolderOpen, HardDrive } from "lucide-react";
 import {
   OUTPUT_MODE_ENUM,
@@ -7,8 +8,8 @@ import {
 } from "@repo/pipeline-engine/schemas";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/shallow";
-import { useHarnessCanvasStore, selectNodeRunState } from "../_store";
-import { NodeCard, useNodePortCounts } from "../NodeCard";
+import { useHarnessCanvasStore, selectNodeRunState, selectNodePortCounts } from "../_store";
+import { NodeCard } from "../NodeCard";
 import { FolderBrowser } from "./FolderBrowser";
 
 export interface OutputLocalPathNodeProps {
@@ -19,13 +20,14 @@ export interface OutputLocalPathNodeProps {
 
 const handleStopPropagation = (e: React.SyntheticEvent) => e.stopPropagation();
 
-const MODE_LABELS: Record<OutputMode, string> = {
-  overwrite: "覆写",
-  error_if_exists: "已存在则中断",
-  auto_rename: "自动重命名",
+const MODE_LABEL_KEYS: Record<OutputMode, string> = {
+  overwrite: "nodes.outputLocalPathNode.modeOverwrite",
+  error_if_exists: "nodes.outputLocalPathNode.modeErrorIfExists",
+  auto_rename: "nodes.outputLocalPathNode.modeAutoRename",
 };
 
 export const OutputLocalPathNode = ({ id, data, selected }: OutputLocalPathNodeProps) => {
+  const { t } = useTranslation();
   const store = useHarnessCanvasStore();
   const { runStatus, dimmed } = useStore(store, useShallow(selectNodeRunState(id)));
   const updateNodeData = useStore(store, (s) => s.updateNodeData);
@@ -35,7 +37,7 @@ export const OutputLocalPathNode = ({ id, data, selected }: OutputLocalPathNodeP
     leftConnectedPortCount,
     leftConnectedPortMask,
     leftPortCount,
-  } = useNodePortCounts(id);
+  } = useStore(store, useShallow(selectNodePortCounts(id)));
   const [browserOpen, setBrowserOpen] = useState(false);
 
   const handleLabelChange = (v: string) => updateNodeData(id, { label: v });
@@ -68,7 +70,7 @@ export const OutputLocalPathNode = ({ id, data, selected }: OutputLocalPathNodeP
       <NodeCard
         leftHandle
         bodyClassName="space-y-2"
-        description="本地路径输出"
+        description={t("nodes.outputLocalPathNode.description")}
         dimmed={dimmed}
         icon={HardDrive}
         label={data.label}
@@ -83,7 +85,9 @@ export const OutputLocalPathNode = ({ id, data, selected }: OutputLocalPathNodeP
         onLabelChange={handleLabelChange}
       >
         <div className="flex items-center gap-1 rounded-md border border-teal-100 bg-teal-50 px-2 py-1">
-          <span className="shrink-0 text-[10px] font-medium text-teal-500">路径</span>
+          <span className="shrink-0 text-[10px] font-medium text-teal-500">
+            {t("nodes.outputLocalPathNode.pathLabel")}
+          </span>
           <input
             className="nodrag nopan flex-1 min-w-0 bg-transparent font-mono text-[11px] font-semibold text-teal-800 focus:outline-none"
             placeholder="/Users/you/Desktop/output"
@@ -95,7 +99,7 @@ export const OutputLocalPathNode = ({ id, data, selected }: OutputLocalPathNodeP
           />
           <button
             className="nodrag nopan shrink-0 rounded p-0.5 text-teal-400 hover:bg-teal-100 hover:text-teal-700 transition-colors"
-            title="浏览文件夹"
+            title={t("nodes.outputLocalPathNode.browseFolder")}
             type="button"
             onClick={handleFolderButtonClick}
             onMouseDown={handleStopPropagation}
@@ -105,7 +109,9 @@ export const OutputLocalPathNode = ({ id, data, selected }: OutputLocalPathNodeP
         </div>
 
         <div className="flex items-center gap-1 rounded-md border border-teal-100 bg-teal-50 px-2 py-1">
-          <span className="shrink-0 text-[10px] font-medium text-teal-500">文件名</span>
+          <span className="shrink-0 text-[10px] font-medium text-teal-500">
+            {t("nodes.outputLocalPathNode.filenameLabel")}
+          </span>
           <input
             className="nodrag nopan flex-1 min-w-0 bg-transparent font-mono text-[11px] font-semibold text-teal-800 focus:outline-none"
             placeholder="output.md"
@@ -118,7 +124,9 @@ export const OutputLocalPathNode = ({ id, data, selected }: OutputLocalPathNodeP
         </div>
 
         <div className="flex items-center gap-1 rounded-md border border-teal-100 bg-teal-50 px-2 py-1">
-          <span className="shrink-0 text-[10px] font-medium text-teal-500">写入模式</span>
+          <span className="shrink-0 text-[10px] font-medium text-teal-500">
+            {t("nodes.outputLocalPathNode.writeModeLabel")}
+          </span>
           <select
             className="nodrag nopan flex-1 min-w-0 bg-transparent text-[11px] font-semibold text-teal-800 focus:outline-none cursor-pointer"
             value={currentMode}
@@ -128,7 +136,7 @@ export const OutputLocalPathNode = ({ id, data, selected }: OutputLocalPathNodeP
           >
             {Object.values(OUTPUT_MODE_ENUM).map((mode) => (
               <option key={mode} value={mode}>
-                {MODE_LABELS[mode]}
+                {t(MODE_LABEL_KEYS[mode])}
               </option>
             ))}
           </select>
@@ -137,13 +145,13 @@ export const OutputLocalPathNode = ({ id, data, selected }: OutputLocalPathNodeP
         {currentMode === "error_if_exists" && (
           <div className="flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] text-amber-700">
             <AlertTriangle className="h-3 w-3 shrink-0" />
-            <span>如果输出文件已存在，管线将会中断</span>
+            <span>{t("nodes.outputLocalPathNode.errorIfExistsWarning")}</span>
           </div>
         )}
 
         <textarea
           className="nodrag nopan text-[11px] text-slate-500 bg-transparent w-full resize-none focus:outline-none focus:bg-slate-50 focus:ring-1 focus:ring-slate-200 rounded px-1"
-          placeholder="描述此输出..."
+          placeholder={t("nodes.outputLocalPathNode.descriptionPlaceholder")}
           rows={2}
           value={data.description ?? ""}
           onChange={handleDescriptionChange}

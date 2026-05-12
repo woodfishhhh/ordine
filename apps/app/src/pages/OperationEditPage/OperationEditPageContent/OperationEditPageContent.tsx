@@ -2,7 +2,15 @@ import { useNavigate } from "@tanstack/react-router";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { FileCode, Folder, FolderGit2, Puzzle, Terminal, Wand2 } from "lucide-react";
+import {
+  FileCode,
+  Folder,
+  FolderGit2,
+  MessageSquareText,
+  Puzzle,
+  Terminal,
+  Wand2,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@repo/ui/lib/utils";
 import { Button } from "@repo/ui/button";
@@ -42,6 +50,7 @@ const OBJECT_TYPE_ICONS: Record<ObjectType, React.ElementType> = {
   file: FileCode,
   folder: Folder,
   project: FolderGit2,
+  prompt: MessageSquareText,
 };
 
 const editFormSchema = z.object({
