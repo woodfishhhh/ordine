@@ -1,19 +1,9 @@
-import { z } from "zod/v4";
-import { DisclosureModeSchema } from "./DisclosureModeSchema";
+import {
+  GithubProjectObjectNodeDataSchema,
+  type GithubProjectObjectNodeData,
+} from "./GithubProjectObjectNodeDataSchema";
 
-export const GithubProjectObjectNodeDataSchema = z.object({
-  label: z.string(),
-  nodeType: z.literal("github-project"),
-  sourceType: z.enum(["github", "local"]).optional(),
-  accessMode: z.enum(["clone", "remote"]).optional(),
-  owner: z.string(),
-  repo: z.string(),
-  branch: z.string().optional(),
-  description: z.string().optional(),
-  isPrivate: z.boolean().optional(),
-  githubProjectId: z.string().optional(),
-  localPath: z.string().optional(),
-  disclosureMode: DisclosureModeSchema.optional(),
-  excludedPaths: z.array(z.string()).optional(),
-});
-export type GithubProjectObjectNodeData = z.infer<typeof GithubProjectObjectNodeDataSchema>;
+export { GithubProjectObjectNodeDataSchema, type GithubProjectObjectNodeData };
+
+export const GitHubProjectNodeDataSchema = GithubProjectObjectNodeDataSchema;
+export type GitHubProjectNodeData = GithubProjectObjectNodeData;

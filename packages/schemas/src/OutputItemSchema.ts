@@ -5,6 +5,7 @@ export const OutputItemSchema = z.object({
   name: z.string(),
   kind: PortKindSchema,
   description: z.string().optional(),
+  path: z.string().optional(),
   templateIds: z.array(z.string()).default([]),
 });
 export type OutputItem = z.infer<typeof OutputItemSchema>;

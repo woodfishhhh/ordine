@@ -1,9 +1,9 @@
-import { z } from "zod/v4";
+import {
+  PromptObjectNodeDataSchema,
+  type PromptObjectNodeData,
+} from "./PromptObjectNodeDataSchema";
 
-export const PromptObjectNodeDataSchema = z.object({
-  label: z.string(),
-  nodeType: z.literal("prompt"),
-  prompt: z.string(),
-  description: z.string().optional(),
-});
-export type PromptObjectNodeData = z.infer<typeof PromptObjectNodeDataSchema>;
+export { PromptObjectNodeDataSchema, type PromptObjectNodeData };
+
+export const PromptNodeDataSchema = PromptObjectNodeDataSchema;
+export type PromptNodeData = PromptObjectNodeData;

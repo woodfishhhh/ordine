@@ -62,6 +62,7 @@
 ```
 
 **字段说明**:
+
 - `outputMode`: `"overwrite"` 覆盖 | `"append"` 追加
 - `dualOutput`: `true` 时同时输出 markdown 和 JSON
 
@@ -80,6 +81,25 @@
 }
 ```
 
+## prompt — 文本/指令输入
+
+用于提供纯文本或指令作为输入，不依赖任何文件或目录。适用于处理文本、翻译、总结等任务。
+
+```json
+{
+  "id": "n_prompt",
+  "type": "prompt",
+  "data": {
+    "label": "任务指令",
+    "nodeType": "prompt",
+    "prompt": "请分析以下数据并生成总结报告"
+  },
+  "position": { "x": 0, "y": 0 }
+}
+```
+
+**注意**: `prompt` 字段是必填项，包含要传递给后续节点的文本内容。
+
 ## github-project — GitHub 项目输入
 
 ```json
@@ -89,7 +109,9 @@
   "data": {
     "label": "GitHub 项目",
     "nodeType": "github-project",
-    "repo": "owner/repo",
+    "sourceType": "github",
+    "owner": "forge-town",
+    "repo": "ordine",
     "branch": "main"
   },
   "position": { "x": 0, "y": 0 }

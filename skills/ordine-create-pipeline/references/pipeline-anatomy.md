@@ -22,7 +22,7 @@
 ```json
 {
   "id": "n_xxx",
-  "type": "folder | operation | output-local-path | file | github-project | condition",
+  "type": "folder | operation | output-local-path | output-project-path | file | github-project | prompt | condition",
   "data": {
     "label": "节点名称",
     "nodeType": "同 type",
@@ -34,14 +34,16 @@
 
 ### 节点类型
 
-| type | 用途 | data 特有字段 |
-|------|------|-------------|
-| `folder` | 输入源 - 本地文件夹 | `folderPath` |
-| `file` | 输入源 - 代码文件 | `filePath` |
-| `github-project` | 输入源 - GitHub 项目 | `repo`, `branch` |
-| `operation` | 执行动作（检查/修复） | `operationId`, `operationName`, `status` |
-| `output-local-path` | 输出目标 - 本地路径 | `localPath`, `outputMode`, `dualOutput` |
-| `condition` | 条件分支 | `condition` |
+| type                  | 用途                  | data 特有字段                            |
+| --------------------- | --------------------- | ---------------------------------------- |
+| `folder`              | 输入源 - 本地文件夹   | `folderPath`                             |
+| `file`                | 输入源 - 代码文件     | `filePath`                               |
+| `github-project`      | 输入源 - GitHub 项目  | `owner`, `repo`, `branch`                |
+| `prompt`              | 输入源 - 纯文本提示词 | `prompt`                                 |
+| `operation`           | 执行动作（检查/修复） | `operationId`, `operationName`, `status` |
+| `output-local-path`   | 输出目标 - 本地路径   | `localPath`, `outputMode`, `dualOutput`  |
+| `output-project-path` | 输出目标 - 项目内路径 | `projectId`, `path`                      |
+| `condition`           | 条件分支              | `condition`                              |
 
 ## 边 (edges)
 

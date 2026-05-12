@@ -1,13 +1,9 @@
-import { z } from "zod/v4";
-import { OutputModeSchema } from "./OutputModeSchema";
+import {
+  LocalPathOutputNodeDataSchema,
+  type LocalPathOutputNodeData,
+} from "./LocalPathOutputNodeDataSchema";
 
-export const LocalPathOutputNodeDataSchema = z.object({
-  label: z.string(),
-  nodeType: z.literal("output-local-path"),
-  localPath: z.string(),
-  outputFileName: z.string().optional(),
-  outputMode: OutputModeSchema.optional(),
-  dualOutput: z.boolean().optional(),
-  description: z.string().optional(),
-});
-export type LocalPathOutputNodeData = z.infer<typeof LocalPathOutputNodeDataSchema>;
+export { LocalPathOutputNodeDataSchema, type LocalPathOutputNodeData };
+
+export const OutputLocalPathNodeDataSchema = LocalPathOutputNodeDataSchema;
+export type OutputLocalPathNodeData = LocalPathOutputNodeData;

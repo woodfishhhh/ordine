@@ -1,10 +1,9 @@
-import { z } from "zod/v4";
+import {
+  FileObjectNodeDataSchema,
+  type FileObjectNodeData,
+} from "./FileObjectNodeDataSchema";
 
-export const FileObjectNodeDataSchema = z.object({
-  label: z.string(),
-  nodeType: z.literal("file"),
-  filePath: z.string(),
-  language: z.string().optional(),
-  description: z.string().optional(),
-});
-export type FileObjectNodeData = z.infer<typeof FileObjectNodeDataSchema>;
+export { FileObjectNodeDataSchema, type FileObjectNodeData };
+
+export const CodeFileNodeDataSchema = FileObjectNodeDataSchema;
+export type CodeFileNodeData = FileObjectNodeData;
