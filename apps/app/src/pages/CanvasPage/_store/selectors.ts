@@ -1,6 +1,11 @@
 import type { NodeRunStatus } from "@repo/pipeline-engine/schemas";
 import type { HarnessCanvasState } from "./harnessCanvasStore";
-import { getNodePortCounts } from "../NodeCard/nodePorts";
+import {
+  decorateEdgesWithPortHandles,
+  getNodePortVisualCounts,
+  type PendingNodePortConnection,
+} from "../NodeCard/nodePorts";
+import type { PipelineEdge, PipelineNode } from "./canvasSlice";
 
 export interface NodeRunState {
   runStatus: NodeRunStatus | undefined;
@@ -20,5 +25,44 @@ export const selectNodeRunState =
     return { runStatus, dimmed };
   };
 
+const portRoutingCache: {
+  connectStartRef: PendingNodePortConnection | null;
+  decoratedEdges: PipelineEdge[];
+  edgesRef: PipelineEdge[] | null;
+  nodesRef: PipelineNode[] | null;
+} = {
+  connectStartRef: null,
+  decoratedEdges: [],
+  edgesRef: null,
+  nodesRef: null,
+};
+
+const getCachedDecoratedEdges = (
+  nodes: PipelineNode[],
+  edges: PipelineEdge[],
+  connectStart: PendingNodePortConnection | null
+) => {
+  if (
+    portRoutingCache.nodesRef === nodes &&
+    portRoutingCache.edgesRef === edges &&
+    portRoutingCache.connectStartRef === connectStart
+  ) {
+    return portRoutingCache.decoratedEdges;
+  }
+
+  portRoutingCache.nodesRef = nodes;
+  portRoutingCache.edgesRef = edges;
+  portRoutingCache.connectStartRef = connectStart;
+  portRoutingCache.decoratedEdges = decorateEdgesWithPortHandles(nodes, edges, connectStart);
+
+  return portRoutingCache.decoratedEdges;
+};
+
 export const selectNodePortCounts = (nodeId: string) => (state: HarnessCanvasState) =>
-  getNodePortCounts(state.edges, nodeId, state.connectStart);
+  getNodePortVisualCounts(
+    state.nodes,
+    state.edges,
+    nodeId,
+    state.connectStart,
+    getCachedDecoratedEdges(state.nodes, state.edges, state.connectStart)
+  );

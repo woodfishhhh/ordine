@@ -31,7 +31,13 @@ export const OutputLocalPathNode = ({ id, data, selected }: OutputLocalPathNodeP
   const store = useHarnessCanvasStore();
   const { runStatus, dimmed } = useStore(store, useShallow(selectNodeRunState(id)));
   const updateNodeData = useStore(store, (s) => s.updateNodeData);
-  const { leftPortCount } = useStore(store, useShallow(selectNodePortCounts(id)));
+  const {
+    leftActivePortCount,
+    leftActivePortMask,
+    leftConnectedPortCount,
+    leftConnectedPortMask,
+    leftPortCount,
+  } = useStore(store, useShallow(selectNodePortCounts(id)));
   const [browserOpen, setBrowserOpen] = useState(false);
 
   const handleLabelChange = (v: string) => updateNodeData(id, { label: v });
@@ -68,6 +74,10 @@ export const OutputLocalPathNode = ({ id, data, selected }: OutputLocalPathNodeP
         dimmed={dimmed}
         icon={HardDrive}
         label={data.label}
+        leftActivePortCount={leftActivePortCount}
+        leftActivePortMask={leftActivePortMask}
+        leftConnectedPortCount={leftConnectedPortCount}
+        leftConnectedPortMask={leftConnectedPortMask}
         leftHandleCount={leftPortCount}
         runStatus={runStatus}
         selected={selected}

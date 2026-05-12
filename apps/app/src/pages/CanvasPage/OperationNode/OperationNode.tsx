@@ -93,7 +93,18 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
       handleOperationAgentDropdownToggle: s.handleOperationAgentDropdownToggle,
     }))
   );
-  const { leftPortCount, rightPortCount } = useStore(store, useShallow(selectNodePortCounts(id)));
+  const {
+    leftActivePortCount,
+    leftActivePortMask,
+    leftConnectedPortCount,
+    leftConnectedPortMask,
+    leftPortCount,
+    rightActivePortCount,
+    rightActivePortMask,
+    rightConnectedPortCount,
+    rightConnectedPortMask,
+    rightPortCount,
+  } = useStore(store, useShallow(selectNodePortCounts(id)));
   const agentOpen = operationAgentDropdownNodeId === id;
 
   const { icon: StatusIcon, color, labelKey } = statusConfig[data.status ?? "idle"];
@@ -157,7 +168,15 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
         }
         icon={Zap}
         label={data.operationName || data.label}
+        leftActivePortCount={leftActivePortCount}
+        leftActivePortMask={leftActivePortMask}
+        leftConnectedPortCount={leftConnectedPortCount}
+        leftConnectedPortMask={leftConnectedPortMask}
         leftHandleCount={leftPortCount}
+        rightActivePortCount={rightActivePortCount}
+        rightActivePortMask={rightActivePortMask}
+        rightConnectedPortCount={rightConnectedPortCount}
+        rightConnectedPortMask={rightConnectedPortMask}
         rightHandleCount={rightPortCount}
         runStatus={nodeRunStatus}
         selected={selected}
