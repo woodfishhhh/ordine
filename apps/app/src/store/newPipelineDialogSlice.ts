@@ -5,7 +5,7 @@ import type { SidebarStoreSlice } from "./sidebarStore";
 import { dataProvider, ResourceName } from "@/integrations/refine/dataProvider";
 import i18n from "@/lib/i18n";
 import { router } from "@/router";
-import type { PipelineData } from "@repo/pipeline-engine/schemas";
+import type { PipelineData } from "@repo/schemas";
 
 type MatchedOperation = { operationId: string; operationName: string; reason: string };
 type UnmatchedStep = { step: string; reason: string };
@@ -46,7 +46,7 @@ export interface NewPipelineDialogSlice {
 
 export const createNewPipelineDialogSlice: SidebarStoreSlice<NewPipelineDialogSlice> = (
   set,
-  get
+  get,
 ) => {
   const formControl = createFormControl<NewPipelineFormValues>({
     defaultValues: { name: "", description: "" },

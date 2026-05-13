@@ -42,21 +42,21 @@ describe("node port helpers", () => {
         nodeId: "source",
         handleId: "right-port-0",
         handleType: "source",
-      })
+      }),
     ).toBe(1);
     expect(
       getNodePortCount([edge], "source", "right", {
         nodeId: "source",
         handleId: "right-port-0",
         handleType: "source",
-      })
+      }),
     ).toBe(2);
     expect(
       getNodePortCount([edge], "source", "left", {
         nodeId: "source",
         handleId: "right-port-0",
         handleType: "source",
-      })
+      }),
     ).toBe(1);
   });
 
@@ -71,7 +71,7 @@ describe("node port helpers", () => {
         nodeId: "node",
         handleId: "left-port-0",
         handleType: "target",
-      })
+      }),
     ).toEqual({ leftPortCount: 2, rightPortCount: 1 });
   });
 
@@ -90,8 +90,8 @@ describe("node port helpers", () => {
           nodeId: "node",
           handleId: "right-port-0",
           handleType: "source",
-        }
-      )
+        },
+      ),
     ).toEqual({
       leftActivePortCount: 0,
       leftActivePortMask: 0,
@@ -120,7 +120,7 @@ describe("node port helpers", () => {
         nodeId: "source",
         handleId: "right-port-0",
         handleType: "source",
-      })
+      }),
     ).toMatchObject({
       rightActivePortMask: 1,
       rightConnectedPortMask: 2,
@@ -220,7 +220,7 @@ describe("node port helpers", () => {
         nodeId: "source",
         handleId: "right-port-0",
         handleType: "source",
-      })
+      }),
     ).toEqual([expect.objectContaining({ id: "edge-existing", sourceHandle: "right-port-1" })]);
   });
 
@@ -271,7 +271,7 @@ describe("node port helpers", () => {
         nodeId: "target",
         handleId: "left-port-0",
         handleType: "target",
-      })
+      }),
     ).toEqual([expect.objectContaining({ id: "edge-existing", targetHandle: "left-port-1" })]);
   });
 });

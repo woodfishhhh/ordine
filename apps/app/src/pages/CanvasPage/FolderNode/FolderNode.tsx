@@ -4,9 +4,9 @@ import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/shallow";
 import { useHarnessCanvasStore, selectNodeRunState, selectNodePortCounts } from "../_store";
-import type { FolderNodeData } from "@repo/pipeline-engine/schemas";
+import type { FolderObjectNodeData } from "@repo/schemas";
 import { NodeCard } from "../NodeCard";
-import { FolderBrowser } from "../OutputLocalPathNode/FolderBrowser";
+import { FolderBrowser } from "@/components/FolderBrowser/FolderBrowser";
 import { FolderTreePreview } from "./FolderTreePreview";
 import { Input } from "@repo/ui/input";
 import { Button } from "@repo/ui/button";
@@ -14,7 +14,7 @@ import { Textarea } from "@repo/ui/textarea";
 
 export interface FolderNodeProps {
   id: string;
-  data: FolderNodeData;
+  data: FolderObjectNodeData;
   selected?: boolean;
 }
 

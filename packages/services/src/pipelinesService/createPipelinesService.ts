@@ -17,8 +17,7 @@ import {
 } from "@repo/models";
 import { extractJsonFromText } from "@repo/agent";
 import { logger } from "@repo/logger";
-import { PipelineSchema, type PipelineData } from "@repo/pipeline-engine/schemas";
-import type { ObjectType } from "@repo/schemas";
+import { PipelineSchema, type PipelineData, type ObjectType } from "@repo/schemas";
 import { runAgent } from "../pipelineRunnerService/agentRunner/agentRunner";
 import { normalizeSettingsRecord } from "../settingsService/normalizeSettingsRecord";
 
@@ -609,7 +608,14 @@ export const createPipelinesService = (db: DbConnection) => {
               prompt: systemPrompt,
             },
             inputs: [],
-            outputs: [{ name: "result", kind: "file", path: "output.md" }],
+            outputs: [
+              {
+                name: "result",
+                contentType: "markdown",
+                description: "Generated result",
+                templateIds: [],
+              },
+            ],
           };
           pendingOperations.push({
             id: opId,

@@ -1,20 +1,16 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, FolderOpen, HardDrive } from "lucide-react";
-import {
-  OUTPUT_MODE_ENUM,
-  type OutputMode,
-  type OutputLocalPathNodeData,
-} from "@repo/pipeline-engine/schemas";
+import { OUTPUT_MODE_ENUM, type OutputMode, type LocalPathOutputNodeData } from "@repo/schemas";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/shallow";
 import { useHarnessCanvasStore, selectNodeRunState, selectNodePortCounts } from "../_store";
 import { NodeCard } from "../NodeCard";
-import { FolderBrowser } from "./FolderBrowser";
+import { FolderBrowser } from "@/components/FolderBrowser/FolderBrowser";
 
 export interface OutputLocalPathNodeProps {
   id: string;
-  data: OutputLocalPathNodeData;
+  data: LocalPathOutputNodeData;
   selected?: boolean;
 }
 

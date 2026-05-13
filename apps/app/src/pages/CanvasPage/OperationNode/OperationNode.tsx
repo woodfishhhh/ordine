@@ -13,10 +13,9 @@ import {
 import { useStore } from "zustand";
 import { useShallow } from "zustand/shallow";
 import { useHarnessCanvasStore, selectNodeRunState, selectNodePortCounts } from "../_store";
-import type { OperationNodeData, NodeRunStatus } from "@repo/pipeline-engine/schemas";
+import type { OperationNodeData, NodeRunStatus, Operation, Agent } from "@repo/schemas";
 import { useList } from "@refinedev/core";
 import { ResourceName } from "@/integrations/refine/dataProvider";
-import { type Operation, type Agent } from "@repo/schemas";
 import { NodeCard } from "../NodeCard";
 
 export interface OperationNodeProps {
@@ -91,7 +90,7 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
       handleOperationCardClick: s.handleOperationCardClick,
       handleOperationAgentDropdownOpenChange: s.handleOperationAgentDropdownOpenChange,
       handleOperationAgentDropdownToggle: s.handleOperationAgentDropdownToggle,
-    }))
+    })),
   );
   const {
     leftActivePortCount,
@@ -157,7 +156,7 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
               data.status === "pass" && "bg-green-50 border-green-100",
               data.status === "fail" && "bg-red-50 border-red-100",
               data.status === "running" && "bg-blue-50 border-blue-100",
-              (!data.status || data.status === "idle") && "bg-white border-slate-100"
+              (!data.status || data.status === "idle") && "bg-white border-slate-100",
             )}
           >
             <StatusIcon className={cn("h-3 w-3 shrink-0", color)} />
@@ -269,7 +268,7 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
               "nodrag nopan flex h-8 w-full items-center gap-1.5 rounded-md border px-2.5 text-[11px] font-medium transition-colors",
               data.loopEnabled
                 ? "border-amber-200 bg-amber-50 text-amber-700"
-                : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100"
+                : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100",
             )}
             type="button"
             onClick={handleLoopButtonClick}

@@ -4,19 +4,19 @@ import { FileCode, FolderOpen } from "lucide-react";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/shallow";
 import { useHarnessCanvasStore, selectNodeRunState, selectNodePortCounts } from "../_store";
-import type { CodeFileNodeData } from "@repo/pipeline-engine/schemas";
+import type { FileObjectNodeData } from "@repo/schemas";
 import { NodeCard } from "../NodeCard";
-import { FolderBrowser } from "../OutputLocalPathNode/FolderBrowser";
+import { FolderBrowser } from "@/components/FolderBrowser/FolderBrowser";
 
-export interface CodeFileNodeProps {
+export interface FileNodeProps {
   id: string;
-  data: CodeFileNodeData;
+  data: FileObjectNodeData;
   selected?: boolean;
 }
 
 const handleStopPropagation = (e: React.SyntheticEvent) => e.stopPropagation();
 
-export const CodeFileNode = ({ id, data, selected }: CodeFileNodeProps) => {
+export const FileNode = ({ id, data, selected }: FileNodeProps) => {
   const { t } = useTranslation();
   const store = useHarnessCanvasStore();
   const { runStatus, dimmed } = useStore(store, useShallow(selectNodeRunState(id)));
@@ -56,7 +56,7 @@ export const CodeFileNode = ({ id, data, selected }: CodeFileNodeProps) => {
       <NodeCard
         rightHandle
         bodyClassName="space-y-2"
-        description={t("canvas.nodeTypes.code-file.label")}
+        description={t("canvas.nodeTypes.file.label")}
         dimmed={dimmed}
         icon={FileCode}
         label={data.label}

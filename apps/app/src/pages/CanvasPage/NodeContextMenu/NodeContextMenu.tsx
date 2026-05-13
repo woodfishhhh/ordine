@@ -30,19 +30,18 @@ import { useStore } from "zustand";
 import { useHarnessCanvasStore } from "../_store";
 import { useList } from "@refinedev/core";
 import { ResourceName } from "@/integrations/refine/dataProvider";
-import type { Operation, Recipe } from "@repo/schemas";
+import type { Operation, Recipe, NodeType, BuiltinNodeType } from "@repo/schemas";
 import { getAllowedConnections } from "../utils/getAllowedConnections";
 import { getNodeMeta, getNodeTypeLabel, getNodeTypeShortLabel } from "../utils/nodeTypeMeta";
-import type { NodeType, BuiltinNodeType } from "@repo/pipeline-engine/schemas";
 import { cn } from "@repo/ui/lib/utils";
 
 const TYPE_ICONS: Record<string, React.ElementType> = {
   operation: Zap,
   compound: Group,
   condition: GitBranch,
-  "code-file": FileCode,
+  file: FileCode,
   folder: Folder,
-  "github-projects": SiGitHubIcon,
+  "github-project": SiGitHubIcon,
   prompt: MessageSquareText,
   "output-project-path": FolderOutput,
   "output-local-path": HardDrive,
@@ -79,7 +78,7 @@ export const NodeContextMenu = () => {
       e.preventDefault();
       handleNodeContextDuplicate();
     },
-    [handleNodeContextDuplicate]
+    [handleNodeContextDuplicate],
   );
 
   if (!nodeContextMenu || !node) return null;
@@ -91,16 +90,16 @@ export const NodeContextMenu = () => {
   // Filter operations based on source type
   const availableOperations = (() => {
     const objectTypeMap: Record<string, string> = {
-      "code-file": "file",
+      file: "file",
       folder: "folder",
-      "github-projects": "project",
+      "github-project": "project",
       prompt: "prompt",
     };
     const objectType = objectTypeMap[node.type];
     if (!objectType) return operations;
 
     return operations.filter((op) =>
-      op.acceptedObjectTypes?.includes(objectType as "file" | "folder" | "project" | "prompt")
+      op.acceptedObjectTypes?.includes(objectType as "file" | "folder" | "project" | "prompt"),
     );
   })();
 
@@ -154,7 +153,7 @@ export const NodeContextMenu = () => {
           <span
             className={cn(
               "flex h-5 w-5 items-center justify-center rounded text-[9px] font-bold text-white",
-              meta.iconBg
+              meta.iconBg,
             )}
           >
             {getNodeTypeShortLabel(t, node.type).charAt(0)}
@@ -176,12 +175,12 @@ export const NodeContextMenu = () => {
             </ContextMenuGroup>
 
             {/* Object types */}
-            {["code-file", "folder", "github-projects", "prompt"].some((t) =>
-              availableTypes.includes(t as BuiltinNodeType)
+            {["file", "folder", "github-project", "prompt"].some((t) =>
+              availableTypes.includes(t as BuiltinNodeType),
             ) && (
               <ContextMenuGroup>
                 <ContextMenuLabel>{t("canvas.contextMenu.processingObject")}</ContextMenuLabel>
-                {["code-file", "folder", "github-projects", "prompt"]
+                {["file", "folder", "github-project", "prompt"]
                   .filter((t) => availableTypes.includes(t as BuiltinNodeType))
                   .map((type) => {
                     const Icon = TYPE_ICONS[type as NodeType];
@@ -196,7 +195,7 @@ export const NodeContextMenu = () => {
                         <span
                           className={cn(
                             "flex size-4 shrink-0 items-center justify-center rounded",
-                            m.iconBg
+                            m.iconBg,
                           )}
                         >
                           <Icon className="size-2.5 text-white" />
@@ -267,7 +266,7 @@ export const NodeContextMenu = () => {
 
             {/* Output nodes */}
             {(["output-project-path", "output-local-path"] as BuiltinNodeType[]).some((t) =>
-              availableTypes.includes(t)
+              availableTypes.includes(t),
             ) && (
               <>
                 <ContextMenuSeparator />
@@ -288,7 +287,7 @@ export const NodeContextMenu = () => {
                           <span
                             className={cn(
                               "flex size-4 shrink-0 items-center justify-center rounded",
-                              m.iconBg
+                              m.iconBg,
                             )}
                           >
                             <Icon className="size-2.5 text-white" />

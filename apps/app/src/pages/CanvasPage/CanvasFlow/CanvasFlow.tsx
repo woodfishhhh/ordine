@@ -4,7 +4,7 @@ import { useHarnessCanvasStore } from "../_store";
 import { useHotkeys } from "react-hotkeys-hook";
 import { ReactFlow, Background, BackgroundVariant, Controls, MiniMap } from "@xyflow/react";
 import { CompoundNode } from "../CompoundNode";
-import { CodeFileNode } from "../CodeFileNode";
+import { FileNode } from "../FileNode";
 import { ErrorNode } from "../ErrorNode";
 import { FolderNode } from "../FolderNode";
 import { GitHubProjectNode } from "../GitHubProjectNode";
@@ -20,9 +20,9 @@ const nodeTypes = {
   default: ErrorNode,
   operation: OperationNode,
   compound: CompoundNode,
-  "code-file": CodeFileNode,
+  file: FileNode,
   folder: FolderNode,
-  "github-projects": GitHubProjectNode,
+  "github-project": GitHubProjectNode,
   prompt: PromptNode,
   "output-project-path": OutputProjectPathNode,
   "output-local-path": OutputLocalPathNode,
@@ -50,7 +50,7 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
   const isCanvasInteractive = useStore(store, (s) => s.isCanvasInteractive);
   const portRoutedEdges = useMemo(
     () => decorateEdgesWithPortHandles(nodes, edges, connectStart),
-    [connectStart, edges, nodes]
+    [connectStart, edges, nodes],
   );
   const isConsoleOpen = useStore(store, (s) => s.isConsoleOpen);
   const canvasSettings = useStore(store, (s) => s.canvasSettings);
@@ -91,7 +91,7 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
       e.preventDefault();
       handleUndo();
     },
-    { preventDefault: false }
+    { preventDefault: false },
   );
   useHotkeys(
     "mod+shift+z, mod+y",
@@ -99,7 +99,7 @@ export const CanvasFlow = ({ viewportRef }: CanvasFlowProps) => {
       e.preventDefault();
       handleRedo();
     },
-    { preventDefault: false }
+    { preventDefault: false },
   );
 
   return (

@@ -3,20 +3,19 @@ import { rm } from "node:fs/promises";
 import { ResultAsync } from "neverthrow";
 import { trace } from "@repo/obs";
 import { pluginRegistry } from "@repo/plugin";
+import { resolveMetaType, type NodeCtx } from "../schemas";
 import {
-  resolveMetaType,
   NODE_TYPE_ENUM,
   type PipelineEdge,
   type PipelineNode,
   type PipelineNodeData,
-  type NodeCtx,
-} from "../schemas";
+} from "@repo/schemas";
 import type { PipelineEngineDeps } from "../deps";
 import { ScriptExecutionError, type PipelineRunError } from "../errors";
 import { buildExecutionLevels, getParentIds, type CycleDetectedError } from "../dagScheduler";
 import { safeReadInputFile } from "../infrastructure";
 import type { AgentInfo, OperationInfo, SkillInfo, OperationNodeContext } from "../nodes/types";
-import { processCodeFileNode } from "../nodes/CodeFileNode";
+import { processFileNode } from "../nodes/FileNode";
 import { processFolderNode } from "../nodes/FolderNode";
 import { processGitHubProjectNode } from "../nodes/GitHubProjectNode";
 import { processPromptNode } from "../nodes/PromptNode";
@@ -180,6 +179,7 @@ export class Pipeline {
           lookupSkill: this.opts.lookupSkill,
           lookupBestPractice: this.opts.lookupBestPractice,
           githubToken: this.opts.githubToken,
+          outputDir: this.resolveOutputDirForNode(node.id),
         };
 
         return this.wrapNodeResult(node.id, processOperationNode(node, input, opCtx));
@@ -221,6 +221,21 @@ export class Pipeline {
     await trace(jobId, `@@NODE_DONE::${node.id}`);
 
     return { ok: true };
+  }
+
+  private resolveOutputDirForNode(nodeId: string): string | undefined {
+    const { edges, nodes } = this.opts.pipeline;
+    const childIds = edges.filter((e) => e.source === nodeId).map((e) => e.target);
+    const outputNode = nodes.find(
+      (n) => childIds.includes(n.id) && n.data.nodeType === NODE_TYPE_ENUM.OUTPUT_LOCAL_PATH,
+    );
+    const configuredPath =
+      outputNode?.data.nodeType === NODE_TYPE_ENUM.OUTPUT_LOCAL_PATH
+        ? (outputNode.data.localPath ?? "")
+        : "";
+    const resolved = configuredPath || this.opts.defaultOutputPath || "";
+
+    return resolved || undefined;
   }
 
   /**
@@ -268,8 +283,8 @@ export class Pipeline {
       return this.wrapNodeResult(node.id, processFolderNode(baseCtx));
     }
 
-    if (node.type === NODE_TYPE_ENUM.CODE_FILE) {
-      return this.wrapNodeResult(node.id, processCodeFileNode(baseCtx));
+    if (node.type === NODE_TYPE_ENUM.FILE) {
+      return this.wrapNodeResult(node.id, processFileNode(baseCtx));
     }
 
     if (node.type === NODE_TYPE_ENUM.PROMPT) {

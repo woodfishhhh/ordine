@@ -1,5 +1,5 @@
-import type { ExecutorConfig } from "@repo/schemas";
-import type { PipelineNode, NodeCtx } from "../../schemas";
+import type { ExecutorConfig, PipelineNode } from "@repo/schemas";
+import type { NodeCtx } from "../../schemas";
 import { trace } from "@repo/obs";
 import { ScriptExecutionError } from "../../errors";
 import { runScript, safeParseConfig } from "../../infrastructure";
@@ -54,7 +54,10 @@ export const executeOperationNode = async (
 
         return agent.defaultRuntime as ExecutorConfig["agent"];
       }
-      await trace(jobId, `WARNING: Agent ${data.agentId} not found or has no runtime, falling back`);
+      await trace(
+        jobId,
+        `WARNING: Agent ${data.agentId} not found or has no runtime, falling back`,
+      );
     }
 
     return data.agentRuntime as ExecutorConfig["agent"] | undefined;
@@ -86,6 +89,7 @@ export const executeOperationNode = async (
 
   const config = configResult.value;
   const executor = config.executor;
+  await trace(jobId, `Operation outputs: ${JSON.stringify(config.outputs)}`);
   if (!executor) {
     await trace(
       jobId,
@@ -97,6 +101,9 @@ export const executeOperationNode = async (
   }
 
   await trace(jobId, `Executing operation "${operation.name}" (${executor.type})`);
+
+  const effectiveAgentMode =
+    executor.agentMode ?? (executor.type === "agent" ? "prompt" : undefined);
 
   const chunkState = { lastTime: 0 };
   const handleChunk = async (accumulated: string) => {
@@ -126,8 +133,8 @@ export const executeOperationNode = async (
     }
     opResult.value = scriptResult.value;
     await trace(jobId, `Script output (${opResult.value.length} chars)`);
-  } else if (executor.type === "agent" && executor.agentMode === "prompt") {
-    const prompt = executor.prompt ?? "";
+  } else if (executor.type === "agent" && effectiveAgentMode === "prompt") {
+    const prompt = executor.prompt ?? executor.systemPrompt ?? "";
     if (!prompt.trim()) {
       await trace(
         jobId,
@@ -147,6 +154,8 @@ export const executeOperationNode = async (
       onProgress,
       extraTools: extraTools.length > 0 ? extraTools : undefined,
       githubToken: input.githubRemote ? ctx.githubToken : undefined,
+      outputItems: config.outputs.length > 0 ? config.outputs : undefined,
+      outputDir: ctx.outputDir,
     });
     if (promptResult.isErr()) {
       await trace(jobId, `@@NODE_FAIL::${node.id}`);
@@ -156,7 +165,7 @@ export const executeOperationNode = async (
     opResult.value = promptResult.value;
     await trace(jobId, `@@LLM_CONTENT::${node.id}::${opResult.value}`);
     await trace(jobId, `Prompt output (${opResult.value.length} chars)`);
-  } else if (executor.type === "agent" && executor.agentMode === "skill") {
+  } else if (executor.type === "agent" && effectiveAgentMode === "skill") {
     const skillId = executor.skillId ?? "";
     if (!skillId) {
       await trace(
@@ -184,6 +193,8 @@ export const executeOperationNode = async (
       allowedTools: executor.allowedTools,
       onChunk: handleChunk,
       onProgress,
+      outputItems: config.outputs.length > 0 ? config.outputs : undefined,
+      outputDir: ctx.outputDir,
     });
     opResult.value = skillResult.isOk() ? skillResult.value : "";
     if (skillResult.isErr()) {

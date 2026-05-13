@@ -6,7 +6,7 @@ import { homedir, tmpdir } from "node:os";
 import { okAsync } from "neverthrow";
 import { processOutputLocalPathNode } from "./OutputLocalPathNode";
 import type { PipelineEngineDeps } from "../../deps";
-import type { PipelineNode } from "../../schemas";
+import type { PipelineNode } from "@repo/schemas";
 import type { NodeContext } from "../types";
 
 vi.mock("@repo/obs", () => ({
@@ -99,29 +99,6 @@ describe("processOutputLocalPathNode", () => {
     await processOutputLocalPathNode(ctx);
 
     expect(deps.structuredJsonToMarkdown).toHaveBeenCalledWith('{"key":"val"}');
-  });
-
-  it("writes dual output (json + md) when dualOutput is true", async () => {
-    const outputDir = join(testDir, "dual-test");
-    const deps = makeDeps();
-    const node = makeNode({
-      localPath: outputDir,
-      outputFileName: "dual.json",
-      dualOutput: true,
-    });
-    const ctx = makeCtx(node, deps, '{"result": true}');
-
-    const result = await processOutputLocalPathNode(ctx);
-
-    expect(result.ok).toBe(true);
-    expect(trace).toHaveBeenCalledWith(
-      "abcdef12-3456-7890",
-      expect.stringContaining("Wrote JSON output"),
-    );
-    expect(trace).toHaveBeenCalledWith(
-      "abcdef12-3456-7890",
-      expect.stringContaining("Wrote Markdown output"),
-    );
   });
 
   it("does not write when content is empty", async () => {

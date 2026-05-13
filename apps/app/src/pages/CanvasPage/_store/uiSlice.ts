@@ -1,4 +1,4 @@
-import type { NodeRunStatus } from "@repo/pipeline-engine/schemas";
+import type { NodeRunStatus } from "@repo/schemas";
 import type { HarnessCanvasStoreSlice } from "./harnessCanvasStore";
 import { DEFAULT_CANVAS_VIEWPORT } from "../utils/canvasViewport";
 
@@ -121,7 +121,7 @@ export const createUISlice = (
   get: Parameters<HarnessCanvasStoreSlice>[1],
 
   pipelineId: string | null = null,
-  pipelineName = ""
+  pipelineName = "",
 ): UISlice => ({
   pipelineId,
   pipelineName,

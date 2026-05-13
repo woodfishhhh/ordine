@@ -1,12 +1,11 @@
 import { sortParentBeforeChildren, type PipelineEdge, type PipelineNode } from "./canvasSlice";
 import type { HarnessCanvasStoreSlice } from "./harnessCanvasStore";
-import type { Operation, Recipe } from "@repo/schemas";
+import type { Operation, Recipe, NodeType, BuiltinNodeType } from "@repo/schemas";
 import type { PickedProject } from "../GitHubProjectNode/PickProjectDialog";
 import type { ConnectedRepoInfo } from "../GitHubProjectNode/GitHubConnectDialog";
 import type { LocalFolderInfo } from "../GitHubProjectNode/PickLocalFolderDialog";
 import { makeDefaultNodeData } from "../utils/makeDefaultNodeData";
 import { makeOperationNodeData } from "../utils/makeOperationNodeData";
-import type { NodeType, BuiltinNodeType } from "@repo/pipeline-engine/schemas";
 import { dataProvider, ResourceName } from "@/integrations/refine/dataProvider";
 import { toastStore } from "@/store/toastStore";
 import { ResultAsync } from "neverthrow";
@@ -25,7 +24,7 @@ import type { CanvasImportPayload } from "../utils/canvasImportJson";
 const getConnectStartHandleId = (
   connectionState: FinalConnectionState,
   currentConnectStart: ConnectStartState | null,
-  fromNodeId: string
+  fromNodeId: string,
 ): string | null =>
   connectionState.fromHandle?.id ??
   (currentConnectStart?.nodeId === fromNodeId ? currentConnectStart.handleId : null);
@@ -33,7 +32,7 @@ const getConnectStartHandleId = (
 const getConnectStartHandleType = (
   connectionState: FinalConnectionState,
   currentConnectStart: ConnectStartState | null,
-  fromNodeId: string
+  fromNodeId: string,
 ): ConnectStartState["handleType"] =>
   connectionState.fromHandle?.type ??
   (currentConnectStart?.nodeId === fromNodeId ? currentConnectStart.handleType : null);
@@ -60,7 +59,7 @@ export interface ActionsSlice {
   handleFlowConnectStart: (event: MouseEvent | TouchEvent, params: OnConnectStartParams) => void;
   handleFlowConnectEnd: (
     event: MouseEvent | TouchEvent,
-    connectionState: FinalConnectionState
+    connectionState: FinalConnectionState,
   ) => void;
   handleFlowNodeClick: (event: React.MouseEvent, node: PipelineNode) => void;
   handleFlowNodeContextMenu: (event: React.MouseEvent, node: PipelineNode) => void;
@@ -71,7 +70,7 @@ export interface ActionsSlice {
   handleFlowNodeDragStop: (
     event: React.MouseEvent,
     node: PipelineNode,
-    nodes: PipelineNode[]
+    nodes: PipelineNode[],
   ) => void;
 
   // Cross-slice semantic actions
@@ -92,7 +91,7 @@ export interface ActionsSlice {
   handleCreateRecipeNode: (
     recipe: Recipe,
     operation: Operation,
-    screenPosition: XYPosition
+    screenPosition: XYPosition,
   ) => void;
   dismissContextMenu: () => void;
   handleContextMenuOpenChange: (open: boolean) => void;
@@ -135,7 +134,7 @@ export interface ActionsSlice {
 
 export const createActionsSlice = (
   set: Parameters<HarnessCanvasStoreSlice>[0],
-  get: Parameters<HarnessCanvasStoreSlice>[1]
+  get: Parameters<HarnessCanvasStoreSlice>[1],
 ): ActionsSlice => ({
   exportCanvas: () => {
     const state = get();
@@ -291,7 +290,7 @@ export const createActionsSlice = (
       const handleType = getConnectStartHandleType(
         connectionState,
         currentConnectStart,
-        fromNodeId
+        fromNodeId,
       );
       if (!handleType) {
         get().handleConnectStart(null);
@@ -408,7 +407,7 @@ export const createActionsSlice = (
           edges,
         },
       }),
-      () => "save-failed" as const
+      () => "save-failed" as const,
     );
 
     if (saveResult.isErr()) {
@@ -428,7 +427,7 @@ export const createActionsSlice = (
         method: "post",
         payload: { id: pipelineId },
       }),
-      () => t("canvas.runStartFailed")
+      () => t("canvas.runStartFailed"),
     );
 
     runResult.match(
@@ -447,7 +446,7 @@ export const createActionsSlice = (
           title: t("canvas.runFailed"),
           description: error,
         });
-      }
+      },
     );
 
     set({ isRunning: false });
@@ -580,7 +579,7 @@ export const createActionsSlice = (
       type,
       position: offsetPosition(
         { x: connectionMenu.flowX, y: connectionMenu.flowY },
-        CONNECTION_MENU_NODE_OFFSET
+        CONNECTION_MENU_NODE_OFFSET,
       ),
       data: makeLocalizedDefaultNodeData(type as BuiltinNodeType),
     });
@@ -594,7 +593,7 @@ export const createActionsSlice = (
       type: "operation",
       position: offsetPosition(
         { x: connectionMenu.flowX, y: connectionMenu.flowY },
-        CONNECTION_MENU_NODE_OFFSET
+        CONNECTION_MENU_NODE_OFFSET,
       ),
       data: makeOperationNodeData(operation),
     });
@@ -608,7 +607,7 @@ export const createActionsSlice = (
       type: "operation",
       position: offsetPosition(
         { x: connectionMenu.flowX, y: connectionMenu.flowY },
-        CONNECTION_MENU_NODE_OFFSET
+        CONNECTION_MENU_NODE_OFFSET,
       ),
       data: {
         ...makeOperationNodeData(operation),
