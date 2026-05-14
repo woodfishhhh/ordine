@@ -1,5 +1,5 @@
 import { Zap, CheckCircle2, XCircle, Loader2, Circle, Brain, Repeat } from "lucide-react";
-import { type SyntheticEvent } from "react";
+import { type ElementType, type SyntheticEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@repo/ui/lib/utils";
 import {
@@ -24,10 +24,7 @@ export interface OperationNodeProps {
   selected?: boolean;
 }
 
-const statusConfig: Record<
-  NodeRunStatus,
-  { icon: React.ElementType; color: string; labelKey: string }
-> = {
+const statusConfig: Record<NodeRunStatus, { icon: ElementType; color: string; labelKey: string }> = {
   idle: {
     icon: Circle,
     color: "text-gray-400",
@@ -110,11 +107,21 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
   const statusLabel = t(labelKey);
 
   const operation = operations.find((op: Operation) => op.id === data.operationId);
+  const executor = operation?.config.executor;
+  const effectiveAgentMode =
+    executor?.type === "agent" ? (executor.agentMode ?? "prompt") : undefined;
+  const isSkillOperation = effectiveAgentMode === "skill";
+  const selectableAgents = isSkillOperation
+    ? agents.filter((agent) => agent.defaultRuntime !== "hermes")
+    : agents;
 
   const selectedAgentId = data.agentId ?? "";
-  const selectedAgentLabel = selectedAgentId
-    ? (agents.find((a) => a.id === selectedAgentId)?.name ?? selectedAgentId)
-    : t("nodes.operation.defaultAgent");
+  const selectedAgent = agents.find((agent) => agent.id === selectedAgentId);
+  const isAgentIncompatible =
+    isSkillOperation && !!selectedAgent && selectedAgent.defaultRuntime === "hermes";
+  const selectedAgentLabel = isAgentIncompatible
+    ? `${selectedAgent.name} (${t("nodes.operation.agentIncompatible")})`
+    : (selectedAgentId ? (selectedAgent?.name ?? selectedAgentId) : t("nodes.operation.defaultAgent"));
 
   const hasLlmContent = !!nodeLlmContent[id];
   const canInspect = isTestRunning || hasLlmContent;
@@ -132,6 +139,9 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
   const handleAgentTriggerClick = (event: SyntheticEvent) => {
     stopCanvasInteraction(event);
     handleOperationAgentDropdownToggle(id);
+  };
+  const handleAgentChange = (agentId: string | null) => {
+    handleOperationAgentChange(id, agentId);
   };
   const handleLoopButtonClick = (event: SyntheticEvent) => {
     stopCanvasInteraction(event);
@@ -182,7 +192,6 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
         theme="violet"
         onLabelChange={handleOperationLabelChange.bind(null, id)}
       >
-        {/* Config display (read-only summary) */}
         {data.config && Object.keys(data.config).length > 0 && (
           <div className="space-y-1">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
@@ -197,7 +206,6 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
           </div>
         )}
 
-        {/* Accepted object types */}
         {operation?.acceptedObjectTypes && (
           <div className="space-y-1">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
@@ -216,7 +224,6 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
           </div>
         )}
 
-        {/* Agent selector */}
         <div className="nodrag nopan space-y-1.5" {...canvasInteractionHandlers}>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
             <Brain className="mr-1 inline-block h-3 w-3" />
@@ -226,7 +233,7 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
             open={agentOpen}
             value={selectedAgentId || "__default__"}
             onOpenChange={handleOperationAgentDropdownOpenChange.bind(null, id)}
-            onValueChange={handleOperationAgentChange.bind(null, id)}
+            onValueChange={handleAgentChange}
           >
             <SelectTrigger
               aria-label={t("nodes.operation.agent")}
@@ -244,7 +251,12 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
               <SelectGroup>
                 <SelectLabel>{t("nodes.operation.agent")}</SelectLabel>
                 <SelectItem value="__default__">{t("nodes.operation.defaultAgent")}</SelectItem>
-                {agents.map((agent) => (
+                {isAgentIncompatible && (
+                  <SelectItem disabled value={selectedAgentId}>
+                    {selectedAgent.name} ({t("nodes.operation.agentIncompatible")})
+                  </SelectItem>
+                )}
+                {selectableAgents.map((agent) => (
                   <SelectItem key={agent.id} value={agent.id}>
                     {agent.name}
                   </SelectItem>
@@ -261,7 +273,6 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
           </div>
         )}
 
-        {/* Loop / Retry settings */}
         <div className="nodrag nopan space-y-1.5" {...canvasInteractionHandlers}>
           <button
             className={cn(

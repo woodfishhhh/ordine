@@ -306,6 +306,52 @@ describe("executeOperationNode — agent override", () => {
     expect(deps.runSkill).toHaveBeenCalledWith(expect.objectContaining({ agent: "claude-code" }));
   });
 
+  it("blocks Hermes for skill operations because local tool permissions cannot be preserved", async () => {
+    const deps = makeDeps();
+    const op = makeOperation({
+      type: "agent",
+      agentMode: "skill",
+      skillId: "sk-1",
+      agent: "claude-code",
+    });
+    const ops = new Map([["op-id", op]]);
+    const node = makeNode({ operationId: "op-id", agentRuntime: "hermes" });
+    const ctx = makeCtx(deps, ops);
+
+    const result = await executeOperationNode(node, makeInput(), ctx);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error?.message).toContain("Hermes is not available");
+    expect(deps.runSkill).not.toHaveBeenCalled();
+    expect(trace).toHaveBeenCalledWith(
+      "job-1",
+      expect.stringContaining("Hermes is not available for skill operation"),
+    );
+  });
+
+  it("propagates Hermes skill failures instead of marking the node done", async () => {
+    const deps = makeDeps();
+    const op = makeOperation({
+      type: "agent",
+      agentMode: "skill",
+      skillId: "sk-1",
+      agent: "claude-code",
+    });
+    const ops = new Map([["op-id", op]]);
+    const node = makeNode({ operationId: "op-id", agentRuntime: "hermes" });
+    const ctx = makeCtx(deps, ops, { node });
+
+    const result = await processOperationNode(node, makeInput(), ctx);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).not.toBeNull();
+      expect(result.error?.message).toContain("Hermes is not available");
+    }
+    expect(ctx.nodeOutputs.has("op-1")).toBe(false);
+    expect(trace).not.toHaveBeenCalledWith("job-1", "@@NODE_DONE::op-1");
+  });
+
   it("falls back to executor.agent when agentRuntime is not set", async () => {
     const deps = makeDeps();
     const op = makeOperation({

@@ -1,6 +1,7 @@
 import {
   runClaude,
   runCodex,
+  runHermes,
   runMastra,
   runOpenclaw,
   type ClaudeStreamEvent,
@@ -87,6 +88,23 @@ const runMastraDirect = async (opts: AgentRunOptions): Promise<AgentRunResult> =
 
 type DriverFn = (opts: AgentRunOptions) => Promise<AgentRunResult>;
 
+const runHermesDirect = async (opts: AgentRunOptions): Promise<AgentRunResult> => {
+  const result = await runHermes({
+    systemPrompt: opts.systemPrompt,
+    userPrompt: opts.userPrompt,
+    cwd: opts.cwd,
+    model: opts.model,
+    allowedTools: opts.allowedTools,
+    onProgress: toAsyncProgress(opts.onProgress),
+  });
+
+  if (result.isErr()) {
+    return Promise.reject(result.error);
+  }
+
+  return { text: result.value, events: [] };
+};
+
 const runOpenclawDirect = async (opts: AgentRunOptions): Promise<AgentRunResult> => {
   const result = await runOpenclaw({
     systemPrompt: opts.systemPrompt,
@@ -101,6 +119,7 @@ const runOpenclawDirect = async (opts: AgentRunOptions): Promise<AgentRunResult>
 const DRIVERS: Record<AgentRuntime, DriverFn> = {
   "claude-code": runLocalClaudeDirect,
   codex: runCodexDirect,
+  hermes: runHermesDirect,
   mastra: runMastraDirect,
   openclaw: runOpenclawDirect,
 };

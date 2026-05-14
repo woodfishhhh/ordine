@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { text, timestamp, pgTable, index, serial, integer, jsonb } from "drizzle-orm/pg-core";
-import type { AgentRuntime, AgentRunStatus } from "@repo/schemas";
+import type { AgentRunStatus, AgentRuntime } from "@repo/schemas";
 import { jobsTable } from "./jobs_table";
 
 export const agentRawExportsTable = pgTable(
