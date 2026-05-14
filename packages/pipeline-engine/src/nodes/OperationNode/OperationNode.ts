@@ -1,4 +1,4 @@
-import type { ExecutorConfig, PipelineNode } from "@repo/schemas";
+import type { OperationExecutorConfig, PipelineNode } from "@repo/schemas";
 import type { NodeCtx } from "../../schemas";
 import { trace } from "@repo/obs";
 import { ScriptExecutionError } from "../../errors";
@@ -52,7 +52,7 @@ export const executeOperationNode = async (
       if (agent?.defaultRuntime) {
         await trace(jobId, `Using agent "${agent.name}" with runtime "${agent.defaultRuntime}"`);
 
-        return agent.defaultRuntime as ExecutorConfig["agent"];
+        return agent.defaultRuntime as OperationExecutorConfig["agent"];
       }
       await trace(
         jobId,
@@ -60,23 +60,7 @@ export const executeOperationNode = async (
       );
     }
 
-    return data.agentRuntime as ExecutorConfig["agent"] | undefined;
-  })();
-
-  const bestPracticeContent = await (async () => {
-    if (!data.bestPracticeId) return "";
-    const bp = await ctx.lookupBestPractice(data.bestPracticeId);
-    if (bp) {
-      await trace(jobId, `Loaded best practice "${bp.title}" (${bp.content.length} chars)`);
-
-      return bp.content;
-    }
-    await trace(
-      jobId,
-      `WARNING: Best practice ${data.bestPracticeId} not found, continuing without standards`,
-    );
-
-    return "";
+    return data.agentRuntime as OperationExecutorConfig["agent"] | undefined;
   })();
 
   const configResult = await safeParseConfig(operation.config, operation.name);
@@ -118,9 +102,7 @@ export const executeOperationNode = async (
     await trace(jobId, line);
   };
 
-  const effectiveInput = bestPracticeContent
-    ? `## Standards (Best Practice)\n\n${bestPracticeContent}\n\n---\n\n${input.content}`
-    : input.content;
+  const effectiveInput = input.content;
 
   const opResult = { value: "" };
 

@@ -1,4 +1,4 @@
-/// <reference path="../text-imports.d.ts" />
+import "../text-imports.d.ts";
 
 import { Result, ResultAsync } from "neverthrow";
 import { homedir } from "node:os";
@@ -17,7 +17,7 @@ import {
 } from "@repo/models";
 import { extractJsonFromText } from "@repo/agent";
 import { logger } from "@repo/logger";
-import { PipelineSchema, type PipelineData, type ObjectType } from "@repo/schemas";
+import { PipelineSchema, type PipelineData, type ObjectNodeType } from "@repo/schemas";
 import { runAgent } from "../pipelineRunnerService/agentRunner/agentRunner";
 import { normalizeSettingsRecord } from "../settingsService/normalizeSettingsRecord";
 
@@ -239,7 +239,7 @@ const buildOptimizeSystemPrompt = (skillReferences: string): string =>
     "=== OPERATION SELECTION RULES ===",
     "- ONLY use operations whose purpose logically matches the pipeline's task",
     "- Check each operation's acceptedObjectTypes — it must accept the type flowing from the previous node",
-    "  - github-project nodes produce 'project' type",
+    "  - github-project nodes produce 'github-project' type",
     "  - folder nodes produce 'folder' type",
     "  - code-file nodes produce 'file' or 'code-file' type",
     "- Do NOT add extra operations just to fill space. If only 1 operation is relevant, use only 1",
@@ -279,7 +279,7 @@ export const createPipelinesService = (db: DbConnection) => {
         name: string;
         description: string;
         config: Record<string, unknown>;
-        acceptedObjectTypes: ObjectType[];
+        acceptedObjectTypes: ObjectNodeType[];
       }>,
     ) => {
       for (const op of pendingOperations) {
@@ -566,7 +566,7 @@ export const createPipelinesService = (db: DbConnection) => {
             name: string;
             description: string;
             config: Record<string, unknown>;
-            acceptedObjectTypes: ObjectType[];
+            acceptedObjectTypes: ObjectNodeType[];
           }>;
         }
       | { error: string }
@@ -583,7 +583,7 @@ export const createPipelinesService = (db: DbConnection) => {
         name: string;
         description: string;
         config: Record<string, unknown>;
-        acceptedObjectTypes: ObjectType[];
+        acceptedObjectTypes: ObjectNodeType[];
       }> = [];
       const newOperations: Array<{ id: string; name: string; description: string }> = [];
 
@@ -622,7 +622,7 @@ export const createPipelinesService = (db: DbConnection) => {
             name: step.step,
             description: step.reason,
             config,
-            acceptedObjectTypes: ["file", "folder", "project", "prompt"] as ObjectType[],
+            acceptedObjectTypes: ["file", "folder", "github-project", "prompt"] as ObjectNodeType[],
           });
           newOperations.push({ id: opId, name: step.step, description: step.reason });
           logger.info(
@@ -643,7 +643,7 @@ export const createPipelinesService = (db: DbConnection) => {
           id: op.id,
           name: op.name,
           description: op.description,
-          acceptedObjectTypes: ["file", "folder", "project", "prompt"] as ObjectType[],
+          acceptedObjectTypes: ["file", "folder", "github-project", "prompt"] as ObjectNodeType[],
         })),
       ];
 

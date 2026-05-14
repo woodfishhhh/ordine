@@ -1,9 +1,5 @@
 export * from "./agentsService";
 export * from "./agentRuntimesService";
-export * from "./bestPracticesService";
-export * from "./bestPracticesBulkService";
-export * from "./checklistService";
-export * from "./codeSnippetsService";
 export * from "./distillationsService";
 export * from "./filesystemService";
 export * from "./githubProjectsService";
@@ -14,7 +10,6 @@ export * from "./pipelinesService";
 export * from "./pipelineRunnerService";
 export * from "./recipesService";
 export * from "./refinementsService";
-export * from "./rulesService";
 export * from "./serviceFactory";
 export * from "./settingsService";
 export * from "./skillsService";

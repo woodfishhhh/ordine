@@ -15,7 +15,6 @@ import type {
   JobsDao,
   PipelineRunsDao,
   SkillsDao,
-  BestPracticesDao,
 } from "@repo/models";
 
 /**
@@ -61,6 +60,7 @@ export const pipelineRunExecutor = {
   run: async (opts: {
     pipelineId: string;
     inputPath?: string;
+    inputs?: Record<string, string>;
     jobId: string;
     githubToken?: string;
     defaultOutputPath?: string;
@@ -70,7 +70,6 @@ export const pipelineRunExecutor = {
     jobsDao: JobsDao;
     pipelineRunsDao: PipelineRunsDao;
     skillsDao: SkillsDao;
-    bestPracticesDao: BestPracticesDao;
     engineDeps: PipelineEngineDeps;
   }): Promise<void> => {
     const {
@@ -83,7 +82,6 @@ export const pipelineRunExecutor = {
       jobsDao,
       pipelineRunsDao,
       skillsDao,
-      bestPracticesDao,
       engineDeps,
     } = opts;
 
@@ -118,12 +116,6 @@ export const pipelineRunExecutor = {
             : null;
         };
 
-        const lookupBestPractice = async (bpId: string) => {
-          const bp = await bestPracticesDao.findById(bpId);
-
-          return bp ? { title: bp.title, content: bp.content } : null;
-        };
-
         const lookupAgent = async (agentId: string) => {
           const agent = await agentsDao.findById(agentId);
 
@@ -132,12 +124,21 @@ export const pipelineRunExecutor = {
             : null;
         };
 
+        // Inject dynamic inputs into prompt nodes before execution
+        const nodes = pipeline.nodes.map((n) => {
+          if (opts.inputs && n.data.nodeType === "prompt" && opts.inputs[n.id]) {
+            return { ...n, data: { ...n.data, prompt: opts.inputs[n.id]! } };
+          }
+
+          return n;
+        });
+
         const result = await ResultAsync.fromPromise(
           pipelineEngine.execute({
             pipeline: {
               id: pipeline.id,
               name: pipeline.name,
-              nodes: pipeline.nodes,
+              nodes,
               edges: pipeline.edges,
             },
             jobId,
@@ -148,7 +149,6 @@ export const pipelineRunExecutor = {
             deps: engineDeps,
             lookupAgent,
             lookupSkill,
-            lookupBestPractice,
           }),
           (cause): PipelineRunError =>
             new ScriptExecutionError(cause instanceof Error ? cause.message : String(cause), cause),

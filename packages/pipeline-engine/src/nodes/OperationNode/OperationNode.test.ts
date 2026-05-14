@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { okAsync, errAsync } from "neverthrow";
 import { executeOperationNode, processOperationNode } from "./OperationNode";
 import type { PipelineEngineDeps } from "../../deps";
-import type { ExecutorConfig, PipelineNode } from "@repo/schemas";
+import type { OperationExecutorConfig, PipelineNode } from "@repo/schemas";
 import type { NodeCtx } from "../../schemas";
 import type { OperationNodeContext, OperationInfo } from "../types";
 
@@ -37,7 +37,7 @@ const makeInput = (content = "input text", inputPath = "/src"): NodeCtx => ({
   content,
 });
 
-const makeOperation = (executor: ExecutorConfig): OperationInfo => ({
+const makeOperation = (executor: OperationExecutorConfig): OperationInfo => ({
   id: "op-id",
   name: "Test Op",
   config: { executor },
@@ -56,7 +56,6 @@ const makeCtx = (
   operations,
   lookupAgent: vi.fn().mockResolvedValue(null),
   lookupSkill: vi.fn().mockResolvedValue(null),
-  lookupBestPractice: vi.fn().mockResolvedValue(null),
   jobId: "job-1",
   ...overrides,
 });
@@ -162,27 +161,6 @@ describe("executeOperationNode", () => {
 
     expect(result.ok).toBe(false);
     expect(trace).toHaveBeenCalledWith("job-1", expect.stringContaining("No executor configured"));
-  });
-
-  it("prepends best practice content when available", async () => {
-    const deps = makeDeps();
-    const op = makeOperation({ type: "agent", agentMode: "prompt", prompt: "Analyze" });
-    const ops = new Map([["op-id", op]]);
-    const node = makeNode({ operationId: "op-id", bestPracticeId: "bp-1" });
-    const ctx = makeCtx(deps, ops, {
-      lookupBestPractice: vi.fn().mockResolvedValue({
-        title: "Clean Code",
-        content: "Write tests first",
-      }),
-    });
-
-    await executeOperationNode(node, makeInput(), ctx);
-
-    expect(deps.runPrompt).toHaveBeenCalledWith(
-      expect.objectContaining({
-        inputContent: expect.stringContaining("Write tests first"),
-      }),
-    );
   });
 
   it("returns error when runPrompt fails", async () => {
@@ -424,7 +402,11 @@ describe("executeOperationNode — agent override", () => {
       prompt: "Analyze",
     });
     const ops = new Map([["op-id", op]]);
-    const node = makeNode({ operationId: "op-id", agentId: "missing-agent", agentRuntime: "mastra" });
+    const node = makeNode({
+      operationId: "op-id",
+      agentId: "missing-agent",
+      agentRuntime: "mastra",
+    });
     const lookupAgent = vi.fn().mockResolvedValue(null);
     const ctx = makeCtx(deps, ops, { lookupAgent });
 
