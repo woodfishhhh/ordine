@@ -163,6 +163,18 @@ export const executeOperationNode = async (
     const skillDescription = skill
       ? `${skill.label}: ${skill.description}`
       : `Skill "${skillId}" (no description available)`;
+    const agent = agentOverride ?? executor.agent;
+
+    if (agent === "hermes") {
+      const message = `Hermes is not available for skill operation "${operation.name}" because skills require local tool permissions`;
+      await trace(
+        jobId,
+        `WARNING: ${message}`,
+      );
+      await trace(jobId, `@@NODE_FAIL::${node.id}`);
+
+      return { ok: false, error: new ScriptExecutionError(message) };
+    }
 
     await trace(jobId, `Running skill "${skillId}"${skill ? ` (${skill.label})` : ""}...`);
     const skillResult = await deps.runSkill({
@@ -171,7 +183,7 @@ export const executeOperationNode = async (
       systemPrompt: executor.systemPrompt,
       inputContent: effectiveInput,
       inputPath: input.inputPath,
-      agent: agentOverride ?? executor.agent,
+      agent,
       allowedTools: executor.allowedTools,
       onChunk: handleChunk,
       onProgress,

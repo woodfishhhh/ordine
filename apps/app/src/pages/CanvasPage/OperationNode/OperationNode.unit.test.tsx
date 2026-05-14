@@ -20,7 +20,10 @@ vi.mock("@refinedev/core", () => ({
     if (resource === "agents") {
       return {
         result: {
-          data: [{ id: "agent-claude", name: "Claude" }],
+          data: [
+            { id: "agent-claude", name: "Claude", defaultRuntime: "claude-code" },
+            { id: "agent-hermes", name: "Hermes", defaultRuntime: "hermes" },
+          ],
         },
       };
     }
@@ -33,6 +36,7 @@ vi.mock("@refinedev/core", () => ({
             name: "Review Code",
             description: "Review code with an agent",
             acceptedObjectTypes: ["file", "project"],
+            config: { executor: { type: "agent", agentMode: "skill", skillId: "review-code" } },
           },
         ],
       },
@@ -128,6 +132,36 @@ describe("OperationNode", () => {
       });
     });
     expect(parentClick).not.toHaveBeenCalled();
+  });
+
+  it("shows stale Hermes selection as incompatible rather than hiding it", async () => {
+    const user = userEvent.setup();
+    const staleData: OperationNodeData = { ...baseData, agentId: "agent-hermes" };
+    const store = renderOperationNode(staleData);
+
+    const trigger = screen.getByRole("combobox", { name: "Agent" });
+    expect(trigger).toHaveTextContent(/Hermes/);
+
+    await user.click(trigger);
+
+    const hermesOption = await screen.findByRole("option", { name: /Hermes/ });
+    expect(hermesOption).toHaveAttribute("aria-disabled", "true");
+
+    await user.click(await screen.findByRole("option", { name: "默认" }));
+
+    await waitFor(() => {
+      expect(store.getState().nodes[0]?.data).toMatchObject({ agentId: undefined });
+    });
+  });
+
+  it("hides Hermes-backed agents for skill operations", async () => {
+    const user = userEvent.setup();
+    renderOperationNode();
+
+    await user.click(screen.getByRole("combobox", { name: "Agent" }));
+
+    expect(await screen.findByRole("option", { name: "Claude" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Hermes" })).not.toBeInTheDocument();
   });
 
   it("updates loop settings without bubbling canvas interactions", async () => {

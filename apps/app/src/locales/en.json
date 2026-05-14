@@ -825,6 +825,7 @@
       "runtimeSelectLabel": "Select Agent Runtime",
       "defaultRuntime": "Default",
       "defaultAgent": "Default",
+      "agentIncompatible": "incompatible",
       "inspectLlmOutput": "View LLM output",
       "loopEnabled": "Loop enabled",
       "enableLoop": "Enable loop",
