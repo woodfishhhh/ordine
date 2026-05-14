@@ -131,4 +131,29 @@ describe("FolderBrowser", () => {
     render(<FolderBrowser open onOpenChange={handleOpenChange} onSelect={handleSelect} />);
     expect(screen.getByText("Path does not exist")).toBeInTheDocument();
   });
+
+  it("constrains a long selected file path inside the dialog", async () => {
+    const user = userEvent.setup();
+    const longPath =
+      "/Users/test/workspace/ordine/apps/app/src/pages/CanvasPage/components/very-long-generated-file-name-that-should-wrap-inside-the-dialog.tsx";
+    const longFileName = "very-long-generated-file-name-that-should-wrap-inside-the-dialog.tsx";
+
+    mockUseList.mockReturnValue(
+      makeQueryResult([{ name: longFileName, type: "file", path: longPath }]),
+    );
+
+    render(
+      <FolderBrowser open mode="file" onOpenChange={handleOpenChange} onSelect={handleSelect} />,
+    );
+
+    await user.click(screen.getByText(longFileName));
+
+    const selectedPath = screen.getByText(longPath);
+    const selectionContainer = selectedPath.closest("div");
+
+    expect(selectionContainer).toHaveClass("max-w-full");
+    expect(selectionContainer).toHaveClass("overflow-hidden");
+    expect(selectedPath).toHaveClass("min-w-0");
+    expect(selectedPath).toHaveClass("break-all");
+  });
 });
