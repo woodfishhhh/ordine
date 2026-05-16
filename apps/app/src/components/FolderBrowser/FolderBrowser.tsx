@@ -103,7 +103,7 @@ export const FolderBrowser = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="min-w-0 sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
             {mode === "file"
@@ -118,7 +118,7 @@ export const FolderBrowser = ({
         </DialogHeader>
 
         {/* Breadcrumb / Path bar */}
-        <div className="flex items-center gap-1 rounded-md border bg-muted/50 px-2 py-1.5 text-xs font-mono overflow-x-auto">
+        <div className="flex min-w-0 max-w-full items-center gap-1 overflow-x-auto rounded-md border bg-muted/50 px-2 py-1.5 text-xs font-mono">
           <button
             className="shrink-0 p-0.5 rounded hover:bg-accent"
             type="button"
@@ -149,7 +149,7 @@ export const FolderBrowser = ({
         </div>
 
         {/* Directory listing */}
-        <ScrollArea className="h-70 rounded-md border">
+        <ScrollArea className="h-70 min-w-0 max-w-full rounded-md border">
           {query.isLoading && (
             <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
               {t("nodes.outputLocalPath.loading")}
@@ -164,7 +164,7 @@ export const FolderBrowser = ({
             <div className="p-1">
               {currentPath && (
                 <button
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent"
+                  className="flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent"
                   type="button"
                   onClick={handleGoUp}
                 >
@@ -176,7 +176,7 @@ export const FolderBrowser = ({
                 <button
                   key={entry.path}
                   className={cn(
-                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent",
+                    "flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent",
                     selectedFile === entry.path && "bg-accent ring-1 ring-teal-400",
                   )}
                   type="button"
@@ -187,7 +187,7 @@ export const FolderBrowser = ({
                   ) : (
                     <FileCode className="h-3.5 w-3.5 shrink-0 text-orange-500" />
                   )}
-                  <span className="truncate">{entry.name}</span>
+                  <span className="min-w-0 truncate">{entry.name}</span>
                 </button>
               ))}
               {entries.length === 0 && !query.isLoading && (
@@ -200,11 +200,11 @@ export const FolderBrowser = ({
         </ScrollArea>
 
         {/* Current selection display */}
-        <div className="rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-xs">
-          <span className="text-teal-600 font-medium">
+        <div className="flex min-w-0 max-w-full items-start gap-1 overflow-hidden rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-xs">
+          <span className="shrink-0 text-teal-600 font-medium">
             {t("nodes.outputLocalPath.currentSelection")}
           </span>
-          <span className="font-mono text-teal-800">
+          <span className="min-w-0 break-all font-mono text-teal-800">
             {mode === "file" && selectedFile ? selectedFile : displayPath}
           </span>
         </div>
