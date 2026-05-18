@@ -10,9 +10,7 @@ import { Input } from "@repo/ui/input";
 import { Label } from "@repo/ui/label";
 import { PageLoadingState } from "@/components/PageLoadingState";
 import { PageHeader } from "@/components/PageHeader";
-import { useToastStore } from "@/store/toastStore";
 import { useStore } from "zustand";
-import { parseOperationZip } from "../importOperation";
 import {
   Select,
   SelectContent,
@@ -30,26 +28,25 @@ export const OperationsPageContent = () => {
   const { result: operationsResult, query: operationsQuery } = useList<Operation>({
     resource: ResourceName.operations,
   });
-  const operations = operationsResult?.data ?? [];
+  const operations = operationsResult.data;
 
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const toastStoreRef = useToastStore();
-  const addToast = useStore(toastStoreRef, (s) => s.addToast);
   const pageStore = useOperationsPageStore();
   const searchQuery = useStore(pageStore, (s) => s.searchQuery);
   const sortBy = useStore(pageStore, (s) => s.sortBy);
   const sortOpen = useStore(pageStore, (s) => s.sortOpen);
   const importing = useStore(pageStore, (s) => s.importing);
   const viewMode = useStore(pageStore, (s) => s.viewMode);
-  const handleSetSearchQuery = useStore(pageStore, (s) => s.handleSetSearchQuery);
-  const handleSetSortBy = useStore(pageStore, (s) => s.handleSetSortBy);
-  const handleSetSortOpen = useStore(pageStore, (s) => s.handleSetSortOpen);
-  const handleToggleSortOpen = useStore(pageStore, (s) => s.handleToggleSortOpen);
-  const handleSetImporting = useStore(pageStore, (s) => s.handleSetImporting);
-  const handleSetViewMode = useStore(pageStore, (s) => s.handleSetViewMode);
-  const { mutateAsync: createOpMutate } = useCreate();
+  const handleSearchInputChange = useStore(pageStore, (s) => s.handleSearchInputChange);
+  const handleClearSearchButtonClick = useStore(pageStore, (s) => s.handleClearSearchButtonClick);
+  const handleSortItemSelect = useStore(pageStore, (s) => s.handleSortItemSelect);
+  const handleSortSelectOpenChange = useStore(pageStore, (s) => s.handleSortSelectOpenChange);
+  const handleSortSelectTriggerClick = useStore(pageStore, (s) => s.handleSortSelectTriggerClick);
+  const handleImportFileInputChange = useStore(pageStore, (s) => s.handleImportFileInputChange);
+  const handleViewModeButtonClick = useStore(pageStore, (s) => s.handleViewModeButtonClick);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const { mutateAsync: createResource } = useCreate();
 
   const filteredOperations = operations
     .filter((op: Operation) => {
@@ -78,84 +75,24 @@ export const OperationsPageContent = () => {
       }
     });
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    handleSetSearchQuery(e.target.value);
-
-  const handleSortChange = (value: string | null) => {
-    handleSetSortBy((value ?? "default") as typeof sortBy);
-    handleSetSortOpen(false);
-  };
-
-  const handleSortOpenChange = (v: boolean) => handleSetSortOpen(v);
-  const handleSortToggle = () => handleToggleSortOpen();
   const handleNavigateToNew = () => navigate({ to: "/pipelines/operations/new" });
 
   const handleImportClick = () => {
     importInputRef.current?.click();
   };
-
-  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    handleSetImporting(true);
-
-    const parseResult = await parseOperationZip(file);
-    if (parseResult.isErr()) {
-      addToast({
-        type: "error",
-        title: t("common.import"),
-        description: parseResult.error,
-      });
-      handleSetImporting(false);
-      e.target.value = "";
-
-      return;
-    }
-    const parsed = parseResult.value;
-
-    // Create templates first if present
-    const templateIdMap = new Map<string, string>();
-    for (const tpl of parsed.templates) {
-      const newId = `tpl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      templateIdMap.set(tpl.id, newId);
-      await createOpMutate({
-        resource: ResourceName.operationOutputItemTemplates,
-        values: {
-          id: newId,
-          name: tpl.name,
-          description: tpl.description,
-          content: tpl.content,
-          contentType: tpl.contentType,
-        },
-      });
-    }
-
-    // Remap templateIds in outputs to new IDs
-    const outputs = parsed.config.outputs.map((o) => ({
-      ...o,
-      templateIds: o.templateIds.map((id) => templateIdMap.get(id) ?? id),
-    }));
-
-    const result = await createOpMutate({
-      resource: ResourceName.operations,
-      values: {
-        id: `op-${Date.now()}`,
-        name: parsed.name,
-        description: parsed.description,
-        config: { ...parsed.config, outputs },
-        acceptedObjectTypes: parsed.acceptedObjectTypes,
-      },
+  const handleImportInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    void handleImportFileInputChange(event, {
+      createOperation: (values) =>
+        createResource({
+          resource: ResourceName.operations,
+          values,
+        }),
+      createOutputTemplate: (values) =>
+        createResource({
+          resource: ResourceName.operationOutputItemTemplates,
+          values,
+        }),
     });
-    const created = result.data;
-    if (created) {
-      addToast({
-        type: "success",
-        title: t("common.import"),
-        description: `${t("operations.createNew")} ${parsed.name}`,
-      });
-    }
-    handleSetImporting(false);
-    e.target.value = "";
   };
 
   if (operationsQuery?.isLoading) {
@@ -185,7 +122,7 @@ export const OperationsPageContent = () => {
               accept=".zip,application/zip"
               className="hidden"
               type="file"
-              onChange={handleImportFile}
+              onChange={handleImportInputChange}
             />
           </>
         }
@@ -202,7 +139,7 @@ export const OperationsPageContent = () => {
             placeholder={t("operations.searchPlaceholder")}
             type="text"
             value={searchQuery}
-            onChange={handleSearchChange}
+            onChange={handleSearchInputChange}
           />
         </div>
 
@@ -212,14 +149,14 @@ export const OperationsPageContent = () => {
         <Select
           open={sortOpen}
           value={sortBy}
-          onOpenChange={handleSortOpenChange}
-          onValueChange={handleSortChange}
+          onOpenChange={handleSortSelectOpenChange}
+          onValueChange={handleSortItemSelect}
         >
           <SelectTrigger
             aria-label={t("common.actions")}
             className="h-8 w-36 text-xs bg-background"
             id="sort-select"
-            onClick={handleSortToggle}
+            onClick={handleSortSelectTriggerClick}
           >
             <SelectValue />
           </SelectTrigger>
@@ -242,7 +179,7 @@ export const OperationsPageContent = () => {
             className={cn("h-8 w-8", viewMode === "grid" && "bg-accent")}
             size="icon"
             variant="ghost"
-            onClick={() => handleSetViewMode("grid")}
+            onClick={() => handleViewModeButtonClick("grid")}
           >
             <LayoutGrid className="h-4 w-4" />
           </Button>
@@ -250,7 +187,7 @@ export const OperationsPageContent = () => {
             className={cn("h-8 w-8", viewMode === "list" && "bg-accent")}
             size="icon"
             variant="ghost"
-            onClick={() => handleSetViewMode("list")}
+            onClick={() => handleViewModeButtonClick("list")}
           >
             <List className="h-4 w-4" />
           </Button>
@@ -271,7 +208,7 @@ export const OperationsPageContent = () => {
                   className="mt-3"
                   size="sm"
                   variant="outline"
-                  onClick={() => handleSetSearchQuery("")}
+                  onClick={handleClearSearchButtonClick}
                 >
                   {t("common.clearSearch", "Clear search")}
                 </Button>

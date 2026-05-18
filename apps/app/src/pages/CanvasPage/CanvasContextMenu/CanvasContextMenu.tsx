@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
-import { useHarnessCanvasStore } from "../_store";
+import { useCanvasPageStore } from "../_store";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -47,8 +47,8 @@ export const CanvasContextMenu = () => {
   const { result: operationsResult } = useList<Operation>({
     resource: ResourceName.operations,
   });
-  const operations = operationsResult?.data ?? [];
-  const store = useHarnessCanvasStore();
+  const operations = operationsResult.data;
+  const store = useCanvasPageStore();
   const contextMenu = useStore(store, (s) => s.contextMenu);
   const connectStart = useStore(store, (s) => s.connectStart);
   const nodes = useStore(store, (s) => s.nodes);

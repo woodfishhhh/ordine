@@ -1,7 +1,8 @@
+import { useNavigate } from "@tanstack/react-router";
 import { Pencil, Play, XCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@repo/ui/button";
-import type { Operation, OperationConfig, OperationConfigInput, OutputItem } from "@repo/schemas";
+import type { Operation } from "@repo/schemas";
 import { useOne } from "@refinedev/core";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/shallow";
@@ -15,16 +16,6 @@ import { ItemDetailPanel } from "./ItemDetailPanel";
 import { OperationMetaPanel } from "./OperationMetaPanel";
 import { OperationRunPanel } from "../OperationRunPanel";
 
-const parseConfig = (raw: OperationConfigInput): OperationConfig => {
-  return {
-    executor: raw.executor,
-    inputs: Array.isArray(raw.inputs) ? raw.inputs : [],
-    outputs: Array.isArray(raw.outputs)
-      ? raw.outputs.map((o) => ({ ...o, templateIds: o.templateIds ?? [] }))
-      : [],
-  };
-};
-
 export const OperationDetailPageContent = () => {
   const { operationId } = Route.useParams();
   const { result: operationResult, query: operationQuery } = useOne<Operation>({
@@ -33,21 +24,34 @@ export const OperationDetailPageContent = () => {
   });
   const operation = operationResult ?? null;
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const store = useOperationDetailPageStore();
-  const { selectedItemIndex, handleNavigateBack, handleNavigateToEdit, handleOpenRunPanel } =
-    useStore(
-      store,
-      useShallow((s) => ({
-        selectedItemIndex: s.selectedItemIndex,
-        handleNavigateBack: s.handleNavigateBack,
-        handleNavigateToEdit: s.handleNavigateToEdit,
-        handleOpenRunPanel: s.handleOpenRunPanel,
-      })),
-    );
-
-  const config = operation ? parseConfig(operation.config) : null;
-  const selectedItem: OutputItem | undefined = config?.outputs[selectedItemIndex];
+  const { handleBackLinkClick, handleEditButtonClick, handleOpenRunPanelButtonClick } = useStore(
+    store,
+    useShallow((s) => ({
+      handleBackLinkClick: s.handleBackLinkClick,
+      handleEditButtonClick: s.handleEditButtonClick,
+      handleOpenRunPanelButtonClick: s.handleOpenRunPanelButtonClick,
+    })),
+  );
+  const handleBackToOperationsClick = () => {
+    handleBackLinkClick({
+      navigateBack: () => {
+        void navigate({ to: "/pipelines/operations" });
+      },
+    });
+  };
+  const handleEditOperationClick = (id: string) => {
+    handleEditButtonClick(id, {
+      navigateToEdit: (operationIdToEdit) => {
+        void navigate({
+          to: "/pipelines/operations/$operationId/edit",
+          params: { operationId: operationIdToEdit },
+        });
+      },
+    });
+  };
 
   if (operationQuery?.isLoading) {
     return (
@@ -58,14 +62,14 @@ export const OperationDetailPageContent = () => {
     );
   }
 
-  if (!operation || !config) {
+  if (!operation) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
         <XCircle className="h-10 w-10 text-muted-foreground/30" />
         <p className="text-sm font-medium text-muted-foreground">
           {t("operations.operationNotFound")}
         </p>
-        <Button className="h-auto p-0 text-xs" variant="link" onClick={handleNavigateBack}>
+        <Button className="h-auto p-0 text-xs" variant="link" onClick={handleBackToOperationsClick}>
           {t("common.backToList")}
         </Button>
       </div>
@@ -81,7 +85,7 @@ export const OperationDetailPageContent = () => {
               aria-label={t("operations.run.run", "Run")}
               size="sm"
               variant="default"
-              onClick={handleOpenRunPanel}
+              onClick={handleOpenRunPanelButtonClick}
             >
               <Play className="h-4 w-4" />
               {t("operations.run.run", "Run")}
@@ -90,7 +94,7 @@ export const OperationDetailPageContent = () => {
               aria-label={t("common.edit")}
               size="sm"
               variant="outline"
-              onClick={handleNavigateToEdit.bind(null, operation.id)}
+              onClick={() => handleEditOperationClick(operation.id)}
             >
               <Pencil className="h-4 w-4" />
               {t("common.edit")}
@@ -103,17 +107,17 @@ export const OperationDetailPageContent = () => {
 
       {/* Three-column body */}
       <div className="flex flex-1 overflow-hidden">
-        <OutputItemsPanel outputs={config.outputs} />
+        <OutputItemsPanel />
 
         <div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
-          <ItemDetailPanel selectedItem={selectedItem} />
+          <ItemDetailPanel />
         </div>
 
-        <OperationMetaPanel config={config} operation={operation} />
+        <OperationMetaPanel />
       </div>
 
       {/* Run panel */}
-      <OperationRunPanel operationId={operation.id} operationName={operation.name} />
+      <OperationRunPanel operationId={operation.id} />
     </div>
   );
 };

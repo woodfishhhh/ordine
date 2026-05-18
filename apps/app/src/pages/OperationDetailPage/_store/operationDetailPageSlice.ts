@@ -1,7 +1,12 @@
 import type { StateCreator } from "zustand";
 import type { OperationOutputItemTemplate } from "@repo/schemas";
-import { dataProvider, ResourceName } from "@/integrations/refine/dataProvider";
-import { router } from "@/router";
+import { ResultAsync } from "neverthrow";
+
+export interface OperationDetailDependencies {
+  fetchTemplate: (templateId: string) => Promise<OperationOutputItemTemplate | null>;
+  navigateBack: () => void;
+  navigateToEdit: (operationId: string) => void;
+}
 
 export interface OperationDetailPageSlice {
   selectedItemIndex: number;
@@ -10,72 +15,74 @@ export interface OperationDetailPageSlice {
   templates: Record<string, OperationOutputItemTemplate>;
   templateViewMode: "raw" | "preview";
 
-  handleSelectItem: (index: number) => void;
-  handleSetActiveTab: (tab: "definition" | "templates") => void;
-  handleSelectTemplate: (index: number) => void;
-  handleFetchTemplates: (templateIds: string[]) => void;
-  handleNavigateBack: () => void;
-  handleNavigateToEdit: (operationId: string) => void;
-  handleSwitchToTemplatesTab: (templateIds: string[]) => void;
-  handleSetTemplateViewMode: (mode: "raw" | "preview") => void;
+  handleOutputItemRowClick: (index: number) => void;
+  handleDefinitionTabButtonClick: () => void;
+  handleTemplatesTabButtonClick: (
+    templateIds: string[],
+    dependencies: Pick<OperationDetailDependencies, "fetchTemplate">,
+  ) => void;
+  handleTemplateItemClick: (index: number) => void;
+  handleBackLinkClick: (dependencies: Pick<OperationDetailDependencies, "navigateBack">) => void;
+  handleEditButtonClick: (
+    operationId: string,
+    dependencies: Pick<OperationDetailDependencies, "navigateToEdit">,
+  ) => void;
+  handleTemplateViewModeButtonClick: (mode: "raw" | "preview") => void;
 }
 
 export const createOperationDetailPageSlice: StateCreator<OperationDetailPageSlice> = (
   set,
   get,
-) => ({
-  selectedItemIndex: 0,
-  activeTab: "definition",
-  selectedTemplateIndex: 0,
-  templates: {},
-  templateViewMode: "raw",
-
-  handleSelectItem: (index) =>
-    set({ selectedItemIndex: index, activeTab: "definition", selectedTemplateIndex: 0 }),
-
-  handleSetActiveTab: (tab) => set({ activeTab: tab }),
-
-  handleSelectTemplate: (index) => set({ selectedTemplateIndex: index }),
-
-  handleFetchTemplates: (templateIds) => {
+) => {
+  const fetchTemplates = (
+    templateIds: string[],
+    dependencies: Pick<OperationDetailDependencies, "fetchTemplate">,
+  ) => {
     const { templates } = get();
     const idsToFetch = templateIds.filter((id) => !templates[id]);
     if (idsToFetch.length === 0) return;
 
     for (const id of idsToFetch) {
-      dataProvider
-        .getOne<OperationOutputItemTemplate>({
-          resource: ResourceName.operationOutputItemTemplates,
-          id,
-        })
-        .then(({ data }) => {
-          if (data) {
+      void ResultAsync.fromPromise(dependencies.fetchTemplate(id), () => null).match(
+        (template) => {
+          if (template) {
             set((state) => ({
-              templates: { ...state.templates, [id]: data },
+              templates: { ...state.templates, [id]: template },
             }));
           }
-        })
-        .catch(() => {
-          /* template not found — ignore */
-        });
+        },
+        () => undefined,
+      );
     }
-  },
+  };
 
-  handleNavigateBack: () => {
-    void router.navigate({ to: "/pipelines/operations" });
-  },
+  return {
+    selectedItemIndex: 0,
+    activeTab: "definition",
+    selectedTemplateIndex: 0,
+    templates: {},
+    templateViewMode: "raw",
 
-  handleNavigateToEdit: (operationId) => {
-    void router.navigate({
-      to: "/pipelines/operations/$operationId/edit",
-      params: { operationId },
-    });
-  },
+    handleOutputItemRowClick: (index) =>
+      set({ selectedItemIndex: index, activeTab: "definition", selectedTemplateIndex: 0 }),
 
-  handleSwitchToTemplatesTab: (templateIds) => {
-    set({ activeTab: "templates" });
-    get().handleFetchTemplates(templateIds);
-  },
+    handleDefinitionTabButtonClick: () => set({ activeTab: "definition" }),
 
-  handleSetTemplateViewMode: (mode) => set({ templateViewMode: mode }),
-});
+    handleTemplatesTabButtonClick: (templateIds, dependencies) => {
+      set({ activeTab: "templates" });
+      fetchTemplates(templateIds, dependencies);
+    },
+
+    handleTemplateItemClick: (index) => set({ selectedTemplateIndex: index }),
+
+    handleBackLinkClick: (dependencies) => {
+      dependencies.navigateBack();
+    },
+
+    handleEditButtonClick: (operationId, dependencies) => {
+      dependencies.navigateToEdit(operationId);
+    },
+
+    handleTemplateViewModeButtonClick: (mode) => set({ templateViewMode: mode }),
+  };
+};

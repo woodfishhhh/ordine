@@ -8,7 +8,7 @@ import {
   type EdgeChange,
   type Connection,
 } from "@xyflow/react";
-import type { HarnessCanvasStoreSlice } from "./harnessCanvasStore";
+import type { CanvasPageStoreSlice } from "./canvasPageStore";
 import { makeDefaultNodeData } from "../utils/makeDefaultNodeData";
 import { ConnectionRuleSchema } from "@repo/pipeline-engine/schemas";
 import type {
@@ -60,7 +60,6 @@ export interface CanvasSlice {
   duplicateNode: (nodeId: string) => void;
   clearCanvas: () => void;
   formatLayout: () => void;
-  setHoveredCompound: (compoundId: string | null) => void;
   addNodeToCompound: (nodeId: string, compoundId: string) => void;
   removeNodeFromCompound: (nodeId: string, compoundId: string) => void;
   groupSelectedNodes: (nodeIds: string[]) => void;
@@ -80,8 +79,8 @@ const makeLocalizedDefaultNodeData = (type: BuiltinNodeType) => {
 };
 
 export const createCanvasSlice = (
-  set: Parameters<HarnessCanvasStoreSlice>[0],
-  get: Parameters<HarnessCanvasStoreSlice>[1],
+  set: Parameters<CanvasPageStoreSlice>[0],
+  get: Parameters<CanvasPageStoreSlice>[1],
   overrideNodes?: PipelineNode[],
   overrideEdges?: PipelineEdge[],
 ): CanvasSlice => {
@@ -293,10 +292,6 @@ export const createCanvasSlice = (
       const layouted = computeAutoLayout(nodes, edges);
       sortParentBeforeChildren(layouted);
       set({ nodes: layouted });
-    },
-
-    setHoveredCompound: (compoundId) => {
-      set({ hoveredCompoundId: compoundId });
     },
 
     addNodeToCompound: (nodeId, compoundId) => {

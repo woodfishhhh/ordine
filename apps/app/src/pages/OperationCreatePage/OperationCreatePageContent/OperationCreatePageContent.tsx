@@ -109,7 +109,7 @@ export const OperationCreatePageContent = () => {
   const { result: skillsResult, query: skillsQuery } = useList<Skill>({
     resource: ResourceName.skills,
   });
-  const skills = skillsResult?.data ?? [];
+  const skills = skillsResult.data;
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -133,12 +133,18 @@ export const OperationCreatePageContent = () => {
 
   const store = useOperationCreatePageStore();
   const skillOpen = useStore(store, (s) => s.skillOpen);
-  const handleSkillOpenChange = useStore(store, (s) => s.handleSetSkillOpen);
-  const handleSkillToggle = useStore(store, (s) => s.handleToggleSkillOpen);
+  const handleSkillSelectOpenChange = useStore(store, (s) => s.handleSkillSelectOpenChange);
+  const handleSkillSelectTriggerClick = useStore(store, (s) => s.handleSkillSelectTriggerClick);
 
   const scriptLangOpen = useStore(store, (s) => s.scriptLangOpen);
-  const handleScriptLangOpenChange = useStore(store, (s) => s.handleSetScriptLangOpen);
-  const handleScriptLangToggle = useStore(store, (s) => s.handleToggleScriptLangOpen);
+  const handleScriptLangSelectOpenChange = useStore(
+    store,
+    (s) => s.handleScriptLangSelectOpenChange,
+  );
+  const handleScriptLangSelectTriggerClick = useStore(
+    store,
+    (s) => s.handleScriptLangSelectTriggerClick,
+  );
 
   const { mutateAsync: createOpMutate } = useCreate();
 
@@ -288,21 +294,22 @@ export const OperationCreatePageContent = () => {
                             const selected = field.value.includes(value);
 
                             return (
-                              <button
+                              <Button
                                 key={value}
                                 className={cn(
-                                  "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+                                  "flex h-auto items-center gap-2 rounded-lg border px-3 py-2 text-sm font-normal",
                                   selected
-                                    ? "border-primary/50 bg-primary/10 text-primary"
-                                    : "border-border bg-background text-muted-foreground hover:bg-muted",
+                                    ? "border-primary/50 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary"
+                                    : "border-border bg-background text-muted-foreground",
                                 )}
                                 type="button"
+                                variant="ghost"
                                 onClick={() => handleChange(toggleObjectType(field.value, value))}
                               >
                                 <Icon className="h-4 w-4" />
                                 {label}
                                 {selected && <span className="ml-1 text-xs">✓</span>}
-                              </button>
+                              </Button>
                             );
                           })}
                         </div>
@@ -331,15 +338,16 @@ export const OperationCreatePageContent = () => {
                           const selected = field.value === value;
 
                           return (
-                            <button
+                            <Button
                               key={value}
                               className={cn(
-                                "flex flex-1 flex-col items-start gap-1 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
+                                "flex h-auto flex-1 flex-col items-start gap-1 rounded-lg border px-3 py-2.5 text-left text-sm font-normal",
                                 selected
-                                  ? "border-primary/50 bg-primary/10 text-primary"
-                                  : "border-border bg-background text-muted-foreground hover:bg-muted",
+                                  ? "border-primary/50 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary"
+                                  : "border-border bg-background text-muted-foreground",
                               )}
                               type="button"
+                              variant="ghost"
                               onClick={() => handleChange(value)}
                             >
                               <span className="flex items-center gap-1.5 font-medium">
@@ -347,7 +355,7 @@ export const OperationCreatePageContent = () => {
                                 {label}
                               </span>
                               <span className="text-[11px] opacity-70">{description}</span>
-                            </button>
+                            </Button>
                           );
                         })}
                       </div>
@@ -372,15 +380,16 @@ export const OperationCreatePageContent = () => {
                               const selected = field.value === value;
 
                               return (
-                                <button
+                                <Button
                                   key={value}
                                   className={cn(
-                                    "flex flex-1 flex-col items-start gap-1 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
+                                    "flex h-auto flex-1 flex-col items-start gap-1 rounded-lg border px-3 py-2 text-left text-sm font-normal",
                                     selected
-                                      ? "border-primary/50 bg-primary/10 text-primary"
-                                      : "border-border bg-background text-muted-foreground hover:bg-muted",
+                                      ? "border-primary/50 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary"
+                                      : "border-border bg-background text-muted-foreground",
                                   )}
                                   type="button"
+                                  variant="ghost"
                                   onClick={() => handleChange(value)}
                                 >
                                   <span className="flex items-center gap-1.5 font-medium">
@@ -388,7 +397,7 @@ export const OperationCreatePageContent = () => {
                                     {label}
                                   </span>
                                   <span className="text-[11px] opacity-70">{description}</span>
-                                </button>
+                                </Button>
                               );
                             })}
                           </div>
@@ -403,7 +412,7 @@ export const OperationCreatePageContent = () => {
                         render={({ field }) => {
                           const handleChange = (v: string | null) => {
                             if (v) field.onChange(v);
-                            handleSkillOpenChange(false);
+                            handleSkillSelectOpenChange(false);
                           };
 
                           return (
@@ -415,10 +424,13 @@ export const OperationCreatePageContent = () => {
                                 <Select
                                   open={skillOpen}
                                   value={field.value}
-                                  onOpenChange={handleSkillOpenChange}
+                                  onOpenChange={handleSkillSelectOpenChange}
                                   onValueChange={handleChange}
                                 >
-                                  <SelectTrigger className="h-9 w-full" onClick={handleSkillToggle}>
+                                  <SelectTrigger
+                                    className="h-9 w-full"
+                                    onClick={handleSkillSelectTriggerClick}
+                                  >
                                     <SelectValue placeholder={t("operations.selectSkill")} />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -491,7 +503,7 @@ export const OperationCreatePageContent = () => {
                       render={({ field }) => {
                         const handleChange = (v: string | null) => {
                           if (v) field.onChange(v);
-                          handleScriptLangOpenChange(false);
+                          handleScriptLangSelectOpenChange(false);
                         };
 
                         return (
@@ -503,12 +515,12 @@ export const OperationCreatePageContent = () => {
                               <Select
                                 open={scriptLangOpen}
                                 value={field.value}
-                                onOpenChange={handleScriptLangOpenChange}
+                                onOpenChange={handleScriptLangSelectOpenChange}
                                 onValueChange={handleChange}
                               >
                                 <SelectTrigger
                                   className="h-9 w-full"
-                                  onClick={handleScriptLangToggle}
+                                  onClick={handleScriptLangSelectTriggerClick}
                                 >
                                   <SelectValue />
                                 </SelectTrigger>

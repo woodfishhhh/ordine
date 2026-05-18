@@ -18,7 +18,7 @@ import { Input } from "@repo/ui/input";
 import { cn } from "@repo/ui/lib/utils";
 import { SiGitHubIcon } from "@/components/icons/SiGitHubIcon";
 import { ResourceName } from "@/integrations/refine/dataProvider";
-import { useHarnessCanvasStore } from "../_store";
+import { useCanvasPageStore } from "../_store";
 import { getNodeMeta, getNodeTypeLabel, getNodeTypeShortLabel } from "../utils/nodeTypeMeta";
 import type { XYPosition } from "@xyflow/system";
 
@@ -46,9 +46,9 @@ export const CanvasNodeCreationPalette = ({
   getCreateNodeScreenPosition,
 }: CanvasNodeCreationPaletteProps) => {
   const { t } = useTranslation();
-  const store = useHarnessCanvasStore();
+  const store = useCanvasPageStore();
   const query = useStore(store, (state) => state.quickAddQuery);
-  const handleSetQuickAddQuery = useStore(store, (state) => state.handleSetQuickAddQuery);
+  const handleQuickAddInputChange = useStore(store, (state) => state.handleQuickAddInputChange);
   const handleCloseQuickAdd = useStore(store, (state) => state.handleCloseQuickAdd);
   const handleQuickAddKeyDown = useStore(store, (state) => state.handleQuickAddKeyDown);
   const handleCreateObjectNode = useStore(store, (state) => state.handleCreateObjectNode);
@@ -57,7 +57,7 @@ export const CanvasNodeCreationPalette = ({
   const { result: operationsResult } = useList<Operation>({
     resource: ResourceName.operations,
   });
-  const operations = operationsResult?.data ?? [];
+  const operations = operationsResult.data;
   const search = normalizeSearch(query);
 
   const objectItems = QUICK_ADD_OBJECT_TYPES.filter((type) => {
@@ -91,7 +91,7 @@ export const CanvasNodeCreationPalette = ({
           name="canvasQuickAddSearch"
           placeholder={t("canvas.quickAdd.searchPlaceholder")}
           value={query}
-          onChange={(event) => handleSetQuickAddQuery(event.target.value)}
+          onChange={handleQuickAddInputChange}
           onKeyDown={handleQuickAddKeyDown}
         />
         <Button
@@ -122,10 +122,11 @@ export const CanvasNodeCreationPalette = ({
                   if (!meta) return null;
 
                   return (
-                    <button
+                    <Button
                       key={type}
-                      className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex h-auto w-full items-center justify-start gap-2 px-2 py-2 text-left text-sm font-normal"
                       type="button"
+                      variant="ghost"
                       onClick={() => handleCreateObjectNode(type, getCreateNodeScreenPosition())}
                     >
                       <span
@@ -138,7 +139,7 @@ export const CanvasNodeCreationPalette = ({
                       </span>
                       <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
                       <span className="text-xs text-muted-foreground">{shortLabel}</span>
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -152,10 +153,11 @@ export const CanvasNodeCreationPalette = ({
               </div>
               <div className="space-y-0.5">
                 {operationItems.map((operation) => (
-                  <button
+                  <Button
                     key={operation.id}
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex h-auto w-full items-center justify-start gap-2 px-2 py-2 text-left text-sm font-normal"
                     type="button"
+                    variant="ghost"
                     onClick={() =>
                       handleCreateOperationNode(operation, getCreateNodeScreenPosition())
                     }
@@ -167,7 +169,7 @@ export const CanvasNodeCreationPalette = ({
                     <span className="text-xs text-muted-foreground">
                       {t("canvas.nodeTypes.operation.shortLabel")}
                     </span>
-                  </button>
+                  </Button>
                 ))}
               </div>
             </section>

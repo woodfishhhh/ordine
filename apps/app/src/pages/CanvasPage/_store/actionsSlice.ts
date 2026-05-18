@@ -1,5 +1,5 @@
 import { sortParentBeforeChildren, type PipelineEdge, type PipelineNode } from "./canvasSlice";
-import type { HarnessCanvasStoreSlice } from "./harnessCanvasStore";
+import type { CanvasPageStoreSlice } from "./canvasPageStore";
 import type { Operation, BuiltinNodeType } from "@repo/schemas";
 import type { PickedProject } from "../GitHubProjectNode/PickProjectDialog";
 import type { ConnectedRepoInfo } from "../GitHubProjectNode/GitHubConnectDialog";
@@ -125,8 +125,8 @@ export interface ActionsSlice {
 }
 
 export const createActionsSlice = (
-  set: Parameters<HarnessCanvasStoreSlice>[0],
-  get: Parameters<HarnessCanvasStoreSlice>[1],
+  set: Parameters<CanvasPageStoreSlice>[0],
+  get: Parameters<CanvasPageStoreSlice>[1],
 ): ActionsSlice => ({
   exportCanvas: () => {
     const state = get();
@@ -237,12 +237,12 @@ export const createActionsSlice = (
 
       return position.x >= cx && position.x <= cx + cw && position.y >= cy && position.y <= cy + ch;
     });
-    get().setHoveredCompound(foundCompound?.id ?? null);
+    set({ hoveredCompoundId: foundCompound?.id ?? null });
   },
 
   handleDragEndOnCompound: (draggedNodeId, isCompound) => {
     if (isCompound) {
-      get().setHoveredCompound(null);
+      set({ hoveredCompoundId: null });
     } else {
       get().dropNodeOntoCompound(draggedNodeId);
     }
@@ -362,16 +362,8 @@ export const createActionsSlice = (
   },
 
   handleRunTest: async () => {
-    const {
-      isRunning,
-      isTestRunning,
-      pipelineId,
-      pipelineName,
-      nodes,
-      edges,
-      startTestRun,
-      setActiveJobId,
-    } = get();
+    const { isRunning, isTestRunning, pipelineId, pipelineName, nodes, edges, startTestRun } =
+      get();
     const t = i18n.t.bind(i18n);
 
     if (isRunning || isTestRunning) return;
@@ -425,7 +417,7 @@ export const createActionsSlice = (
     runResult.match(
       (data) => {
         const result = data.data as { jobId: string };
-        setActiveJobId(result.jobId);
+        set({ activeJobId: result.jobId, isConsoleOpen: true });
         toastStore.getState().addToast({
           type: "success",
           title: t("canvas.runCompleted"),
@@ -753,7 +745,7 @@ export const createActionsSlice = (
   handleOperationCardClick: (nodeId) => {
     const { isTestRunning, nodeLlmContent } = get();
     if (isTestRunning || nodeLlmContent[nodeId]) {
-      get().setInspectingNodeId(nodeId);
+      set({ inspectingNodeId: nodeId });
     }
   },
 

@@ -48,6 +48,7 @@ export const OperationCard = ({ operation }: OperationCardProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { mutate: deleteOpMutate } = useDelete();
+
   const handleEdit = () =>
     navigate({
       to: "/pipelines/operations/$operationId/edit",

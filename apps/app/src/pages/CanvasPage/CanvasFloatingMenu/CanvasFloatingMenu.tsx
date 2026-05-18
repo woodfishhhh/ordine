@@ -1,11 +1,13 @@
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
-import { useHarnessCanvasStore } from "../_store";
+import { useCanvasPageStore } from "../_store";
 import { Menu, Home, Save, FileDown, FileUp, Settings, Undo, Redo } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useCreate, useUpdate } from "@refinedev/core";
 import { Popover, PopoverContent, PopoverTrigger } from "@repo/ui/popover";
+import { Button } from "@repo/ui/button";
+import { Input } from "@repo/ui/input";
 import { ResourceName } from "@/integrations/refine/dataProvider";
 import { toastStore } from "@/store/toastStore";
 import { ResultAsync } from "neverthrow";
@@ -17,7 +19,7 @@ import {
 
 export const CanvasFloatingMenu = () => {
   const { t } = useTranslation();
-  const store = useHarnessCanvasStore();
+  const store = useCanvasPageStore();
   const pipelineId = useStore(store, (state) => state.pipelineId);
   const pipelineName = useStore(store, (state) => state.pipelineName);
   const nodes = useStore(store, (state) => state.nodes);
@@ -177,20 +179,21 @@ export const CanvasFloatingMenu = () => {
                   {item.label}
                 </Link>
               ) : (
-                <button
-                  className="flex w-full items-center gap-3 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                <Button
+                  className="flex h-auto w-full items-center justify-start gap-3 px-4 py-2 text-sm text-gray-700"
                   disabled={item.disabled}
+                  variant="ghost"
                   onClick={handleItemClick(item.onClick)}
                 >
                   <item.icon className="h-4 w-4" />
                   {item.label}
-                </button>
+                </Button>
               )}
             </div>
           ))}
         </PopoverContent>
       </Popover>
-      <input
+      <Input
         ref={fileInputRef}
         accept=".json"
         aria-label={t("canvas.floatingMenu.importJson")}

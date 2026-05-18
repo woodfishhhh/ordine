@@ -38,6 +38,7 @@ import {
   SidebarTrigger,
 } from "@repo/ui/sidebar";
 import { Badge } from "@repo/ui/badge";
+import { Button } from "@repo/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@repo/ui/avatar";
 import {
   DropdownMenu,
@@ -47,8 +48,7 @@ import {
   DropdownMenuTrigger,
 } from "@repo/ui/dropdown-menu";
 import { useSession, signOut } from "@/integrations/better-auth-client";
-import { useSidebarStore } from "@/store/sidebarStore";
-import { SidebarView } from "@/store/sidebarSlice";
+import { useSidebarStore, SidebarView } from "@/store/sidebarStore";
 
 interface NavItem {
   labelKey: string;
@@ -147,22 +147,23 @@ export const AppSidebar = () => {
   const { data: session } = useSession();
   const store = useSidebarStore();
   const sidebarView = useStore(store, (s) => s.view);
-  const setView = useStore(store, (s) => s.setView);
-  const handleShowPipelineView = useStore(store, (s) => s.handleShowPipelineView);
-  const handleShowMainView = useStore(store, (s) => s.handleShowMainView);
-  const handleOpenSearch = useStore(store, (s) => s.handleOpenSearch);
-  const handleOpenNewPipeline = useStore(store, (s) => s.handleOpenNewPipeline);
+  const handleSidebarLocationChange = useStore(store, (s) => s.handleSidebarLocationChange);
+  const handleSidebarPipelineViewButtonClick = useStore(
+    store,
+    (s) => s.handleSidebarPipelineViewButtonClick,
+  );
+  const handleSidebarMainViewButtonClick = useStore(
+    store,
+    (s) => s.handleSidebarMainViewButtonClick,
+  );
+  const handleSearchButtonClick = useStore(store, (s) => s.handleSearchButtonClick);
+  const handleNewPipelineButtonClick = useStore(store, (s) => s.handleNewPipelineButtonClick);
   const currentPath = location.pathname;
   const pipelineActive = isPipelinePath(currentPath);
 
   useEffect(() => {
-    if (isPipelinePath(currentPath)) {
-      setView(SidebarView.Pipeline);
-
-      return;
-    }
-    setView(SidebarView.Main);
-  }, [currentPath, setView]);
+    handleSidebarLocationChange(currentPath);
+  }, [currentPath, handleSidebarLocationChange]);
 
   const handleLogout = async () => {
     await signOut();
@@ -190,7 +191,7 @@ export const AppSidebar = () => {
             <SidebarMenuButton
               className="h-8 text-muted-foreground"
               tooltip={t("nav.search")}
-              onClick={handleOpenSearch}
+              onClick={handleSearchButtonClick}
             >
               <Search />
               <span>{t("nav.search")}</span>
@@ -200,7 +201,7 @@ export const AppSidebar = () => {
             <SidebarMenuButton
               className="h-8 text-muted-foreground"
               tooltip={t("nav.newPipeline")}
-              onClick={handleOpenNewPipeline}
+              onClick={handleNewPipelineButtonClick}
             >
               <SquarePen />
               <span>{t("nav.newPipeline")}</span>
@@ -227,7 +228,7 @@ export const AppSidebar = () => {
                       isActive={pipelineActive}
                       render={<Link to="/pipelines" />}
                       tooltip={t("nav.pipelines")}
-                      onClick={handleShowPipelineView}
+                      onClick={handleSidebarPipelineViewButtonClick}
                     >
                       <Layers />
                       <span>{t("nav.pipelines")}</span>
@@ -260,7 +261,7 @@ export const AppSidebar = () => {
                     <SidebarMenuButton
                       className="h-8 font-medium"
                       tooltip={t("nav.back")}
-                      onClick={handleShowMainView}
+                      onClick={handleSidebarMainViewButtonClick}
                     >
                       <ArrowLeft />
                       <span>{t("nav.pipelines")}</span>
@@ -287,7 +288,7 @@ export const AppSidebar = () => {
             <DropdownMenu>
               <DropdownMenuTrigger
                 className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-sidebar-accent"
-                render={<button type="button" />}
+                render={<Button type="button" variant="ghost" />}
               >
                 <Avatar size="sm">
                   {session?.user?.image && (

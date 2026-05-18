@@ -1,8 +1,16 @@
 import type { Agent } from "@repo/schemas";
 import { Badge } from "@repo/ui/badge";
 
-export const TagsCell = ({ agent }: { agent: Agent }) =>
-  agent.tags.length > 0 ? (
+interface TagsCellProps {
+  agent: Agent;
+}
+
+export const TagsCell = ({ agent }: TagsCellProps) => {
+  if (agent.tags.length === 0) {
+    return <span className="text-sm text-muted-foreground/50">—</span>;
+  }
+
+  return (
     <div className="flex flex-wrap gap-1">
       {agent.tags.map((tag) => (
         <Badge key={tag} className="text-[10px]" variant="outline">
@@ -10,6 +18,5 @@ export const TagsCell = ({ agent }: { agent: Agent }) =>
         </Badge>
       ))}
     </div>
-  ) : (
-    <span className="text-sm text-muted-foreground/50">—</span>
   );
+};

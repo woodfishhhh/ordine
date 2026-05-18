@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Refine } from "@refinedev/core";
-import { createHarnessCanvasStore, HarnessCanvasStoreContext } from "../_store";
+import { createCanvasPageStore, CanvasPageStoreContext } from "../_store";
 import { canvasStoryDataProvider } from "../storybookData";
 import { CanvasNodeCreationPalette } from "./CanvasNodeCreationPalette";
 
@@ -13,7 +13,7 @@ const meta: Meta<typeof CanvasNodeCreationPalette> = {
   },
   decorators: [
     (Story) => {
-      const store = createHarnessCanvasStore();
+      const store = createCanvasPageStore();
       store.setState({
         isQuickAddOpen: true,
         screenToFlowPosition: (position) => position,
@@ -21,11 +21,11 @@ const meta: Meta<typeof CanvasNodeCreationPalette> = {
 
       return (
         <Refine dataProvider={canvasStoryDataProvider}>
-          <HarnessCanvasStoreContext.Provider value={store}>
+          <CanvasPageStoreContext.Provider value={store}>
             <div className="relative h-[32rem] w-full bg-slate-50">
               <Story />
             </div>
-          </HarnessCanvasStoreContext.Provider>
+          </CanvasPageStoreContext.Provider>
         </Refine>
       );
     },
@@ -34,7 +34,7 @@ const meta: Meta<typeof CanvasNodeCreationPalette> = {
     docs: {
       description: {
         component:
-          "Toolbar quick-add dialog for creating object nodes, Operations, and Recipes at the current viewport center. Stories use local mock Refine data so the menu is stable without a running API.",
+          "Toolbar quick-add dialog for creating object nodes and Operations at the current viewport center. Stories use local mock Refine data so the menu is stable without a running API.",
       },
     },
   },
@@ -48,7 +48,7 @@ export const Open: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Open quick-add menu with object nodes, mocked Operations, and mocked Recipes.",
+        story: "Open quick-add menu with object nodes and mocked Operations.",
       },
     },
   },

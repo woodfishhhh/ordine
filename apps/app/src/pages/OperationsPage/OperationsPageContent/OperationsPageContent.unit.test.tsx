@@ -7,6 +7,7 @@ import { OperationsPageContent } from "./OperationsPageContent";
 
 const mockOps = vi.fn<() => Operation[]>(() => []);
 const mockNavigate = vi.fn();
+const mockUseOne = vi.fn();
 
 vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => mockNavigate,
@@ -28,11 +29,17 @@ const testStore = createStore<Record<string, unknown>>((set) => ({
   sortBy: "default",
   sortOpen: false,
   importing: false,
-  handleSetSearchQuery: (q: string) => set({ searchQuery: q }),
-  handleSetSortBy: (s: string) => set({ sortBy: s }),
-  handleSetSortOpen: (o: boolean) => set({ sortOpen: o }),
-  handleToggleSortOpen: () => set((state) => ({ sortOpen: !state.sortOpen })),
-  handleSetImporting: (i: boolean) => set({ importing: i }),
+  activeGroup: "all",
+  viewMode: "grid",
+  handleSearchInputChange: (e: { target: { value: string } }) =>
+    set({ searchQuery: e.target.value }),
+  handleClearSearchButtonClick: () => set({ searchQuery: "" }),
+  handleSortItemSelect: (v: string | null) => set({ sortBy: v ?? "default", sortOpen: false }),
+  handleSortSelectOpenChange: (o: boolean) => set({ sortOpen: o }),
+  handleSortSelectTriggerClick: () => set((state) => ({ sortOpen: !state.sortOpen })),
+  handleImportFileInputChange: async () => {},
+  handleGroupTabClick: (g: string) => set({ activeGroup: g }),
+  handleViewModeButtonClick: (m: string) => set({ viewMode: m }),
 }));
 vi.mock("../_store", () => ({
   useOperationsPageStore: () => testStore,
@@ -54,7 +61,7 @@ vi.mock("@refinedev/core", () => ({
   useUpdate: () => ({ mutate: vi.fn(), mutateAsync: vi.fn() }),
   useCustomMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn() }),
   useInvalidate: () => vi.fn(),
-  useOne: () => ({ result: null, isLoading: false }),
+  useOne: (...args: unknown[]) => mockUseOne(...args),
 }));
 
 const makeOp = (overrides: Partial<Operation> & { id: string; name: string }): Operation => ({
@@ -67,9 +74,21 @@ const makeOp = (overrides: Partial<Operation> & { id: string; name: string }): O
 
 describe("OperationsPageContent", () => {
   beforeEach(() => {
-    testStore.setState({ searchQuery: "", sortBy: "default", sortOpen: false, importing: false });
+    testStore.setState({
+      searchQuery: "",
+      sortBy: "default",
+      sortOpen: false,
+      importing: false,
+      activeGroup: "all",
+      viewMode: "grid",
+    });
     mockOps.mockReturnValue([]);
     mockNavigate.mockClear();
+    mockUseOne.mockClear();
+    mockUseOne.mockImplementation(({ id }: { id: string }) => ({
+      result: mockOps().find((op) => op.id === id) ?? null,
+      isLoading: false,
+    }));
   });
 
   describe("displays all operations", () => {
@@ -85,6 +104,12 @@ describe("OperationsPageContent", () => {
       expect(screen.getByText("Alpha Op")).toBeInTheDocument();
       expect(screen.getByText("Beta Op")).toBeInTheDocument();
       expect(screen.getByText("Gamma Op")).toBeInTheDocument();
+    });
+
+    it("renders list data without refetching each card", () => {
+      mockOps.mockReturnValue(ops);
+      render(<OperationsPageContent />);
+      expect(mockUseOne).not.toHaveBeenCalled();
     });
   });
 

@@ -8,7 +8,7 @@ import { Card } from "@repo/ui/card";
 import { ScrollArea } from "@repo/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@repo/ui/sheet";
 import { cn } from "@repo/ui/lib/utils";
-import { useCustom, useOne } from "@refinedev/core";
+import { useCustom, useCustomMutation, useOne } from "@refinedev/core";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/shallow";
 import { ResourceName } from "@/integrations/refine/dataProvider";
@@ -20,6 +20,11 @@ interface JobData {
   id: string;
   status: JobStatus;
   error: string | null;
+}
+
+interface OperationDataForName {
+  id: string;
+  name: string;
 }
 
 const POLL_INTERVAL = 1500;
@@ -52,11 +57,16 @@ const STATUS_STYLES: Partial<Record<JobStatus, string>> = {
 
 interface OperationRunPanelProps {
   operationId: string;
-  operationName: string;
 }
 
-export const OperationRunPanel = ({ operationId, operationName }: OperationRunPanelProps) => {
+export const OperationRunPanel = ({ operationId }: OperationRunPanelProps) => {
   const { t } = useTranslation();
+  const { result: operation } = useOne<OperationDataForName>({
+    resource: ResourceName.operations,
+    id: operationId,
+  });
+  const { mutateAsync: runOperation } = useCustomMutation();
+  const operationName = operation?.name ?? "";
   const store = useOperationDetailPageStore();
   const {
     runJobId,
@@ -64,10 +74,11 @@ export const OperationRunPanel = ({ operationId, operationName }: OperationRunPa
     runInputPath,
     runInputContent,
     isRunPanelOpen,
-    handleSetRunInputPath,
-    handleSetRunInputContent,
-    handleStartRun,
-    handleCloseRunPanel,
+    handleRunInputPathInputChange,
+    handleRunInputPathBrowserSelect,
+    handleRunInputContentTextareaChange,
+    handleStartRunButtonClick,
+    handleCloseRunPanelButtonClick,
   } = useStore(
     store,
     useShallow((s) => ({
@@ -76,10 +87,11 @@ export const OperationRunPanel = ({ operationId, operationName }: OperationRunPa
       runInputPath: s.runInputPath,
       runInputContent: s.runInputContent,
       isRunPanelOpen: s.isRunPanelOpen,
-      handleSetRunInputPath: s.handleSetRunInputPath,
-      handleSetRunInputContent: s.handleSetRunInputContent,
-      handleStartRun: s.handleStartRun,
-      handleCloseRunPanel: s.handleCloseRunPanel,
+      handleRunInputPathInputChange: s.handleRunInputPathInputChange,
+      handleRunInputPathBrowserSelect: s.handleRunInputPathBrowserSelect,
+      handleRunInputContentTextareaChange: s.handleRunInputContentTextareaChange,
+      handleStartRunButtonClick: s.handleStartRunButtonClick,
+      handleCloseRunPanelButtonClick: s.handleCloseRunPanelButtonClick,
     })),
   );
 
@@ -115,7 +127,18 @@ export const OperationRunPanel = ({ operationId, operationName }: OperationRunPa
   const handleBrowserOpenChange = (open: boolean) => setIsBrowserOpen(open);
   const handleOpenBrowser = () => setIsBrowserOpen(true);
   const handleSheetOpenChange = (open: boolean) => {
-    if (!open) handleCloseRunPanel();
+    if (!open) handleCloseRunPanelButtonClick();
+  };
+  const handleRunButtonClick = () => {
+    handleStartRunButtonClick(operationId, async (input) => {
+      const result = await runOperation({
+        url: "operations/run",
+        method: "post",
+        values: input,
+      });
+
+      return (result.data as { jobId: string }).jobId;
+    });
   };
 
   const traceLogs = (tracesResult.data?.traces ?? []).map((trace) => trace.message);
@@ -145,7 +168,7 @@ export const OperationRunPanel = ({ operationId, operationName }: OperationRunPa
                   disabled={isRunning}
                   placeholder={t("operations.run.inputPathPlaceholder", "/path/to/file-or-folder")}
                   value={runInputPath}
-                  onChange={(e) => handleSetRunInputPath(e.target.value)}
+                  onChange={handleRunInputPathInputChange}
                 />
                 <Button
                   className="h-8 shrink-0"
@@ -161,7 +184,7 @@ export const OperationRunPanel = ({ operationId, operationName }: OperationRunPa
                 mode="file"
                 open={isBrowserOpen}
                 onOpenChange={handleBrowserOpenChange}
-                onSelect={handleSetRunInputPath}
+                onSelect={handleRunInputPathBrowserSelect}
               />
             </div>
 
@@ -179,7 +202,7 @@ export const OperationRunPanel = ({ operationId, operationName }: OperationRunPa
                 )}
                 rows={4}
                 value={runInputContent}
-                onChange={(e) => handleSetRunInputContent(e.target.value)}
+                onChange={handleRunInputContentTextareaChange}
               />
             </div>
 
@@ -187,7 +210,7 @@ export const OperationRunPanel = ({ operationId, operationName }: OperationRunPa
               className="w-full"
               disabled={isRunning || (!runInputPath && !runInputContent)}
               size="sm"
-              onClick={() => handleStartRun(operationId)}
+              onClick={handleRunButtonClick}
             >
               {isRunning ? (
                 <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />

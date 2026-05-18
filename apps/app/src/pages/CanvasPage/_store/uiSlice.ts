@@ -1,5 +1,6 @@
+import type { ChangeEvent } from "react";
 import type { NodeRunStatus } from "@repo/schemas";
-import type { HarnessCanvasStoreSlice } from "./harnessCanvasStore";
+import type { CanvasPageStoreSlice } from "./canvasPageStore";
 import { DEFAULT_CANVAS_VIEWPORT } from "../utils/canvasViewport";
 
 export type SidebarPanel = "components" | "properties" | "ai-assistant" | null;
@@ -78,7 +79,6 @@ export interface UISlice {
   closeCanvasSettings: () => void;
   updateCanvasSettings: (settings: Partial<CanvasSettingsState>) => void;
   toggleConsole: () => void;
-  setActiveJobId: (jobId: string | null) => void;
   openContextMenu: (state: ContextMenuState) => void;
   closeContextMenu: () => void;
   openConnectionMenu: (state: ContextMenuState) => void;
@@ -88,22 +88,18 @@ export interface UISlice {
   handleOpenQuickAdd: () => void;
   handleCloseQuickAdd: () => void;
   handleToggleQuickAdd: () => void;
-  handleSetQuickAddQuery: (query: string) => void;
+  handleQuickAddInputChange: (event: ChangeEvent<HTMLInputElement>) => void;
   handleToggleConsoleCollapse: () => void;
   handleToggleCanvasInteractive: () => void;
   handleQuickAddKeyDown: (event: React.KeyboardEvent) => void;
   handleConnectStart: (state: ConnectStartState | null) => void;
-  handlePipelineNameChange: (name: string) => void;
-  setViewportZoom: (zoom: number) => void;
+  handlePipelineNameChange: (event: ChangeEvent<HTMLInputElement>) => void;
   handleFlowMove: (zoom: number) => void;
 
   // Pipeline run actions
   startTestRun: () => void;
   stopTestRun: () => void;
-  setNodeRunStatus: (nodeId: string, status: NodeRunStatus) => void;
-  setRunningNodeId: (nodeId: string | null) => void;
-  setNodeLlmContent: (nodeId: string, content: string) => void;
-  setInspectingNodeId: (nodeId: string | null) => void;
+  applyNodeLlmContent: (nodeId: string, content: string) => void;
 
   // Semantic actions
   handleCloseConsole: () => void;
@@ -117,8 +113,8 @@ export interface UISlice {
 }
 
 export const createUISlice = (
-  set: Parameters<HarnessCanvasStoreSlice>[0],
-  get: Parameters<HarnessCanvasStoreSlice>[1],
+  set: Parameters<CanvasPageStoreSlice>[0],
+  get: Parameters<CanvasPageStoreSlice>[1],
 
   pipelineId: string | null = null,
   pipelineName = "",
@@ -192,10 +188,6 @@ export const createUISlice = (
     set((state) => ({ isConsoleOpen: !state.isConsoleOpen }));
   },
 
-  setActiveJobId: (jobId) => {
-    set({ activeJobId: jobId, isConsoleOpen: jobId !== null });
-  },
-
   openContextMenu: (state) => {
     set({ contextMenu: state });
   },
@@ -246,8 +238,8 @@ export const createUISlice = (
     }));
   },
 
-  handleSetQuickAddQuery: (query) => {
-    set({ quickAddQuery: query });
+  handleQuickAddInputChange: (event) => {
+    set({ quickAddQuery: event.target.value });
   },
 
   handleToggleConsoleCollapse: () => {
@@ -268,12 +260,8 @@ export const createUISlice = (
     set({ connectStart: state });
   },
 
-  handlePipelineNameChange: (name) => {
-    set({ pipelineName: name });
-  },
-
-  setViewportZoom: (zoom) => {
-    set({ viewportZoom: zoom });
+  handlePipelineNameChange: (event) => {
+    set({ pipelineName: event.target.value });
   },
 
   handleFlowMove: (zoom) => {
@@ -297,24 +285,10 @@ export const createUISlice = (
     set({ isTestRunning: false, runningNodeId: null });
   },
 
-  setNodeRunStatus: (nodeId, status) => {
-    set((state) => ({
-      nodeRunStatuses: { ...state.nodeRunStatuses, [nodeId]: status },
-    }));
-  },
-
-  setRunningNodeId: (nodeId) => {
-    set({ runningNodeId: nodeId });
-  },
-
-  setNodeLlmContent: (nodeId, content) => {
+  applyNodeLlmContent: (nodeId, content) => {
     set((state) => ({
       nodeLlmContent: { ...state.nodeLlmContent, [nodeId]: content },
     }));
-  },
-
-  setInspectingNodeId: (nodeId) => {
-    set({ inspectingNodeId: nodeId });
   },
 
   // Semantic actions
