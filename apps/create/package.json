@@ -22,7 +22,7 @@
   },
   "scripts": {
     "build:cli": "bun build ./src/index.ts --target=node --format=esm --outfile=./dist/index.js --external=embedded-postgres --external=postgres",
-    "build:app": "cd ../app && bun run build && cd ../create && rm -rf app && cp -r ../app/.output app",
+    "build:app": "rm -rf app && cp -r ../app/.output app",
     "build": "bun run build:cli && bun run build:app",
     "dev": "bun src/index.ts",
     "check-types": "tsc --noEmit",
@@ -39,6 +39,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@ordine/app": "workspace:*",
     "@repo/oxlint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^25.6.0",

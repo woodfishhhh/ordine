@@ -20,7 +20,7 @@
     "@ai-sdk/anthropic": "3.0.71",
     "@mastra/core": "1.27.0",
     "@mastra/observability": "^1.10.0",
-    "@mastra/pg": "^1.9.2",
+    "@mastra/pg": "1.9.3",
     "@repo/logger": "workspace:*",
     "neverthrow": "^8.2.0",
     "zod": "^4.3.6"
