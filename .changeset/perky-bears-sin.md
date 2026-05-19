@@ -16,7 +16,7 @@
 "@repo/utils": patch
 "@ordine/scripts": patch
 "@repo/obs": patch
-"create-ordine": patch
+"@ordine/create": patch
 "@ordine/server": patch
 "@repo/db": patch
 "@repo/ui": patch
