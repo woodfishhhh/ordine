@@ -20,7 +20,10 @@ export default defineConfig({
         }
 
         const realFilePath = realpathSync(filePath);
-        return `export default ${JSON.stringify(readFileSync(realFilePath, "utf8"))}`;
+        return {
+          code: `export default ${JSON.stringify(readFileSync(realFilePath, "utf8"))}`,
+          moduleType: "js",
+        };
       },
     },
     ...(!IS_STORYBOOK ? [nitro()] : []),
@@ -33,13 +36,5 @@ export default defineConfig({
   ],
   build: {
     target: "esnext",
-  },
-  esbuild: {
-    target: "esnext",
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      target: "esnext",
-    },
   },
 });
