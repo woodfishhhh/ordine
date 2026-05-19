@@ -1,4 +1,4 @@
-# @ordine/create
+# create-ordine
 
 ## 0.0.2-preview.4
 

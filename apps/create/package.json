@@ -1,8 +1,8 @@
 {
-  "name": "@ordine/create",
+  "name": "create-ordine",
   "version": "0.0.2-preview.4",
   "private": false,
-  "description": "Create a local Ordine instance — npm create @ordine",
+  "description": "Create a local Ordine instance — npm create ordine",
   "repository": {
     "type": "git",
     "url": "https://github.com/forge-town/ordine",
