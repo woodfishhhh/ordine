@@ -437,6 +437,9 @@
       "errorTitle": "AI Assistant Error",
       "close": "Close AI assistant",
       "send": "Send request",
+      "runtimeLabel": "Runtime",
+      "runtimePlaceholder": "Select a configured runtime",
+      "runtimeLoading": "Loading runtimes...",
       "inputPlaceholder": "Type your request...",
       "runtimeNotConfigured": "AI runtime is not configured yet.",
       "goToRuntimeSettings": "Go to configuration"

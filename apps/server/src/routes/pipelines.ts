@@ -10,6 +10,7 @@ const ProposeOperationsBodySchema = z.object({
   snapshot: PipelineGraphSnapshotSchema,
   message: z.string().min(1),
   pipelineName: z.string().optional(),
+  runtimeId: z.string().optional(),
 });
 
 pipelinesRoutes.get("/", async (c) => {
@@ -85,6 +86,7 @@ pipelinesRoutes.post("/:id/propose-operations", async (c) => {
     snapshot: parsed.data.snapshot,
     message: parsed.data.message,
     pipelineName: parsed.data.pipelineName,
+    runtimeId: parsed.data.runtimeId,
   });
 
   return c.json(result);

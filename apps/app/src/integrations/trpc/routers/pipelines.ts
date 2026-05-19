@@ -99,6 +99,7 @@ export const pipelinesRouter = router({
         snapshot: PipelineGraphSnapshotSchema,
         message: z.string(),
         pipelineName: z.string().optional(),
+        runtimeId: z.string().optional(),
       }),
     )
     .mutation(({ input }) =>
@@ -107,6 +108,7 @@ export const pipelinesRouter = router({
         snapshot: input.snapshot,
         message: input.message,
         pipelineName: input.pipelineName,
+        runtimeId: input.runtimeId,
       }),
     ),
 

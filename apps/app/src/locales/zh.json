@@ -437,6 +437,9 @@
       "errorTitle": "AI 助手错误",
       "close": "关闭 AI 助手",
       "send": "发送请求",
+      "runtimeLabel": "运行时",
+      "runtimePlaceholder": "选择已配置的运行时",
+      "runtimeLoading": "正在加载运行时...",
       "inputPlaceholder": "输入你的需求...",
       "runtimeNotConfigured": "暂未配置运行时 AI。",
       "goToRuntimeSettings": "前往配置"

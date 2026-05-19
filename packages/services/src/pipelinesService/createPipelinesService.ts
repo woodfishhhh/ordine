@@ -6,6 +6,7 @@ import { join } from "node:path";
 import nodeTypesRef from "../../../../skills/ordine-create-pipeline/references/node-types.md" with { type: "text" };
 import pipelineAnatomyRef from "../../../../skills/ordine-create-pipeline/references/pipeline-anatomy.md" with { type: "text" };
 import {
+  createAgentRuntimesDao,
   createDistillationsDao,
   createJobsDao,
   createJobTracesDao,
@@ -19,6 +20,7 @@ import { extractJsonFromText } from "@repo/agent";
 import { logger } from "@repo/logger";
 import { validatePipelineOperations } from "@repo/pipeline-engine";
 import {
+  BuiltinNodeTypeSchema,
   PipelineGraphSnapshotSchema,
   PipelineOperationProposalSchema,
   PipelineSchema,
@@ -383,7 +385,186 @@ const validateProposalOperationCatalog = (
     return [];
   });
 
+const NODE_TYPE_ALIASES = {
+  promptInput: "prompt",
+  prompt_input: "prompt",
+  github_project: "github-project",
+  output_local_path: "output-local-path",
+  output_project_path: "output-project-path",
+} as const;
+
+const OPERATION_TYPE_ALIASES = {
+  add_node: "addNode",
+  remove_node: "removeNode",
+  add_edge: "addEdge",
+  remove_edge: "removeEdge",
+  reconnect_edge: "reconnectEdge",
+  replace_node_data: "replaceNodeData",
+} as const;
+
+const normalizeProposalPayload = (value: unknown): unknown => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return value;
+  }
+
+  const rawProposal = "proposal" in value && value.proposal ? value.proposal : value;
+  if (!rawProposal || typeof rawProposal !== "object" || Array.isArray(rawProposal)) {
+    return rawProposal;
+  }
+
+  const proposalRecord = rawProposal as Record<string, unknown>;
+  const rawOperations = Array.isArray(proposalRecord.operations) ? proposalRecord.operations : [];
+  const operations = rawOperations.map((rawOperation) => {
+    if (!rawOperation || typeof rawOperation !== "object" || Array.isArray(rawOperation)) {
+      return rawOperation;
+    }
+
+    const rawOperationRecord = rawOperation as Record<string, unknown>;
+    const normalizedType =
+      typeof rawOperationRecord.type === "string"
+        ? rawOperationRecord.type in OPERATION_TYPE_ALIASES
+          ? OPERATION_TYPE_ALIASES[rawOperationRecord.type as keyof typeof OPERATION_TYPE_ALIASES]
+          : rawOperationRecord.type
+        : typeof rawOperationRecord.op === "string" &&
+            rawOperationRecord.op in OPERATION_TYPE_ALIASES
+          ? OPERATION_TYPE_ALIASES[rawOperationRecord.op as keyof typeof OPERATION_TYPE_ALIASES]
+          : rawOperationRecord.type;
+    const normalizedOperation: Record<string, unknown> = {
+      ...rawOperationRecord,
+      ...(typeof normalizedType === "string" ? { type: normalizedType } : {}),
+    };
+
+    if (
+      normalizedOperation.type === "addNode" &&
+      normalizedOperation.node &&
+      typeof normalizedOperation.node === "object" &&
+      !Array.isArray(normalizedOperation.node) &&
+      !("data" in (normalizedOperation.node as Record<string, unknown>))
+    ) {
+      const nodeRecord = normalizedOperation.node as Record<string, unknown>;
+      normalizedOperation.node = {
+        ...nodeRecord,
+        data: {
+          ...(typeof nodeRecord.label === "string" ? { label: nodeRecord.label } : {}),
+          ...(typeof nodeRecord.prompt === "string" ? { prompt: nodeRecord.prompt } : {}),
+          ...(typeof nodeRecord.folderPath === "string" ? { folderPath: nodeRecord.folderPath } : {}),
+          ...(typeof nodeRecord.localPath === "string" ? { localPath: nodeRecord.localPath } : {}),
+          ...(typeof nodeRecord.projectPath === "string" ? { projectPath: nodeRecord.projectPath } : {}),
+          ...(typeof nodeRecord.operationId === "string" ? { operationId: nodeRecord.operationId } : {}),
+          ...(typeof nodeRecord.operationName === "string" ? { operationName: nodeRecord.operationName } : {}),
+          ...(typeof nodeRecord.owner === "string" ? { owner: nodeRecord.owner } : {}),
+          ...(typeof nodeRecord.repo === "string" ? { repo: nodeRecord.repo } : {}),
+          ...(typeof nodeRecord.filePath === "string" ? { filePath: nodeRecord.filePath } : {}),
+        },
+      };
+    }
+
+    if (
+      normalizedOperation.type === "addNode" &&
+      !("node" in normalizedOperation) &&
+      normalizedOperation.data &&
+      typeof normalizedOperation.data === "object" &&
+      !Array.isArray(normalizedOperation.data)
+    ) {
+      const dataRecord = normalizedOperation.data as Record<string, unknown>;
+      normalizedOperation.node = {
+        id: dataRecord.id,
+        type: dataRecord.type,
+        position:
+          dataRecord.position && typeof dataRecord.position === "object" && !Array.isArray(dataRecord.position)
+            ? dataRecord.position
+            : { x: 0, y: 0 },
+        data: dataRecord,
+      };
+    }
+
+    const operation = normalizedOperation;
+
+    if (!operation || typeof operation !== "object" || Array.isArray(operation)) {
+      return operation;
+    }
+
+    const operationRecord = operation as Record<string, unknown>;
+    if (operationRecord.type !== "addNode") {
+      return operation;
+    }
+
+    const node =
+      operationRecord.node && typeof operationRecord.node === "object" && !Array.isArray(operationRecord.node)
+        ? (operationRecord.node as Record<string, unknown>)
+        : null;
+    const data =
+      node?.data && typeof node.data === "object" && !Array.isArray(node.data)
+        ? (node.data as Record<string, unknown>)
+        : null;
+
+    if (!node || !data) {
+      return operation;
+    }
+
+    const parsedNodeType =
+      typeof node.type === "string"
+        ? BuiltinNodeTypeSchema.safeParse(
+            node.type in NODE_TYPE_ALIASES
+              ? NODE_TYPE_ALIASES[node.type as keyof typeof NODE_TYPE_ALIASES]
+              : node.type,
+          )
+        : null;
+    const parsedDataNodeType =
+      typeof data.nodeType === "string" ? BuiltinNodeTypeSchema.safeParse(data.nodeType) : null;
+    const inferredNodeType =
+      parsedDataNodeType?.success
+        ? parsedDataNodeType.data
+        : parsedNodeType?.success
+          ? parsedNodeType.data
+          : typeof data.prompt === "string"
+            ? "prompt"
+            : typeof data.folderPath === "string"
+              ? "folder"
+              : typeof data.localPath === "string"
+                ? "output-local-path"
+                : typeof data.projectPath === "string"
+                  ? "output-project-path"
+                  : typeof data.operationId === "string"
+                    ? "operation"
+                    : typeof data.owner === "string" || typeof data.repo === "string"
+                      ? "github-project"
+                      : typeof data.filePath === "string"
+                        ? "file"
+                        : null;
+
+    if (!inferredNodeType) {
+      return operation;
+    }
+
+    return {
+      ...operationRecord,
+      node: {
+        ...node,
+        type: inferredNodeType,
+        data: {
+          ...data,
+          nodeType: inferredNodeType,
+          ...(inferredNodeType === "prompt" && typeof data.prompt !== "string"
+            ? { prompt: "" }
+            : {}),
+        },
+      },
+    };
+  });
+
+  return {
+    ...proposalRecord,
+    summary:
+      typeof proposalRecord.summary === "string" && proposalRecord.summary.trim().length > 0
+        ? proposalRecord.summary
+        : "Apply AI-assisted graph updates.",
+    operations,
+  };
+};
+
 export const createPipelinesService = (db: DbConnection) => {
+  const agentRuntimesDao = createAgentRuntimesDao(db);
   const dao = createPipelinesDao(db);
   const distillationsDao = createDistillationsDao(db);
   const jobsDao = createJobsDao(db);
@@ -420,9 +601,11 @@ export const createPipelinesService = (db: DbConnection) => {
       message: string;
       pipelineId?: string;
       pipelineName?: string;
+      runtimeId?: string;
     }): Promise<{
       proposal: PipelineOperationProposal | null;
       diagnostics: PipelineOperationDiagnostic[];
+      reply?: string;
     }> => {
       const parsedSnapshot = PipelineGraphSnapshotSchema.safeParse(opts.snapshot);
       if (!parsedSnapshot.success) {
@@ -436,6 +619,24 @@ export const createPipelinesService = (db: DbConnection) => {
 
       const snapshot = parsedSnapshot.data;
       const settings = normalizeSettingsRecord(await settingsDao.get());
+      const configuredRuntimes = await agentRuntimesDao.findMany();
+      const selectedRuntime = opts.runtimeId
+        ? configuredRuntimes.find((runtime) => runtime.id === opts.runtimeId) ?? null
+        : null;
+
+      if (opts.runtimeId && !selectedRuntime) {
+        logger.warn({ runtimeId: opts.runtimeId }, "proposeOperations: runtime not found");
+
+        return {
+          proposal: null,
+          diagnostics: [],
+          reply: `Selected runtime "${opts.runtimeId}" is not available.`,
+        };
+      }
+
+      const defaultRuntime =
+        configuredRuntimes.find((runtime) => runtime.type === settings.defaultAgentRuntime) ?? null;
+      const effectiveRuntime = selectedRuntime ?? defaultRuntime;
       const operations = await operationsDao.findMany();
       const operationCatalog = operations.map((operation) => ({
         id: operation.id,
@@ -469,7 +670,7 @@ export const createPipelinesService = (db: DbConnection) => {
         for (const attempt of Array.from({ length: MAX_RETRIES }, (_, i) => i + 1)) {
           const result = await ResultAsync.fromPromise(
             runAgent({
-              agent: settings.defaultAgentRuntime,
+              agent: effectiveRuntime?.type ?? settings.defaultAgentRuntime,
               systemPrompt: PROPOSE_SYSTEM_PROMPT,
               userPrompt: userPromptText,
               inputPath: process.cwd(),
@@ -478,6 +679,7 @@ export const createPipelinesService = (db: DbConnection) => {
               logPrefix: "proposeOperations",
               apiKey: settings.defaultApiKey,
               model: settings.defaultModel,
+              ssh: effectiveRuntime?.connection.mode === "ssh" ? effectiveRuntime.connection : undefined,
             }),
             (cause) => (cause instanceof Error ? cause : new Error(String(cause))),
           );
@@ -525,7 +727,8 @@ export const createPipelinesService = (db: DbConnection) => {
         return { proposal: null, diagnostics: [] };
       }
 
-      const parsed = PipelineOperationProposalSchema.safeParse(parseJsonResult.value);
+      const normalizedProposal = normalizeProposalPayload(parseJsonResult.value);
+      const parsed = PipelineOperationProposalSchema.safeParse(normalizedProposal);
       if (!parsed.success) {
         logger.error(
           { error: parsed.error },

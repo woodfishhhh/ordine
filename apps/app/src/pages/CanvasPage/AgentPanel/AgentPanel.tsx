@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import {
@@ -14,8 +14,17 @@ import {
 import { Button } from "@repo/ui/button";
 import { ScrollArea } from "@repo/ui/scroll-area";
 import { Input } from "@repo/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@repo/ui/select";
 import { cn } from "@repo/ui/lib/utils";
 import { ResultAsync } from "neverthrow";
+import type { AgentRuntimeConfig } from "@repo/schemas";
 import { useCanvasPageStore } from "../_store";
 import { dataProvider, ResourceName } from "@/integrations/refine/dataProvider";
 import { toastStore } from "@/store/toastStore";
@@ -29,6 +38,11 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+}
+
+interface RuntimeState {
+  runtimeOptions: AgentRuntimeConfig[];
+  suggestedRuntimeId: string | null;
 }
 
 const getOperationLabel = (op: PipelineOperation): string => {
@@ -56,6 +70,9 @@ const getOperationLabel = (op: PipelineOperation): string => {
     }
   }
 };
+
+const formatRuntimeLabel = (runtime: AgentRuntimeConfig): string =>
+  runtime.name === runtime.type ? runtime.name : `${runtime.name} (${runtime.type})`;
 
 export const AgentPanel = () => {
   const { t } = useTranslation();
@@ -92,7 +109,10 @@ export const AgentPanel = () => {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isLoadingRuntimes, setIsLoadingRuntimes] = useState(true);
   const [needsRuntimeSetup, setNeedsRuntimeSetup] = useState(false);
+  const [runtimeOptions, setRuntimeOptions] = useState<AgentRuntimeConfig[]>([]);
+  const [selectedRuntimeId, setSelectedRuntimeId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -100,6 +120,57 @@ export const AgentPanel = () => {
       messagesEndRef.current?.scrollIntoView({ block: "end" });
     });
   }, []);
+
+  const fetchRuntimeState = useCallback(
+    () =>
+      ResultAsync.fromPromise(
+        Promise.all([
+          dataProvider.getOne!({
+            resource: ResourceName.settings,
+            id: "default",
+          }),
+          dataProvider.getList!({
+            resource: ResourceName.agentRuntimes,
+          }),
+        ]),
+        (error) => (error instanceof Error ? error : new Error(String(error))),
+      ).map(([settingsResult, runtimesResult]) => {
+        const settings = settingsResult.data as { defaultAgentRuntime?: string };
+        const nextRuntimeOptions = (runtimesResult.data as AgentRuntimeConfig[]) ?? [];
+        const preferredRuntime =
+          nextRuntimeOptions.find((runtime) => runtime.type === settings.defaultAgentRuntime) ??
+          nextRuntimeOptions[0] ??
+          null;
+
+        return {
+          runtimeOptions: nextRuntimeOptions,
+          suggestedRuntimeId: preferredRuntime?.id ?? null,
+        } satisfies RuntimeState;
+      }),
+    [],
+  );
+
+  useEffect(() => {
+    setIsLoadingRuntimes(true);
+    void fetchRuntimeState().match(
+      ({ runtimeOptions: nextRuntimeOptions, suggestedRuntimeId }) => {
+        setRuntimeOptions(nextRuntimeOptions);
+        setSelectedRuntimeId((currentRuntimeId) =>
+          currentRuntimeId && nextRuntimeOptions.some((runtime) => runtime.id === currentRuntimeId)
+            ? currentRuntimeId
+            : suggestedRuntimeId,
+        );
+        setNeedsRuntimeSetup(nextRuntimeOptions.length === 0);
+        setIsLoadingRuntimes(false);
+      },
+      () => {
+        setRuntimeOptions([]);
+        setSelectedRuntimeId(null);
+        setNeedsRuntimeSetup(true);
+        setIsLoadingRuntimes(false);
+      },
+    );
+  }, [fetchRuntimeState]);
 
   const doSend = useCallback(async () => {
     if (isSending) {
@@ -131,18 +202,7 @@ export const AgentPanel = () => {
     scrollToBottom();
     setIsSending(true);
 
-    const runtimeSetupResult = await ResultAsync.fromPromise(
-      Promise.all([
-        dataProvider.getOne!({
-          resource: ResourceName.settings,
-          id: "default",
-        }),
-        dataProvider.getList!({
-          resource: ResourceName.agentRuntimes,
-        }),
-      ]),
-      (error) => (error instanceof Error ? error : new Error(String(error))),
-    );
+    const runtimeSetupResult = await fetchRuntimeState();
 
     if (runtimeSetupResult.isErr()) {
       const assistantMessage: Message = {
@@ -162,14 +222,18 @@ export const AgentPanel = () => {
       return;
     }
 
-    const [settingsResult, runtimesResult] = runtimeSetupResult.value;
-    const settings = settingsResult.data as { defaultAgentRuntime?: string };
-    const runtimeConfigs = runtimesResult.data as Array<{ type?: string }>;
-    const hasConfiguredRuntime = runtimeConfigs.some(
-      (runtime) => runtime.type === settings.defaultAgentRuntime,
-    );
+    const {
+      runtimeOptions: nextRuntimeOptions,
+      suggestedRuntimeId,
+    } = runtimeSetupResult.value;
+    setRuntimeOptions(nextRuntimeOptions);
+    const effectiveRuntimeId =
+      selectedRuntimeId && nextRuntimeOptions.some((runtime) => runtime.id === selectedRuntimeId)
+        ? selectedRuntimeId
+        : suggestedRuntimeId;
+    setSelectedRuntimeId(effectiveRuntimeId);
 
-    if (!hasConfiguredRuntime) {
+    if (!effectiveRuntimeId) {
       setNeedsRuntimeSetup(true);
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
@@ -194,6 +258,7 @@ export const AgentPanel = () => {
           snapshot: { nodes, edges },
           message: text,
           pipelineName,
+          runtimeId: effectiveRuntimeId,
         },
       }),
       (error) => (error instanceof Error ? error : new Error(String(error))),
@@ -246,6 +311,8 @@ export const AgentPanel = () => {
     isSending,
     clearPendingProposal,
     pipelineId,
+    fetchRuntimeState,
+    selectedRuntimeId,
     t,
     setPendingProposal,
     scrollToBottom,
@@ -270,6 +337,11 @@ export const AgentPanel = () => {
     },
     [],
   );
+
+  const handleRuntimeValueChange = useCallback((runtimeId: string | null) => {
+    setSelectedRuntimeId(runtimeId);
+    setNeedsRuntimeSetup(false);
+  }, []);
 
   const handleSendClick = useCallback(() => {
     void doSend();
@@ -344,6 +416,40 @@ export const AgentPanel = () => {
       </div>
 
       {/* Messages */}
+      <div className="border-b px-3 py-2">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-muted-foreground">
+            {t("canvas.agentPanel.runtimeLabel")}
+          </span>
+          <Select
+            value={selectedRuntimeId}
+            onValueChange={handleRuntimeValueChange}
+          >
+            <SelectTrigger
+              className="h-8 w-full text-xs"
+              disabled={isLoadingRuntimes || runtimeOptions.length === 0}
+            >
+              <SelectValue
+                placeholder={
+                  isLoadingRuntimes
+                    ? t("canvas.agentPanel.runtimeLoading")
+                    : t("canvas.agentPanel.runtimePlaceholder")
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {runtimeOptions.map((runtime) => (
+                  <SelectItem key={runtime.id} value={runtime.id}>
+                    {formatRuntimeLabel(runtime)}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <ScrollArea className="flex-1">
         <div className="flex flex-col gap-3 p-3">
           {messages.map((msg) => (
@@ -461,7 +567,7 @@ export const AgentPanel = () => {
       <div className="flex items-center gap-2 border-t p-3">
         <Input
           className="h-9 flex-1 text-sm"
-          disabled={isSending || agentPanel.isLoading}
+          disabled={isSending || agentPanel.isLoading || isLoadingRuntimes}
           placeholder={t("canvas.agentPanel.inputPlaceholder")}
           value={inputValue}
           onChange={handleInputValueChange}
@@ -470,7 +576,13 @@ export const AgentPanel = () => {
         <Button
           aria-label={t("canvas.agentPanel.send")}
           className="h-9 w-9"
-          disabled={isSending || agentPanel.isLoading || !inputValue.trim()}
+          disabled={
+            isSending ||
+            agentPanel.isLoading ||
+            isLoadingRuntimes ||
+            !selectedRuntimeId ||
+            !inputValue.trim()
+          }
           size="icon"
           title={t("canvas.agentPanel.send")}
           variant="ghost"

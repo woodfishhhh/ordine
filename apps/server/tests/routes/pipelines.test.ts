@@ -67,7 +67,12 @@ describe("pipelinesRoutes propose-operations", () => {
     const response = await makeApp().request("/pipelines/p1/propose-operations", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ snapshot, message: "add node", pipelineName: "Pipeline 1" }),
+      body: JSON.stringify({
+        snapshot,
+        message: "add node",
+        pipelineName: "Pipeline 1",
+        runtimeId: "runtime-codex",
+      }),
     });
 
     expect(response.status).toBe(200);
@@ -77,6 +82,7 @@ describe("pipelinesRoutes propose-operations", () => {
       snapshot,
       message: "add node",
       pipelineName: "Pipeline 1",
+      runtimeId: "runtime-codex",
     });
   });
 });

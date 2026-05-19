@@ -24,10 +24,27 @@ const mockOperationsDao = {
     },
   ]),
 };
+const mockAgentRuntimesDao = {
+  findMany: vi.fn().mockResolvedValue([
+    {
+      id: "runtime-codex",
+      name: "Codex Local",
+      type: "codex",
+      connection: { mode: "local" },
+    },
+    {
+      id: "runtime-claude-ssh",
+      name: "Claude SSH",
+      type: "claude-code",
+      connection: { mode: "ssh", host: "example.com", user: "ubuntu", port: 22 },
+    },
+  ]),
+};
 const mockRunAgent = vi.fn();
 const mockExtractJsonFromText = vi.fn((raw: string) => raw);
 
 vi.mock("@repo/models", () => ({
+  createAgentRuntimesDao: () => mockAgentRuntimesDao,
   createPipelinesDao: () => mockDao,
   createDistillationsDao: () => ({}),
   createJobsDao: () => ({}),
@@ -80,6 +97,7 @@ describe("createPipelinesService", () => {
     mockDao.delete.mockClear();
     mockSettingsDao.get.mockClear();
     mockOperationsDao.findMany.mockClear();
+    mockAgentRuntimesDao.findMany.mockClear();
     mockRunAgent.mockReset();
     mockExtractJsonFromText.mockReset();
     mockExtractJsonFromText.mockImplementation((raw: string) => raw);
@@ -139,6 +157,7 @@ describe("createPipelinesService", () => {
 
     expect(mockRunAgent).toHaveBeenCalledWith(
       expect.objectContaining({
+        agent: "codex",
         allowedTools: [],
         agentId: "pipeline-propose-operations",
         userPrompt: expect.stringContaining("op-known"),
@@ -153,6 +172,46 @@ describe("createPipelinesService", () => {
     expect(mockDao.create).not.toHaveBeenCalled();
     expect(mockDao.update).not.toHaveBeenCalled();
     expect(mockDao.delete).not.toHaveBeenCalled();
+  });
+
+  it("proposeOperations uses the selected runtime config when runtimeId is provided", async () => {
+    mockRunAgent.mockResolvedValue(
+      JSON.stringify({
+        summary: "remove stale node",
+        operations: [{ type: "removeNode", nodeId: "folder-1" }],
+      }),
+    );
+    const svc = createPipelinesService({} as never);
+
+    await svc.proposeOperations({
+      snapshot,
+      message: "remove folder-1",
+      runtimeId: "runtime-claude-ssh",
+    });
+
+    expect(mockRunAgent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agent: "claude-code",
+        ssh: { mode: "ssh", host: "example.com", user: "ubuntu", port: 22 },
+      }),
+    );
+  });
+
+  it("proposeOperations reports a missing selected runtime without invoking the agent", async () => {
+    const svc = createPipelinesService({} as never);
+
+    const result = await svc.proposeOperations({
+      snapshot,
+      message: "remove folder-1",
+      runtimeId: "missing-runtime",
+    });
+
+    expect(result).toEqual({
+      proposal: null,
+      diagnostics: [],
+      reply: 'Selected runtime "missing-runtime" is not available.',
+    });
+    expect(mockRunAgent).not.toHaveBeenCalled();
   });
 
   it("proposeOperations returns diagnostics for operation nodes with unknown operation IDs", async () => {
@@ -194,6 +253,234 @@ describe("createPipelinesService", () => {
         }),
       ]),
     );
+  });
+
+  it("proposeOperations normalizes missing summary and addNode nodeType from agent output", async () => {
+    mockRunAgent.mockResolvedValue(
+      JSON.stringify({
+        operations: [
+          {
+            type: "addNode",
+            node: {
+              id: "prompt-1",
+              type: "prompt",
+              position: { x: 120, y: 80 },
+              data: {
+                label: "Prompt",
+                prompt: "Hello",
+              },
+            },
+          },
+        ],
+      }),
+    );
+    const svc = createPipelinesService({} as never);
+
+    const result = await svc.proposeOperations({
+      snapshot,
+      message: "add prompt",
+    });
+
+    expect(result.proposal).toEqual({
+      summary: "Apply AI-assisted graph updates.",
+      operations: [
+        {
+          type: "addNode",
+          node: {
+            id: "prompt-1",
+            type: "prompt",
+            position: { x: 120, y: 80 },
+            data: {
+              nodeType: "prompt",
+              label: "Prompt",
+              prompt: "Hello",
+            },
+          },
+        },
+      ],
+    });
+  });
+
+  it("proposeOperations infers built-in prompt node types from addNode payloads", async () => {
+    mockRunAgent.mockResolvedValue(
+      JSON.stringify({
+        summary: "add prompt node",
+        operations: [
+          {
+            type: "addNode",
+            node: {
+              id: "prompt-2",
+              type: "input",
+              position: { x: 80, y: 60 },
+              data: {
+                label: "Prompt",
+                prompt: "Hello",
+              },
+            },
+          },
+        ],
+      }),
+    );
+    const svc = createPipelinesService({} as never);
+
+    const result = await svc.proposeOperations({
+      snapshot,
+      message: "add prompt",
+    });
+
+    expect(result.proposal).toEqual({
+      summary: "add prompt node",
+      operations: [
+        {
+          type: "addNode",
+          node: {
+            id: "prompt-2",
+            type: "prompt",
+            position: { x: 80, y: 60 },
+            data: {
+              nodeType: "prompt",
+              label: "Prompt",
+              prompt: "Hello",
+            },
+          },
+        },
+      ],
+    });
+  });
+
+  it("proposeOperations normalizes codex promptInput nodes into prompt nodes", async () => {
+    mockRunAgent.mockResolvedValue(
+      JSON.stringify({
+        summary: "Added a prompt input node labeled Prompt.",
+        operations: [
+          {
+            type: "addNode",
+            node: {
+              id: "prompt-1",
+              type: "promptInput",
+              position: { x: 0, y: 0 },
+              data: {
+                label: "Prompt",
+              },
+            },
+          },
+        ],
+      }),
+    );
+    const svc = createPipelinesService({} as never);
+
+    const result = await svc.proposeOperations({
+      snapshot,
+      message: "add prompt",
+    });
+
+    expect(result.proposal).toEqual({
+      summary: "Added a prompt input node labeled Prompt.",
+      operations: [
+        {
+          type: "addNode",
+          node: {
+            id: "prompt-1",
+            type: "prompt",
+            position: { x: 0, y: 0 },
+            data: {
+              label: "Prompt",
+              nodeType: "prompt",
+              prompt: "",
+            },
+          },
+        },
+      ],
+    });
+  });
+
+  it("proposeOperations normalizes claude snake_case add_node payloads", async () => {
+    mockRunAgent.mockResolvedValue(
+      JSON.stringify({
+        summary: "Add a Prompt input node to the empty pipeline graph.",
+        operations: [
+          {
+            op: "add_node",
+            data: {
+              id: "prompt",
+              type: "prompt_input",
+              label: "Prompt",
+              position: { x: 0, y: 0 },
+            },
+          },
+        ],
+      }),
+    );
+    const svc = createPipelinesService({} as never);
+
+    const result = await svc.proposeOperations({
+      snapshot,
+      message: "add prompt",
+    });
+
+    expect(result.proposal).toEqual({
+      summary: "Add a Prompt input node to the empty pipeline graph.",
+      operations: [
+        {
+          type: "addNode",
+          node: {
+            id: "prompt",
+            type: "prompt",
+            position: { x: 0, y: 0 },
+            data: {
+              label: "Prompt",
+              nodeType: "prompt",
+              prompt: "",
+            },
+          },
+        },
+      ],
+    });
+  });
+
+  it("proposeOperations normalizes claude flat node payloads with snake_case type", async () => {
+    mockRunAgent.mockResolvedValue(
+      JSON.stringify({
+        summary: "Added a Prompt input node (type: prompt) to the empty graph at default position (100, 100).",
+        operations: [
+          {
+            type: "add_node",
+            node: {
+              id: "prompt-1",
+              type: "prompt",
+              label: "Prompt",
+              position: { x: 100, y: 100 },
+            },
+          },
+        ],
+      }),
+    );
+    const svc = createPipelinesService({} as never);
+
+    const result = await svc.proposeOperations({
+      snapshot,
+      message: "add prompt",
+    });
+
+    expect(result.proposal).toEqual({
+      summary: "Added a Prompt input node (type: prompt) to the empty graph at default position (100, 100).",
+      operations: [
+        {
+          type: "addNode",
+          node: {
+            id: "prompt-1",
+            type: "prompt",
+            label: "Prompt",
+            position: { x: 100, y: 100 },
+            data: {
+              label: "Prompt",
+              nodeType: "prompt",
+              prompt: "",
+            },
+          },
+        },
+      ],
+    });
   });
 
   it("proposeOperations returns null proposal when snapshot is invalid at runtime", async () => {

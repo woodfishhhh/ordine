@@ -66,6 +66,7 @@ vi.mock("@repo/ui/button", () => ({
     className,
     variant,
     size,
+    ...props
   }: React.ComponentProps<"button"> & { variant?: string; size?: string }) => {
     const handleClick = onClick;
 
@@ -77,6 +78,7 @@ vi.mock("@repo/ui/button", () => ({
         disabled={disabled}
         title={title}
         onClick={handleClick}
+        {...props}
       >
         {children}
       </button>
@@ -181,7 +183,14 @@ describe("AgentPanel", () => {
       data: { defaultAgentRuntime: "codex" },
     });
     mockGetList.mockResolvedValue({
-      data: [{ type: "codex" }],
+      data: [
+        {
+          id: "runtime-codex",
+          name: "Codex Local",
+          type: "codex",
+          connection: { mode: "local" },
+        },
+      ],
       total: 1,
     });
   });
@@ -190,20 +199,16 @@ describe("AgentPanel", () => {
     render(<AgentPanel />, { wrapper: wrapperWithState() });
     expect(screen.getByText("AI 助手")).toBeInTheDocument();
     expect(screen.getByText(/你好！我是你的 AI 助手/)).toBeInTheDocument();
+    expect(screen.getByText("运行时")).toBeInTheDocument();
   });
 
   it("calls toggleAgentPanel when close button is clicked", async () => {
     const user = userEvent.setup();
     render(<AgentPanel />, { wrapper: wrapperWithState() });
+    const closeButton = screen.getByLabelText("关闭 AI 助手");
 
-    const store = screen.getByText("AI 助手").closest("div")?.parentElement;
-    const closeBtn = store?.querySelector("button");
-    expect(closeBtn).toBeTruthy();
-
-    await user.click(closeBtn!);
-    // toggleAgentPanel flips isOpen; panel is still rendered because component
-    // doesn't gate on isOpen itself — the parent (CanvasInner) does.
-    expect(closeBtn).toBeInTheDocument();
+    await user.click(closeButton);
+    expect(closeButton).toBeInTheDocument();
   });
 
   it("sends user message and displays it", async () => {
@@ -214,6 +219,9 @@ describe("AgentPanel", () => {
 
     render(<AgentPanel />, { wrapper: wrapperWithState() });
     const input = screen.getByPlaceholderText("输入你的需求...");
+    await waitFor(() => {
+      expect(mockGetList).toHaveBeenCalled();
+    });
 
     await user.type(input, "添加一个操作节点");
     await user.keyboard("{Enter}");
@@ -226,6 +234,7 @@ describe("AgentPanel", () => {
         payload: expect.objectContaining({
           id: "pipe-1",
           message: "添加一个操作节点",
+          runtimeId: "runtime-codex",
         }),
       })
     );
@@ -245,13 +254,11 @@ describe("AgentPanel", () => {
 
     render(<AgentPanel />, { wrapper: wrapperWithState() });
     const input = screen.getByPlaceholderText("输入你的需求...");
+    await waitFor(() => {
+      expect(mockGetList).toHaveBeenCalled();
+    });
     await user.type(input, "hello");
-
-    // Send button is the last button (close button is first)
-    const buttons = screen.getAllByRole("button");
-    const sendBtn = buttons.at(-1);
-    expect(sendBtn).toBeTruthy();
-    await user.click(sendBtn!);
+    await user.click(screen.getByLabelText("发送请求"));
 
     await waitFor(() => {
       expect(screen.getByText("hello")).toBeInTheDocument();
@@ -264,6 +271,9 @@ describe("AgentPanel", () => {
 
     render(<AgentPanel />, { wrapper: wrapperWithState() });
     const input = screen.getByPlaceholderText("输入你的需求...");
+    await waitFor(() => {
+      expect(mockGetList).toHaveBeenCalled();
+    });
     await user.type(input, "test");
     await user.keyboard("{Enter}");
 
@@ -377,6 +387,9 @@ describe("AgentPanel", () => {
   it("does not send message when pipelineId is missing", async () => {
     const user = userEvent.setup();
     render(<AgentPanel />, { wrapper: wrapperWithoutPipeline });
+    await waitFor(() => {
+      expect(mockGetList).toHaveBeenCalled();
+    });
 
     const input = screen.getByPlaceholderText("输入你的需求...") as HTMLInputElement;
     await user.type(input, "test");
@@ -395,6 +408,9 @@ describe("AgentPanel", () => {
 
     render(<AgentPanel />, { wrapper: wrapperWithState() });
     const input = screen.getByPlaceholderText("输入你的需求...");
+    await waitFor(() => {
+      expect(mockGetList).toHaveBeenCalled();
+    });
     await user.type(input, "test");
     await user.keyboard("{Enter}");
 
@@ -409,10 +425,14 @@ describe("AgentPanel", () => {
 
     render(<AgentPanel />, { wrapper: wrapperWithState() });
     const input = screen.getByPlaceholderText("输入你的需求...") as HTMLInputElement;
+    await waitFor(() => {
+      expect(mockGetList).toHaveBeenCalled();
+    });
     await user.type(input, "test");
     await user.keyboard("{Enter}");
 
     expect(input.disabled).toBe(true);
+    expect(screen.getByLabelText("发送请求")).toBeDisabled();
   });
 
   it("shows default reply when proposal is returned without explicit reply", async () => {
@@ -424,6 +444,9 @@ describe("AgentPanel", () => {
 
     render(<AgentPanel />, { wrapper: wrapperWithState() });
     const input = screen.getByPlaceholderText("输入你的需求...");
+    await waitFor(() => {
+      expect(mockGetList).toHaveBeenCalled();
+    });
     await user.type(input, "add node");
     await user.keyboard("{Enter}");
 
