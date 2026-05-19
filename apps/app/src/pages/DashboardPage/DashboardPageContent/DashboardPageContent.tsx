@@ -1,5 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { Activity, ArrowRight, FolderGit2, LayoutDashboard, Sparkles, Workflow } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  FolderGit2,
+  LayoutDashboard,
+  Sparkles,
+  Workflow,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
 import { DashboardActivityChart } from "../DashboardActivityChart";
@@ -131,12 +138,12 @@ export const DashboardPageContent = () => {
                         </div>
                         <p className="mt-4 text-sm font-semibold text-foreground">
                           {t(
-                            `dashboard.quickAction${action.key[0].toUpperCase()}${action.key.slice(1)}`
+                            `dashboard.quickAction${action.key[0].toUpperCase()}${action.key.slice(1)}`,
                           )}
                         </p>
                         <p className="mt-1 text-xs leading-5 text-muted-foreground">
                           {t(
-                            `dashboard.quickAction${action.key[0].toUpperCase()}${action.key.slice(1)}Sub`
+                            `dashboard.quickAction${action.key[0].toUpperCase()}${action.key.slice(1)}Sub`,
                           )}
                         </p>
                       </div>

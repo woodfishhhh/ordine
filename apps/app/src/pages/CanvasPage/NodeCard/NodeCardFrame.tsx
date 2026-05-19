@@ -7,8 +7,9 @@ import {
   CardAction,
 } from "@repo/ui/card";
 import { cn } from "@repo/ui/lib/utils";
-import type { NodeRunStatus } from "@repo/pipeline-engine/schemas";
+import type { NodeRunStatus } from "@repo/schemas";
 import { memo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { themeMap, type NodeTheme } from "./nodeCardTheme";
 
 export interface NodeCardFrameProps {
@@ -41,6 +42,7 @@ export const NodeCardFrame = memo(
     runStatus,
     dimmed,
   }: NodeCardFrameProps) => {
+    const { t: translate } = useTranslation();
     const t = themeMap[theme] ?? themeMap.emerald;
     const [isLabelEditing, setIsLabelEditing] = useState(false);
     const handleChange = onLabelChange
@@ -59,7 +61,7 @@ export const NodeCardFrame = memo(
             "ring-2 ring-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.4)] animate-pulse",
           runStatus === "pass" && "ring-2 ring-green-500",
           runStatus === "fail" && "ring-2 ring-red-500",
-          dimmed && "opacity-40 pointer-events-none"
+          dimmed && "opacity-40 pointer-events-none",
         )}
         size="sm"
       >
@@ -68,7 +70,7 @@ export const NodeCardFrame = memo(
             <div
               className={cn(
                 "flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
-                t.iconBg
+                t.iconBg,
               )}
             >
               <Icon className={cn("h-4 w-4", t.iconColor)} />
@@ -76,10 +78,10 @@ export const NodeCardFrame = memo(
             <div className="flex min-h-8 flex-1 min-w-0 flex-col justify-center">
               {handleChange ? (
                 <input
-                  aria-label="Node label"
+                  aria-label={translate("canvas.nodeLabel")}
                   className={cn(
                     "nodrag nopan w-auto max-w-full bg-transparent text-xs font-semibold leading-tight [field-sizing:content] focus:outline-none",
-                    isLabelEditing ? "select-text" : "cursor-default select-none"
+                    isLabelEditing ? "select-text" : "cursor-default select-none",
                   )}
                   name="nodeLabel"
                   readOnly={!isLabelEditing}
@@ -109,6 +111,6 @@ export const NodeCardFrame = memo(
         )}
       </Card>
     );
-  }
+  },
 );
 NodeCardFrame.displayName = "NodeCardFrame";

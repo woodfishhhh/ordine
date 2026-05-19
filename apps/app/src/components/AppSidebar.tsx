@@ -3,6 +3,7 @@ import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useStore } from "zustand";
 import {
   ArrowLeft,
+  Bot,
   LayoutDashboard,
   Workflow,
   BookOpen,
@@ -10,11 +11,11 @@ import {
   Layers,
   Activity,
   Zap,
-  ChefHat,
   FlaskConical,
   Box,
   Puzzle,
   ExternalLink,
+  Eye,
   ChevronRight,
   Server,
   LogOut,
@@ -37,6 +38,7 @@ import {
   SidebarTrigger,
 } from "@repo/ui/sidebar";
 import { Badge } from "@repo/ui/badge";
+import { Button } from "@repo/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@repo/ui/avatar";
 import {
   DropdownMenu,
@@ -46,31 +48,32 @@ import {
   DropdownMenuTrigger,
 } from "@repo/ui/dropdown-menu";
 import { useSession, signOut } from "@/integrations/better-auth-client";
-import { useSidebarStore } from "@/store/sidebarStore";
-import { SidebarView } from "@/store/sidebarSlice";
+import { useSidebarStore, SidebarView } from "@/store/sidebarStore";
 
 interface NavItem {
   labelKey: string;
   icon: ElementType;
   to: string;
   badge?: string;
+  exact?: boolean;
 }
 
 const mainItems: NavItem[] = [{ labelKey: "nav.dashboard", icon: LayoutDashboard, to: "/" }];
 
 const mainPeerItems: NavItem[] = [
   { labelKey: "nav.distillations", icon: FlaskConical, to: "/distillations" },
-  { labelKey: "nav.skills", icon: BookOpen, to: "/pipelines/skills" },
+  { labelKey: "nav.skills", icon: BookOpen, to: "/skills" },
 ];
 
 const pipelineItems: NavItem[] = [
+  { labelKey: "nav.preview", icon: Eye, to: "/pipelines", exact: true },
   { labelKey: "nav.objects", icon: Box, to: "/pipelines/objects" },
   { labelKey: "nav.operations", icon: Zap, to: "/pipelines/operations" },
-  { labelKey: "nav.recipes", icon: ChefHat, to: "/pipelines/recipes" },
   { labelKey: "nav.jobs", icon: Activity, to: "/pipelines/jobs" },
 ];
 
 const configItems: NavItem[] = [
+  { labelKey: "nav.agents", icon: Bot, to: "/agents" },
   { labelKey: "nav.plugins", icon: Puzzle, to: "/plugins" },
   { labelKey: "nav.runtimes", icon: Server, to: "/runtimes" },
   { labelKey: "nav.settings", icon: Settings, to: "/settings" },
@@ -105,8 +108,9 @@ const NavGroup = ({
           {items.map((item) => {
             const Icon = item.icon;
             const labelText = t(item.labelKey);
-            const isActive =
-              currentPath === item.to || (item.to !== "/" && currentPath.startsWith(item.to));
+            const isActive = item.exact
+              ? currentPath === item.to
+              : currentPath === item.to || (item.to !== "/" && currentPath.startsWith(item.to));
 
             return (
               <SidebarMenuItem key={item.to}>
@@ -143,22 +147,23 @@ export const AppSidebar = () => {
   const { data: session } = useSession();
   const store = useSidebarStore();
   const sidebarView = useStore(store, (s) => s.view);
-  const setView = useStore(store, (s) => s.setView);
-  const handleShowPipelineView = useStore(store, (s) => s.handleShowPipelineView);
-  const handleShowMainView = useStore(store, (s) => s.handleShowMainView);
-  const handleOpenSearch = useStore(store, (s) => s.handleOpenSearch);
-  const handleOpenNewPipeline = useStore(store, (s) => s.handleOpenNewPipeline);
+  const handleSidebarLocationChange = useStore(store, (s) => s.handleSidebarLocationChange);
+  const handleSidebarPipelineViewButtonClick = useStore(
+    store,
+    (s) => s.handleSidebarPipelineViewButtonClick,
+  );
+  const handleSidebarMainViewButtonClick = useStore(
+    store,
+    (s) => s.handleSidebarMainViewButtonClick,
+  );
+  const handleSearchButtonClick = useStore(store, (s) => s.handleSearchButtonClick);
+  const handleNewPipelineButtonClick = useStore(store, (s) => s.handleNewPipelineButtonClick);
   const currentPath = location.pathname;
   const pipelineActive = isPipelinePath(currentPath);
 
   useEffect(() => {
-    if (isPipelinePath(currentPath)) {
-      setView(SidebarView.Pipeline);
-
-      return;
-    }
-    setView(SidebarView.Main);
-  }, [currentPath, setView]);
+    handleSidebarLocationChange(currentPath);
+  }, [currentPath, handleSidebarLocationChange]);
 
   const handleLogout = async () => {
     await signOut();
@@ -186,7 +191,7 @@ export const AppSidebar = () => {
             <SidebarMenuButton
               className="h-8 text-muted-foreground"
               tooltip={t("nav.search")}
-              onClick={handleOpenSearch}
+              onClick={handleSearchButtonClick}
             >
               <Search />
               <span>{t("nav.search")}</span>
@@ -196,7 +201,7 @@ export const AppSidebar = () => {
             <SidebarMenuButton
               className="h-8 text-muted-foreground"
               tooltip={t("nav.newPipeline")}
-              onClick={handleOpenNewPipeline}
+              onClick={handleNewPipelineButtonClick}
             >
               <SquarePen />
               <span>{t("nav.newPipeline")}</span>
@@ -223,7 +228,7 @@ export const AppSidebar = () => {
                       isActive={pipelineActive}
                       render={<Link to="/pipelines" />}
                       tooltip={t("nav.pipelines")}
-                      onClick={handleShowPipelineView}
+                      onClick={handleSidebarPipelineViewButtonClick}
                     >
                       <Layers />
                       <span>{t("nav.pipelines")}</span>
@@ -256,7 +261,7 @@ export const AppSidebar = () => {
                     <SidebarMenuButton
                       className="h-8 font-medium"
                       tooltip={t("nav.back")}
-                      onClick={handleShowMainView}
+                      onClick={handleSidebarMainViewButtonClick}
                     >
                       <ArrowLeft />
                       <span>{t("nav.pipelines")}</span>
@@ -283,7 +288,7 @@ export const AppSidebar = () => {
             <DropdownMenu>
               <DropdownMenuTrigger
                 className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-sidebar-accent"
-                render={<button type="button" />}
+                render={<Button type="button" variant="ghost" />}
               >
                 <Avatar size="sm">
                   {session?.user?.image && (

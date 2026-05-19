@@ -24,18 +24,14 @@ import "@xyflow/react/dist/style.css";
 import { cn } from "@repo/ui/lib/utils";
 import { Button } from "@repo/ui/button";
 import { Input } from "@repo/ui/input";
-import { useOne, useCustomMutation } from "@refinedev/core";
+import { useOne, useCustomMutation, useList } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
-import type { Operation } from "@repo/schemas";
-import type { PipelineData, PipelineNode } from "@repo/pipeline-engine/schemas";
+import type { Operation, PipelineData, PipelineNode } from "@repo/schemas";
 import { ResourceName } from "@/integrations/refine/dataProvider";
+import { Route } from "@/routes/_layout/pipelines.$pipelineId";
 import { PageHeader } from "@/components/PageHeader";
+import { PageLoadingState } from "@/components/PageLoadingState";
 import { Stat } from "../Stat";
-
-interface Props {
-  pipeline: PipelineData;
-  operations: Operation[];
-}
 
 // ─── Node type metadata ───────────────────────────────────────────────────────
 
@@ -44,7 +40,7 @@ const NODE_META: Record<string, { icon: React.ElementType; color: string }> = {
     icon: Zap,
     color: "text-violet-600 bg-violet-50",
   },
-  "code-file": {
+  file: {
     icon: FileCode,
     color: "text-sky-600 bg-sky-50",
   },
@@ -52,7 +48,7 @@ const NODE_META: Record<string, { icon: React.ElementType; color: string }> = {
     icon: Folder,
     color: "text-amber-600 bg-amber-50",
   },
-  "github-projects": {
+  "github-project": {
     icon: FolderGit2,
     color: "text-slate-600 bg-slate-50",
   },
@@ -73,9 +69,9 @@ const NODE_META: Record<string, { icon: React.ElementType; color: string }> = {
 const getNodeTypeLabel = (type: string, t: (key: string) => string): string => {
   const keyMap: Record<string, string> = {
     operation: "pipelines.nodeTypes.operation",
-    "code-file": "pipelines.nodeTypes.code-file",
+    file: "pipelines.nodeTypes.file",
     folder: "pipelines.nodeTypes.folder",
-    "github-projects": "pipelines.nodeTypes.github-projects",
+    "github-project": "pipelines.nodeTypes.github-project",
     "output-local-path": "pipelines.nodeTypes.output-local-path",
     "output-project-path": "pipelines.nodeTypes.output-project-path",
     condition: "pipelines.nodeTypes.condition",
@@ -100,9 +96,20 @@ const getNodeLabel = (node: PipelineNode, operations: Operation[]): string => {
 
 type RunState = "idle" | "running" | "done" | "failed";
 
-export const PipelineDetailPageContent = ({ pipeline, operations }: Props) => {
+export const PipelineDetailPageContent = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { pipelineId } = Route.useParams();
+
+  const { result: pipelineResult, query: pipelineQuery } = useOne<PipelineData>({
+    resource: ResourceName.pipelines,
+    id: pipelineId,
+  });
+  const { result: operationsResult, query: operationsQuery } = useList<Operation>({
+    resource: ResourceName.operations,
+  });
+  const pipeline = pipelineResult ?? null;
+  const operations = operationsResult.data;
 
   // ── Run panel state ─────────────────────────────────────────────────────────
   const [inputPath, setInputPath] = useState("");
@@ -153,7 +160,7 @@ export const PipelineDetailPageContent = ({ pipeline, operations }: Props) => {
       {
         url: "pipelines/run",
         method: "post",
-        values: { id: pipeline.id, inputPath: inputPath || undefined },
+        values: { id: pipeline!.id, inputPath: inputPath || undefined },
       },
       {
         onSuccess: (data) => {
@@ -166,7 +173,7 @@ export const PipelineDetailPageContent = ({ pipeline, operations }: Props) => {
           setRunState("failed");
           setRunError(error.message ?? "Failed to start pipeline");
         },
-      }
+      },
     );
   };
 
@@ -175,6 +182,24 @@ export const PipelineDetailPageContent = ({ pipeline, operations }: Props) => {
   };
 
   const handleClickRun = () => handleRun();
+
+  if (pipelineQuery?.isLoading || operationsQuery?.isLoading) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden">
+        <PageHeader title={t("pipelines.title")} />
+        <PageLoadingState variant="detail" />
+      </div>
+    );
+  }
+
+  if (!pipeline) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <p className="text-sm text-muted-foreground">Pipeline 不存在</p>
+      </div>
+    );
+  }
+
   const handleCanvasClick = () => void navigate({ to: "/canvas", search: { id: pipeline.id } });
   const handleOpenDistillationStudio = () =>
     void navigate({
@@ -293,7 +318,7 @@ export const PipelineDetailPageContent = ({ pipeline, operations }: Props) => {
                     className={cn(
                       "flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium",
                       meta?.color ?? "text-gray-600 bg-gray-50",
-                      "border-current/20"
+                      "border-current/20",
                     )}
                   >
                     <Icon className="h-3 w-3" />
@@ -411,7 +436,7 @@ export const PipelineDetailPageContent = ({ pipeline, operations }: Props) => {
                       "text-xs font-medium",
                       runState === "running" && "text-blue-600",
                       runState === "done" && "text-green-600",
-                      runState === "failed" && "text-red-600"
+                      runState === "failed" && "text-red-600",
                     )}
                   >
                     {runState === "running" && t("pipelines.runningStatus")}
@@ -459,7 +484,7 @@ export const PipelineDetailPageContent = ({ pipeline, operations }: Props) => {
                     <div
                       className={cn(
                         "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
-                        meta?.color ?? "text-gray-600 bg-gray-50"
+                        meta?.color ?? "text-gray-600 bg-gray-50",
                       )}
                     >
                       <Icon className="h-3.5 w-3.5" />
@@ -480,7 +505,7 @@ export const PipelineDetailPageContent = ({ pipeline, operations }: Props) => {
                       className={cn(
                         "shrink-0 rounded border px-2 py-0.5 text-[10px] font-medium",
                         meta?.color ?? "text-gray-500 bg-gray-50",
-                        "border-current/20"
+                        "border-current/20",
                       )}
                     >
                       {getNodeTypeLabel(node.type, t)}

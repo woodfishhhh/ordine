@@ -2,18 +2,24 @@ import { memo, useLayoutEffect, useRef, useState } from "react";
 import { NodeCardFrame, type NodeCardFrameProps } from "./NodeCardFrame";
 import { NodeCardPorts } from "./NodeCardPorts";
 
-export type { NodeTheme } from "./nodeCardTheme";
-
 export interface NodeCardProps extends NodeCardFrameProps {
+  leftActivePortCount?: number;
+  leftActivePortMask?: number;
+  leftConnectedPortCount?: number;
+  leftConnectedPortMask?: number;
   leftHandle?: boolean;
   rightHandle?: boolean;
+  rightActivePortCount?: number;
+  rightActivePortMask?: number;
+  rightConnectedPortCount?: number;
+  rightConnectedPortMask?: number;
   leftHandleCount?: number;
   rightHandleCount?: number;
 }
 
 const useCardMaxPortSpread = (
   wrapperRef: React.RefObject<HTMLDivElement | null>,
-  enabled: boolean
+  enabled: boolean,
 ) => {
   const [cardMaxPortSpread, setCardMaxPortSpread] = useState<number | undefined>(undefined);
 
@@ -34,7 +40,7 @@ const useCardMaxPortSpread = (
       const nextMaxSpread =
         Number.isFinite(height) && height > 0 ? Math.floor(height / 2) : undefined;
       setCardMaxPortSpread((currentMaxSpread) =>
-        currentMaxSpread === nextMaxSpread ? currentMaxSpread : nextMaxSpread
+        currentMaxSpread === nextMaxSpread ? currentMaxSpread : nextMaxSpread,
       );
     };
 
@@ -55,8 +61,16 @@ const useCardMaxPortSpread = (
 
 export const NodeCard = memo(
   ({
+    leftActivePortCount,
+    leftActivePortMask,
+    leftConnectedPortCount,
+    leftConnectedPortMask,
     leftHandle,
     rightHandle,
+    rightActivePortCount,
+    rightActivePortMask,
+    rightConnectedPortCount,
+    rightConnectedPortMask,
     leftHandleCount = 1,
     rightHandleCount = 1,
     selected,
@@ -76,7 +90,11 @@ export const NodeCard = memo(
     const cardMaxPortSpread = useCardMaxPortSpread(wrapperRef, hasPorts);
 
     return (
-      <div ref={wrapperRef} className="relative">
+      <div
+        ref={wrapperRef}
+        className="group/node-card relative"
+        data-selected={selected ? "true" : "false"}
+      >
         <NodeCardFrame
           bodyClassName={bodyClassName}
           description={description}
@@ -94,8 +112,16 @@ export const NodeCard = memo(
         {hasPorts && (
           <NodeCardPorts
             cardMaxPortSpread={cardMaxPortSpread}
+            leftActivePortCount={leftActivePortCount}
+            leftActivePortMask={leftActivePortMask}
+            leftConnectedPortCount={leftConnectedPortCount}
+            leftConnectedPortMask={leftConnectedPortMask}
             leftHandle={leftHandle}
             leftHandleCount={leftHandleCount}
+            rightActivePortCount={rightActivePortCount}
+            rightActivePortMask={rightActivePortMask}
+            rightConnectedPortCount={rightConnectedPortCount}
+            rightConnectedPortMask={rightConnectedPortMask}
             rightHandle={rightHandle}
             rightHandleCount={rightHandleCount}
             theme={theme}
@@ -103,6 +129,6 @@ export const NodeCard = memo(
         )}
       </div>
     );
-  }
+  },
 );
 NodeCard.displayName = "NodeCard";

@@ -3,107 +3,108 @@ import { useCustomMutation } from "@refinedev/core";
 import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { Button } from "@repo/ui/button";
-import { FlaskConical, Loader2, Sparkles } from "lucide-react";
-import { useDistillationStudioPageStore } from "./_store";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@repo/ui/select";
+import { FlaskConical, Sparkles } from "lucide-react";
+import { type DistillationActionDependencies, useDistillationStudioPageStore } from "./_store";
+
+const REFINEMENT_ROUND_OPTIONS = [1, 2, 3, 5, 8, 10];
 
 export const DistillationActionBar = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { mutateAsync: startRefinement } = useCustomMutation();
+  const { mutateAsync: optimizePipeline } = useCustomMutation();
 
   const store = useDistillationStudioPageStore();
   const latestDistillation = useStore(store, (s) => s.latestDistillation);
   const refinementId = useStore(store, (s) => s.refinementId);
   const refinementRounds = useStore(store, (s) => s.refinementRounds);
-  const setRefinementId = useStore(store, (s) => s.handleSetRefinementId);
-  const setRefinementRounds = useStore(store, (s) => s.handleSetRefinementRounds);
-
-  const handleRefinementRoundsChange = (e: React.ChangeEvent<HTMLSelectElement>) =>
-    setRefinementRounds(Number(e.target.value));
-
-  const { mutate: optimizePipeline, mutation: optimizeMutation } = useCustomMutation();
-  const { mutate: startRefinement, mutation: refinementMutation } = useCustomMutation();
-  const isOptimizing = optimizeMutation.isPending;
-  const isStartingRefinement = refinementMutation.isPending;
+  const handleRefinementRoundsSelectChange = useStore(
+    store,
+    (s) => s.handleRefinementRoundsSelectChange,
+  );
+  const handleStartRefinementButtonClick = useStore(
+    store,
+    (s) => s.handleStartRefinementButtonClick,
+  );
+  const handleOptimizePipelineButtonClick = useStore(
+    store,
+    (s) => s.handleOptimizePipelineButtonClick,
+  );
 
   if (!latestDistillation?.result) {
     return null;
   }
 
-  const handleOptimizePipeline = () => {
-    optimizePipeline(
-      {
-        url: "pipelines/optimizeFromDistillation",
-        method: "post",
-        values: { distillationId: latestDistillation.id },
-      },
-      {
-        onSuccess: (data) => {
-          const pipeline = data.data as { id: string };
-          void navigate({
-            to: "/pipelines/$pipelineId",
-            params: { pipelineId: pipeline.id },
-          });
-        },
-      }
-    );
-  };
-
-  const handleStartRefinement = () => {
-    startRefinement(
-      {
+  const actionDependencies: DistillationActionDependencies = {
+    startRefinement: async (sourceDistillationId, maxRounds) => {
+      const result = await startRefinement({
         url: "refinements/start",
         method: "post",
-        values: {
-          sourceDistillationId: latestDistillation.id,
-          maxRounds: refinementRounds,
-        },
-      },
-      {
-        onSuccess: (data) => {
-          const result = data.data as { id: string };
-          setRefinementId(result.id);
-        },
-      }
-    );
+        values: { sourceDistillationId, maxRounds },
+      });
+
+      return (result.data as { id: string }).id;
+    },
+    optimizePipeline: async (distillationId) => {
+      const result = await optimizePipeline({
+        url: "pipelines/optimizeFromDistillation",
+        method: "post",
+        values: { distillationId },
+      });
+
+      return (result.data as { id: string }).id;
+    },
+    navigateToPipeline: (pipelineId) => {
+      void navigate({ to: "/pipelines/$pipelineId", params: { pipelineId } });
+    },
+  };
+
+  const handleStartRefinementClick = () => {
+    void handleStartRefinementButtonClick(actionDependencies);
+  };
+
+  const handleOptimizePipelineClick = () => {
+    void handleOptimizePipelineButtonClick(actionDependencies);
   };
 
   return (
     <div className="flex items-center justify-end gap-2">
       <div className="flex items-center gap-1.5">
-        <select
-          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-          value={refinementRounds}
-          onChange={handleRefinementRoundsChange}
-        >
-          {[1, 2, 3, 5, 8, 10].map((n) => (
-            <option key={n} value={n}>
-              {n} {t("distillations.refinementRounds")}
-            </option>
-          ))}
-        </select>
+        <Select value={String(refinementRounds)} onValueChange={handleRefinementRoundsSelectChange}>
+          <SelectTrigger className="h-8 w-32 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {REFINEMENT_ROUND_OPTIONS.map((n) => (
+                <SelectItem key={n} value={String(n)}>
+                  {n} {t("distillations.refinementRounds")}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
         <Button
-          disabled={isStartingRefinement || !!refinementId}
+          disabled={!!refinementId}
           size="sm"
           variant="secondary"
-          onClick={handleStartRefinement}
+          onClick={handleStartRefinementClick}
         >
-          {isStartingRefinement ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <FlaskConical className="mr-1.5 h-3.5 w-3.5" />
-          )}
-          {isStartingRefinement
-            ? t("distillations.refinementRunning")
-            : t("distillations.startRefinement")}
+          <FlaskConical className="mr-1.5 h-3.5 w-3.5" />
+          {t("distillations.startRefinement")}
         </Button>
       </div>
-      <Button disabled={isOptimizing} size="sm" onClick={handleOptimizePipeline}>
-        {isOptimizing ? (
-          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-        )}
-        {isOptimizing ? t("distillations.optimizing") : t("distillations.optimizePipeline")}
+      <Button size="sm" onClick={handleOptimizePipelineClick}>
+        <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+        {t("distillations.optimizePipeline")}
       </Button>
     </div>
   );

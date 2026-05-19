@@ -4,7 +4,7 @@ import {
   type PipelineGraphSnapshot,
   type PipelineOperation,
   type PipelineOperationDiagnostic,
-} from "@repo/pipeline-engine/schemas";
+} from "@repo/schemas";
 import { isConnectionAllowed } from "../schemas/nodes/NodeConnectionRulesSchema";
 
 type PipelineGraphNode = PipelineGraphSnapshot["nodes"][number];

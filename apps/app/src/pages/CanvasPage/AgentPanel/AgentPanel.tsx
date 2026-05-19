@@ -16,7 +16,7 @@ import { ScrollArea } from "@repo/ui/scroll-area";
 import { Input } from "@repo/ui/input";
 import { cn } from "@repo/ui/lib/utils";
 import { ResultAsync } from "neverthrow";
-import { useHarnessCanvasStore } from "../_store";
+import { useCanvasPageStore } from "../_store";
 import { dataProvider, ResourceName } from "@/integrations/refine/dataProvider";
 import { toastStore } from "@/store/toastStore";
 import type {
@@ -59,7 +59,7 @@ const getOperationLabel = (op: PipelineOperation): string => {
 
 export const AgentPanel = () => {
   const { t } = useTranslation();
-  const store = useHarnessCanvasStore();
+  const store = useCanvasPageStore();
 
   const agentPanel = useStore(store, (state) => state.agentPanel);
   const handleToggleAgentPanel = useStore(
@@ -333,8 +333,10 @@ export const AgentPanel = () => {
           <span>{t("canvas.agentPanel.title")}</span>
         </div>
         <Button
+          aria-label={t("canvas.agentPanel.close")}
           className="h-7 w-7"
           size="icon"
+          title={t("canvas.agentPanel.close")}
           variant="ghost"
           onClick={handleToggleAgentPanel}>
           <X className="h-4 w-4" />
@@ -466,9 +468,11 @@ export const AgentPanel = () => {
           onKeyDown={handleKeyDown}
         />
         <Button
+          aria-label={t("canvas.agentPanel.send")}
           className="h-9 w-9"
           disabled={isSending || agentPanel.isLoading || !inputValue.trim()}
           size="icon"
+          title={t("canvas.agentPanel.send")}
           variant="ghost"
           onClick={handleSendClick}>
           {isSending || agentPanel.isLoading ? (

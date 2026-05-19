@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
-import { PipelineNodeSchema } from "./PipelineNodeSchema";
-import { PipelineEdgeSchema } from "./PipelineEdgeSchema";
+import { PipelineNodeSchema } from "./node/PipelineNodeSchema";
+import { PipelineEdgeSchema } from "./edge/PipelineEdgeSchema";
 
 export const PipelineGraphNodeSchema = PipelineNodeSchema.extend({
   parentId: z.string().optional(),

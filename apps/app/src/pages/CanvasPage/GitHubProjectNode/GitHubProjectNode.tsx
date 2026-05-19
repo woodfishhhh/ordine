@@ -3,9 +3,9 @@ import { Link2, Lock, Globe, BookMarked, FolderOpen, FolderInput, X, Eye } from 
 import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/shallow";
-import { useHarnessCanvasStore, selectNodeRunState } from "../_store";
-import type { GitHubProjectNodeData } from "@repo/pipeline-engine/schemas";
-import { NodeCard, useNodePortCounts } from "../NodeCard";
+import { useCanvasPageStore, selectNodeRunState, selectNodePortCounts } from "../_store";
+import type { GithubProjectObjectNodeData } from "@repo/schemas";
+import { NodeCard } from "../NodeCard";
 import { FolderTreePreview } from "../FolderNode/FolderTreePreview";
 import { SiGitHubIcon } from "@/components/icons/SiGitHubIcon";
 import { GitHubConnectDialog, type ConnectedRepoInfo } from "./GitHubConnectDialog";
@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export interface GitHubProjectNodeProps {
   id: string;
-  data: GitHubProjectNodeData;
+  data: GithubProjectObjectNodeData;
   selected?: boolean;
 }
 
@@ -25,7 +25,7 @@ const handleMouseDown = (e: React.MouseEvent) => e.stopPropagation();
 
 export const GitHubProjectNode = ({ id, data, selected }: GitHubProjectNodeProps) => {
   const { t } = useTranslation();
-  const store = useHarnessCanvasStore();
+  const store = useCanvasPageStore();
   const { runStatus, dimmed } = useStore(store, useShallow(selectNodeRunState(id)));
   const [pickOpen, setPickOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
@@ -37,7 +37,13 @@ export const GitHubProjectNode = ({ id, data, selected }: GitHubProjectNodeProps
   const handleGitHubProjectLocalFolder = useStore(store, (s) => s.handleGitHubProjectLocalFolder);
   const handleNodeAddExcludedPath = useStore(store, (s) => s.handleNodeAddExcludedPath);
   const handleNodeRemoveExcludedPath = useStore(store, (s) => s.handleNodeRemoveExcludedPath);
-  const { rightPortCount } = useNodePortCounts(id);
+  const {
+    rightActivePortCount,
+    rightActivePortMask,
+    rightConnectedPortCount,
+    rightConnectedPortMask,
+    rightPortCount,
+  } = useStore(store, useShallow(selectNodePortCounts(id)));
 
   const isLocal = data.sourceType === "local";
   const isConnected = isLocal ? !!data.localPath : !!(data.owner && data.repo);
@@ -74,14 +80,18 @@ export const GitHubProjectNode = ({ id, data, selected }: GitHubProjectNodeProps
   const handleAddExcluded = (path: string) => handleNodeAddExcludedPath(id, path);
 
   return (
-    <div className="group relative" style={{ overflow: "visible" }}>
+    <div className="group relative overflow-visible">
       <NodeCard
         rightHandle
         bodyClassName="space-y-2"
-        description="GitHub Project"
+        description={t("canvas.nodeTypes.github-project.label")}
         dimmed={dimmed}
         icon={SiGitHubIcon}
         label={data.label}
+        rightActivePortCount={rightActivePortCount}
+        rightActivePortMask={rightActivePortMask}
+        rightConnectedPortCount={rightConnectedPortCount}
+        rightConnectedPortMask={rightConnectedPortMask}
         rightHandleCount={rightPortCount}
         runStatus={runStatus}
         selected={selected}

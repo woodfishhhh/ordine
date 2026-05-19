@@ -1,16 +1,12 @@
+import type { ChangeEvent } from "react";
 import { applyPipelineOperations } from "@repo/pipeline-engine/operations";
 import type {
   NodeRunStatus,
-  PipelineOperationProposal,
   PipelineOperationDiagnostic,
-} from "@repo/pipeline-engine/schemas";
-import type { HarnessCanvasStoreSlice } from "./harnessCanvasStore";
+  PipelineOperationProposal,
+} from "@repo/schemas";
+import type { CanvasPageStoreSlice } from "./canvasPageStore";
 import { DEFAULT_CANVAS_VIEWPORT } from "../utils/canvasViewport";
-
-export interface NodeRunState {
-  runStatus: NodeRunStatus | undefined;
-  dimmed: boolean;
-}
 
 export type SidebarPanel = "components" | "properties" | "ai-assistant" | null;
 
@@ -33,6 +29,20 @@ export interface ConnectStartState {
   handleType: "source" | "target" | null;
 }
 
+export interface CanvasSettingsState {
+  showMiniMap: boolean;
+  showControls: boolean;
+  showBackground: boolean;
+  snapToGrid: boolean;
+}
+
+export const DEFAULT_CANVAS_SETTINGS: CanvasSettingsState = {
+  showMiniMap: true,
+  showControls: false,
+  showBackground: true,
+  snapToGrid: false,
+};
+
 export interface AgentPanelState {
   isOpen: boolean;
   pendingProposal: PipelineOperationProposal | null;
@@ -44,9 +54,11 @@ export interface UISlice {
   pipelineId: string | null;
   pipelineName: string;
   viewportZoom: number;
+  canvasSettings: CanvasSettingsState;
   sidebarPanel: SidebarPanel;
   isSidebarOpen: boolean;
   isPropertiesPanelOpen: boolean;
+  isCanvasSettingsOpen: boolean;
   isConsoleOpen: boolean;
   activeJobId: string | null;
   contextMenu: ContextMenuState | null;
@@ -57,6 +69,7 @@ export interface UISlice {
   isQuickAddOpen: boolean;
   quickAddQuery: string;
   isConsoleCollapsed: boolean;
+  isCanvasInteractive: boolean;
 
   // Pipeline test run state
   isTestRunning: boolean;
@@ -69,13 +82,18 @@ export interface UISlice {
   // Agent panel state
   agentPanel: AgentPanelState;
 
+  // Operation node UI state
+  operationAgentDropdownNodeId: string | null;
+
   handlePipelineIdChange: (id: string) => void;
   handleSidebarPanelChange: (panel: SidebarPanel) => void;
   handleToggleSidebar: () => void;
   openPropertiesPanel: () => void;
   closePropertiesPanel: () => void;
+  openCanvasSettings: () => void;
+  closeCanvasSettings: () => void;
+  updateCanvasSettings: (settings: Partial<CanvasSettingsState>) => void;
   toggleConsole: () => void;
-  setActiveJobId: (jobId: string | null) => void;
   openContextMenu: (state: ContextMenuState) => void;
   closeContextMenu: () => void;
   openConnectionMenu: (state: ContextMenuState) => void;
@@ -85,21 +103,18 @@ export interface UISlice {
   handleOpenQuickAdd: () => void;
   handleCloseQuickAdd: () => void;
   handleToggleQuickAdd: () => void;
-  handleSetQuickAddQuery: (query: string) => void;
+  handleQuickAddInputChange: (event: ChangeEvent<HTMLInputElement>) => void;
   handleToggleConsoleCollapse: () => void;
+  handleToggleCanvasInteractive: () => void;
   handleQuickAddKeyDown: (event: React.KeyboardEvent) => void;
   handleConnectStart: (state: ConnectStartState | null) => void;
-  handlePipelineNameChange: (name: string) => void;
-  setViewportZoom: (zoom: number) => void;
+  handlePipelineNameChange: (event: ChangeEvent<HTMLInputElement>) => void;
   handleFlowMove: (zoom: number) => void;
 
   // Pipeline run actions
   startTestRun: () => void;
   stopTestRun: () => void;
-  setNodeRunStatus: (nodeId: string, status: NodeRunStatus) => void;
-  setRunningNodeId: (nodeId: string | null) => void;
-  setNodeLlmContent: (nodeId: string, content: string) => void;
-  setInspectingNodeId: (nodeId: string | null) => void;
+  applyNodeLlmContent: (nodeId: string, content: string) => void;
 
   // Semantic actions
   handleCloseConsole: () => void;
@@ -113,24 +128,29 @@ export interface UISlice {
 
   // Agent panel actions
   toggleAgentPanel: () => void;
-  setPendingProposal: (proposal: PipelineOperationProposal | null, diagnostics: PipelineOperationDiagnostic[] | null) => void;
+  setPendingProposal: (
+    proposal: PipelineOperationProposal | null,
+    diagnostics: PipelineOperationDiagnostic[] | null,
+  ) => void;
   clearPendingProposal: () => void;
   applyAgentProposal: (proposal: PipelineOperationProposal) => boolean;
 }
 
 export const createUISlice = (
-  set: Parameters<HarnessCanvasStoreSlice>[0],
-  get: Parameters<HarnessCanvasStoreSlice>[1],
+  set: Parameters<CanvasPageStoreSlice>[0],
+  get: Parameters<CanvasPageStoreSlice>[1],
 
   pipelineId: string | null = null,
-  pipelineName = ""
+  pipelineName = "",
 ): UISlice => ({
   pipelineId,
   pipelineName,
   viewportZoom: DEFAULT_CANVAS_VIEWPORT.zoom,
+  canvasSettings: { ...DEFAULT_CANVAS_SETTINGS },
   sidebarPanel: "components",
   isSidebarOpen: true,
   isPropertiesPanelOpen: false,
+  isCanvasSettingsOpen: false,
   isConsoleOpen: false,
   activeJobId: null,
   contextMenu: null,
@@ -141,6 +161,7 @@ export const createUISlice = (
   isQuickAddOpen: false,
   quickAddQuery: "",
   isConsoleCollapsed: false,
+  isCanvasInteractive: true,
   // Pipeline test run state defaults
   isTestRunning: false,
   isRunning: false,
@@ -148,13 +169,13 @@ export const createUISlice = (
   nodeRunStatuses: {},
   nodeLlmContent: {},
   inspectingNodeId: null,
-  // Agent panel state defaults
   agentPanel: {
     isOpen: false,
     pendingProposal: null,
     diagnostics: null,
     isLoading: false,
   },
+  operationAgentDropdownNodeId: null,
   handlePipelineIdChange: (id) => {
     set({ pipelineId: id });
   },
@@ -175,12 +196,26 @@ export const createUISlice = (
     set({ isPropertiesPanelOpen: false });
   },
 
-  toggleConsole: () => {
-    set((state) => ({ isConsoleOpen: !state.isConsoleOpen }));
+  openCanvasSettings: () => {
+    set({
+      isCanvasSettingsOpen: true,
+      contextMenu: null,
+      connectionMenu: null,
+      nodeContextMenu: null,
+      isQuickAddOpen: false,
+    });
   },
 
-  setActiveJobId: (jobId) => {
-    set({ activeJobId: jobId, isConsoleOpen: jobId !== null });
+  closeCanvasSettings: () => {
+    set({ isCanvasSettingsOpen: false });
+  },
+
+  updateCanvasSettings: (settings) => {
+    set((state) => ({ canvasSettings: { ...state.canvasSettings, ...settings } }));
+  },
+
+  toggleConsole: () => {
+    set((state) => ({ isConsoleOpen: !state.isConsoleOpen }));
   },
 
   openContextMenu: (state) => {
@@ -233,12 +268,16 @@ export const createUISlice = (
     }));
   },
 
-  handleSetQuickAddQuery: (query) => {
-    set({ quickAddQuery: query });
+  handleQuickAddInputChange: (event) => {
+    set({ quickAddQuery: event.target.value });
   },
 
   handleToggleConsoleCollapse: () => {
     set((state) => ({ isConsoleCollapsed: !state.isConsoleCollapsed }));
+  },
+
+  handleToggleCanvasInteractive: () => {
+    set((state) => ({ isCanvasInteractive: !state.isCanvasInteractive }));
   },
 
   handleQuickAddKeyDown: (event) => {
@@ -251,12 +290,8 @@ export const createUISlice = (
     set({ connectStart: state });
   },
 
-  handlePipelineNameChange: (name) => {
-    set({ pipelineName: name });
-  },
-
-  setViewportZoom: (zoom) => {
-    set({ viewportZoom: zoom });
+  handlePipelineNameChange: (event) => {
+    set({ pipelineName: event.target.value });
   },
 
   handleFlowMove: (zoom) => {
@@ -280,24 +315,10 @@ export const createUISlice = (
     set({ isTestRunning: false, runningNodeId: null });
   },
 
-  setNodeRunStatus: (nodeId, status) => {
-    set((state) => ({
-      nodeRunStatuses: { ...state.nodeRunStatuses, [nodeId]: status },
-    }));
-  },
-
-  setRunningNodeId: (nodeId) => {
-    set({ runningNodeId: nodeId });
-  },
-
-  setNodeLlmContent: (nodeId, content) => {
+  applyNodeLlmContent: (nodeId, content) => {
     set((state) => ({
       nodeLlmContent: { ...state.nodeLlmContent, [nodeId]: content },
     }));
-  },
-
-  setInspectingNodeId: (nodeId) => {
-    set({ inspectingNodeId: nodeId });
   },
 
   // Semantic actions
@@ -374,9 +395,7 @@ export const createUISlice = (
       agentPanel: {
         ...state.agentPanel,
         isOpen: !state.agentPanel.isOpen,
-        ...(state.agentPanel.isOpen
-          ? { pendingProposal: null, diagnostics: null }
-          : {}),
+        ...(state.agentPanel.isOpen ? { pendingProposal: null, diagnostics: null } : {}),
       },
     }));
   },
@@ -404,15 +423,13 @@ export const createUISlice = (
   },
 
   applyAgentProposal: (proposal) => {
-    const { nodes, edges, recordCommand } = get();
-
-    const snapshot = { nodes, edges };
-    const result = applyPipelineOperations(snapshot, proposal.operations);
+    const { edges, nodes, recordCommand } = get();
+    const result = applyPipelineOperations({ nodes, edges }, proposal.operations);
 
     if (result.isErr()) {
-      set((s) => ({
+      set((state) => ({
         agentPanel: {
-          ...s.agentPanel,
+          ...state.agentPanel,
           diagnostics: result.error,
           isLoading: false,
         },
@@ -422,20 +439,22 @@ export const createUISlice = (
     }
 
     const next = result.value;
-
     recordCommand(
       {
         type: "APPLY_AGENT_PROPOSAL",
-        label: `应用 AI 提案: ${proposal.summary}`,
-        payload: { summary: proposal.summary, operationCount: proposal.operations.length },
+        label: `Apply AI proposal: ${proposal.summary}`,
+        payload: {
+          operationCount: proposal.operations.length,
+          summary: proposal.summary,
+        },
       },
       (draft) => {
         draft.nodes = next.nodes as typeof draft.nodes;
         draft.edges = next.edges as typeof draft.edges;
-      }
+      },
     );
 
-    set((s) => ({
+    set((state) => ({
       selectedNodeId: null,
       selectedEdgeId: null,
       contextMenu: null,
@@ -445,7 +464,7 @@ export const createUISlice = (
       isQuickAddOpen: false,
       quickAddQuery: "",
       agentPanel: {
-        ...s.agentPanel,
+        ...state.agentPanel,
         pendingProposal: null,
         diagnostics: null,
         isLoading: false,
@@ -455,16 +474,3 @@ export const createUISlice = (
     return true;
   },
 });
-
-export const selectNodeRunState =
-  (nodeId: string) =>
-    (state: UISlice): NodeRunState => {
-      const runStatus = state.nodeRunStatuses[nodeId];
-      const dimmed =
-        state.isTestRunning &&
-        state.runningNodeId !== null &&
-        state.runningNodeId !== nodeId &&
-        runStatus !== "running";
-
-      return { runStatus, dimmed };
-    };

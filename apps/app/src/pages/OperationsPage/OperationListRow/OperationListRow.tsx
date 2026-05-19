@@ -8,9 +8,11 @@ import {
   Pencil,
   Download,
   Trash2,
+  MessageSquareText,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Operation, ObjectType } from "@repo/schemas";
+import { useDelete } from "@refinedev/core";
 import { Button } from "@repo/ui/button";
 import {
   DropdownMenu,
@@ -18,11 +20,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@repo/ui/dropdown-menu";
+import { ResourceName } from "@/integrations/refine/dataProvider";
+import { exportOperation } from "../exportOperation";
 
 const OBJECT_TYPE_ICONS: Record<ObjectType, React.ElementType> = {
   file: FileCode,
   folder: Folder,
-  project: FolderGit2,
+  "github-project": FolderGit2,
+  prompt: MessageSquareText,
 };
 
 const getComplexity = (op: Operation) => {
@@ -33,10 +38,6 @@ const getComplexity = (op: Operation) => {
 
   return inputs + outputs;
 };
-
-import { useDelete } from "@refinedev/core";
-import { ResourceName } from "@/integrations/refine/dataProvider";
-import { exportOperation } from "../exportOperation";
 
 const handleStopPropagation = (e: React.MouseEvent) => e.stopPropagation();
 
@@ -60,7 +61,7 @@ export const OperationListRow = ({ operation }: OperationListRowProps) => {
   const complexity = getComplexity(operation);
   const objectTypes = Array.isArray(operation.acceptedObjectTypes)
     ? operation.acceptedObjectTypes
-    : (["file", "folder", "project"] as ObjectType[]);
+    : (["file", "folder", "github-project", "prompt"] as ObjectType[]);
 
   const handleRowClick = () => {
     navigate({

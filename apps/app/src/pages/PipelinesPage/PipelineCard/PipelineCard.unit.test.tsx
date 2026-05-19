@@ -1,15 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { type PipelineData, PipelineSchema } from "@repo/pipeline-engine/schemas";
+import { type PipelineData, PipelineSchema } from "@repo/schemas";
 import { PipelineCard } from "./PipelineCard";
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
   useNavigate: () => vi.fn(),
-}));
-
-vi.mock("@refinedev/core", () => ({
-  useDelete: () => ({ mutate: vi.fn() }),
 }));
 
 const mockPipelineInput = PipelineSchema.parse({
@@ -30,9 +26,14 @@ const mockPipeline: PipelineData = {
   updatedAt: new Date(mockPipelineInput.updatedAt),
 };
 
+vi.mock("@refinedev/core", () => ({
+  useDelete: () => ({ mutate: vi.fn() }),
+  useOne: () => ({ result: mockPipeline, isLoading: false }),
+}));
+
 describe("PipelineCard", () => {
   it("renders pipeline name", () => {
-    render(<PipelineCard pipeline={mockPipeline} />);
+    render(<PipelineCard pipelineId="pipe-001" />);
     expect(screen.getByText("测试 Pipeline")).toBeInTheDocument();
   });
 });

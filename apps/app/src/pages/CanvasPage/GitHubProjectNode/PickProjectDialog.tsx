@@ -3,6 +3,8 @@ import { Search, GitBranch, Lock, Globe, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useList } from "@refinedev/core";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@repo/ui/dialog";
+import { Button } from "@repo/ui/button";
+import { Input } from "@repo/ui/input";
 import { ResourceName } from "@/integrations/refine/dataProvider";
 import type { GithubProject } from "@repo/schemas";
 
@@ -36,7 +38,7 @@ export const PickProjectDialog = ({ open, onClose, onPick }: PickProjectDialogPr
     (p) =>
       p.owner.toLowerCase().includes(search.toLowerCase()) ||
       p.repo.toLowerCase().includes(search.toLowerCase()) ||
-      p.description.toLowerCase().includes(search.toLowerCase())
+      p.description.toLowerCase().includes(search.toLowerCase()),
   );
 
   const handlePick = (p: GithubProject) => {
@@ -67,41 +69,42 @@ export const PickProjectDialog = ({ open, onClose, onPick }: PickProjectDialogPr
         </DialogHeader>
 
         <div className="space-y-3">
-          {/* 搜索 */}
+          {/* Search */}
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <input
+            <Input
               autoFocus
-              className="w-full rounded-md border bg-muted/30 py-1.5 pl-8 pr-3 text-sm focus:bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+              className="bg-muted/30 pl-8"
               placeholder={t("canvas.searchRepo")}
               value={search}
               onChange={handleSearchChange}
             />
           </div>
 
-          {/* 项目列表 */}
+          {/* Project list */}
           <div className="max-h-72 overflow-y-auto space-y-1">
             {loading && (
               <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                加载中...
+                {t("common.loading")}
               </div>
             )}
 
             {!loading && filtered.length === 0 && (
               <div className="py-8 text-center text-sm text-muted-foreground">
                 {projects.length === 0
-                  ? "项目库为空，请先在「项目」页面连接 GitHub 仓库"
-                  : "未找到匹配的项目"}
+                  ? t("github.projectListEmpty")
+                  : t("github.projectListNoResults")}
               </div>
             )}
 
             {!loading &&
               filtered.map((p) => (
-                <button
+                <Button
                   key={p.id}
-                  className="w-full rounded-lg border border-transparent px-3 py-2.5 text-left hover:border-border hover:bg-muted/50 transition-colors"
+                  className="flex h-auto w-full flex-col items-stretch gap-0 rounded-lg border border-transparent px-3 py-2.5 text-left hover:border-border"
                   type="button"
+                  variant="ghost"
                   onClick={() => handlePick(p)}
                 >
                   <div className="flex items-center gap-2">
@@ -123,7 +126,7 @@ export const PickProjectDialog = ({ open, onClose, onPick }: PickProjectDialogPr
                       {p.description}
                     </div>
                   )}
-                </button>
+                </Button>
               ))}
           </div>
         </div>

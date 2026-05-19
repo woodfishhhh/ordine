@@ -8,7 +8,7 @@ import { Badge } from "@repo/ui/badge";
 import { cn } from "@repo/ui/lib/utils";
 import { useCreate, useList } from "@refinedev/core";
 import { ResourceName } from "@/integrations/refine/dataProvider";
-import type { PipelineData } from "@repo/pipeline-engine/schemas";
+import type { PipelineData } from "@repo/schemas";
 import { useStore } from "zustand";
 import { PageLoadingState } from "@/components/PageLoadingState";
 import { PageHeader } from "@/components/PageHeader";
@@ -25,9 +25,10 @@ export const PipelinesPageContent = () => {
   const store = usePipelinesPageStore();
   const search = useStore(store, (s) => s.search);
   const selectedTags = useStore(store, (s) => s.selectedTags);
-  const handleSetSearch = useStore(store, (s) => s.handleSetSearch);
-  const handleToggleTag = useStore(store, (s) => s.handleToggleTag);
-  const handleClearTags = useStore(store, (s) => s.handleClearTags);
+  const handleSearchInputChange = useStore(store, (s) => s.handleSearchInputChange);
+  const handleClearSearchButtonClick = useStore(store, (s) => s.handleClearSearchButtonClick);
+  const handleTagBadgeClick = useStore(store, (s) => s.handleTagBadgeClick);
+  const handleClearTagsButtonClick = useStore(store, (s) => s.handleClearTagsButtonClick);
   const navigate = useNavigate();
   const { mutateAsync: createPipelineMutate } = useCreate();
 
@@ -40,14 +41,6 @@ export const PipelinesPageContent = () => {
 
     return [...tagSet].sort();
   }, [pipelinesData]);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    handleSetSearch(e.target.value);
-  const handleClearSearch = () => handleSetSearch("");
-
-  const handleTagClick = (tag: string) => () => {
-    handleToggleTag(tag);
-  };
 
   const filtered = useMemo(() => {
     const items = pipelinesData ?? [];
@@ -120,15 +113,17 @@ export const PipelinesPageContent = () => {
             placeholder={t("common.search")}
             type="text"
             value={search}
-            onChange={handleSearchChange}
+            onChange={handleSearchInputChange}
           />
           {search && (
-            <button
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
-              onClick={handleClearSearch}
+            <Button
+              className="absolute right-1 top-1/2 size-6 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              size="icon"
+              variant="ghost"
+              onClick={handleClearSearchButtonClick}
             >
               <X className="h-3 w-3" />
-            </button>
+            </Button>
           )}
         </div>
         {allTags.length > 0 && (
@@ -138,7 +133,7 @@ export const PipelinesPageContent = () => {
                 className="mr-1 h-6 px-2 text-[11px]"
                 size="sm"
                 variant="ghost"
-                onClick={handleClearTags}
+                onClick={handleClearTagsButtonClick}
               >
                 {t("common.clear")}
               </Button>
@@ -150,10 +145,10 @@ export const PipelinesPageContent = () => {
                   "cursor-pointer select-none text-[11px] transition-colors",
                   selectedTags.includes(tag)
                     ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80",
                 )}
                 variant="secondary"
-                onClick={handleTagClick(tag)}
+                onClick={() => handleTagBadgeClick(tag)}
               >
                 #{tag}
               </Badge>
@@ -174,7 +169,7 @@ export const PipelinesPageContent = () => {
         ) : (
           <div className="grid grid-cols-3 gap-4">
             {filtered.map((p) => (
-              <PipelineCard key={p.id} pipeline={p} />
+              <PipelineCard key={p.id} pipelineId={p.id} />
             ))}
           </div>
         )}

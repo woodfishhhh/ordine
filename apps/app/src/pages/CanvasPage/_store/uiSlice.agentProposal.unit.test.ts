@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { err, ok } from "neverthrow";
-import { createHarnessCanvasStore } from "./harnessCanvasStore";
+import { createCanvasPageStore } from "./canvasPageStore";
 import type { PipelineEdge, PipelineNode } from "./canvasSlice";
 import type {
   PipelineOperationDiagnostic,
@@ -47,7 +47,7 @@ describe("uiSlice applyAgentProposal", () => {
     const edgeA = makeEdge("edge-a", "node-a", "node-a");
     const edgeB = makeEdge("edge-b", "node-b", "node-b");
     const proposal = makeProposal();
-    const store = createHarnessCanvasStore([nodeA], [edgeA], "pipe-1", "Pipeline 1");
+    const store = createCanvasPageStore([nodeA], [edgeA], "pipe-1", "Pipeline 1");
 
     store.setState({
       selectedNodeId: "node-a",
@@ -101,7 +101,7 @@ describe("uiSlice applyAgentProposal", () => {
     const diagnostics: PipelineOperationDiagnostic[] = [
       { code: "NODE_NOT_FOUND", severity: "error", message: "missing node", operationIndex: 0 },
     ];
-    const store = createHarnessCanvasStore([nodeA], [edgeA], "pipe-1", "Pipeline 1");
+    const store = createCanvasPageStore([nodeA], [edgeA], "pipe-1", "Pipeline 1");
 
     store.setState({
       agentPanel: {

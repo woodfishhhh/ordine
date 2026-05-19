@@ -3,10 +3,10 @@ import { Folder, FolderOpen, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/shallow";
-import { useHarnessCanvasStore, selectNodeRunState } from "../_store";
-import type { FolderNodeData } from "@repo/pipeline-engine/schemas";
-import { NodeCard, useNodePortCounts } from "../NodeCard";
-import { FolderBrowser } from "../OutputLocalPathNode/FolderBrowser";
+import { useCanvasPageStore, selectNodeRunState, selectNodePortCounts } from "../_store";
+import type { FolderObjectNodeData } from "@repo/schemas";
+import { NodeCard } from "../NodeCard";
+import { FolderBrowser } from "@/components/FolderBrowser/FolderBrowser";
 import { FolderTreePreview } from "./FolderTreePreview";
 import { Input } from "@repo/ui/input";
 import { Button } from "@repo/ui/button";
@@ -14,7 +14,7 @@ import { Textarea } from "@repo/ui/textarea";
 
 export interface FolderNodeProps {
   id: string;
-  data: FolderNodeData;
+  data: FolderObjectNodeData;
   selected?: boolean;
 }
 
@@ -22,12 +22,18 @@ const handleStopPropagation = (e: React.SyntheticEvent) => e.stopPropagation();
 
 export const FolderNode = ({ id, data, selected }: FolderNodeProps) => {
   const { t } = useTranslation();
-  const store = useHarnessCanvasStore();
+  const store = useCanvasPageStore();
   const { runStatus, dimmed } = useStore(store, useShallow(selectNodeRunState(id)));
   const updateNodeData = useStore(store, (s) => s.updateNodeData);
   const handleNodeAddExcludedPath = useStore(store, (s) => s.handleNodeAddExcludedPath);
   const handleNodeRemoveExcludedPath = useStore(store, (s) => s.handleNodeRemoveExcludedPath);
-  const { rightPortCount } = useNodePortCounts(id);
+  const {
+    rightActivePortCount,
+    rightActivePortMask,
+    rightConnectedPortCount,
+    rightConnectedPortMask,
+    rightPortCount,
+  } = useStore(store, useShallow(selectNodePortCounts(id)));
   const [browserOpen, setBrowserOpen] = useState(false);
 
   const excludedPaths: string[] = Array.isArray(data.excludedPaths) ? data.excludedPaths : [];
@@ -56,14 +62,18 @@ export const FolderNode = ({ id, data, selected }: FolderNodeProps) => {
   const handleAddExcluded = (path: string) => handleNodeAddExcludedPath(id, path);
 
   return (
-    <div className="group relative" style={{ overflow: "visible" }}>
+    <div className="group relative overflow-visible">
       <NodeCard
         rightHandle
         bodyClassName="space-y-2"
-        description="Folder"
+        description={t("canvas.nodeTypes.folder.label")}
         dimmed={dimmed}
         icon={Folder}
         label={data.label}
+        rightActivePortCount={rightActivePortCount}
+        rightActivePortMask={rightActivePortMask}
+        rightConnectedPortCount={rightConnectedPortCount}
+        rightConnectedPortMask={rightConnectedPortMask}
         rightHandleCount={rightPortCount}
         runStatus={runStatus}
         selected={selected}
@@ -82,7 +92,7 @@ export const FolderNode = ({ id, data, selected }: FolderNodeProps) => {
           />
           <Button
             className="nodrag nopan shrink-0 rounded p-0.5 text-orange-400 hover:bg-orange-100 hover:text-orange-700 transition-colors h-auto"
-            title="浏览文件夹"
+            title={t("canvas.browseFolder")}
             type="button"
             variant="ghost"
             onClick={handleFolderButtonClick}
@@ -101,7 +111,7 @@ export const FolderNode = ({ id, data, selected }: FolderNodeProps) => {
               >
                 {ep}
                 <Button
-                  aria-label={`移除排除 ${ep}`}
+                  aria-label={`${t("canvas.removeExclude")} ${ep}`}
                   className="nodrag nopan rounded-sm p-0 hover:bg-red-200 transition-colors h-auto"
                   size="icon-xs"
                   type="button"

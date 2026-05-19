@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ReactFlowProvider } from "@xyflow/react";
 import type * as XyFlowReact from "@xyflow/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HarnessCanvasStoreProvider } from "../_store";
+import { CanvasPageStoreProvider } from "../_store";
 import type { PipelineNode } from "../_store/canvasSlice";
 import { CanvasInner } from "./CanvasInner";
 
@@ -34,11 +34,11 @@ const queryClient = new QueryClient({
 
 const existingNode = {
   id: "node-1",
-  type: "code-file",
+  type: "file",
   position: { x: 0, y: 0 },
   data: {
     label: "Source File",
-    nodeType: "code-file",
+    nodeType: "file",
     filePath: "src/index.ts",
     language: "typescript",
     description: "",
@@ -49,9 +49,9 @@ const makeWrapper =
   (nodes: PipelineNode[] = []) =>
   ({ children }: React.PropsWithChildren) => (
     <QueryClientProvider client={queryClient}>
-      <HarnessCanvasStoreProvider pipeline={{ id: "pipe-1", name: "Pipeline", nodes, edges: [] }}>
+      <CanvasPageStoreProvider pipeline={{ id: "pipe-1", name: "Pipeline", nodes, edges: [] }}>
         <ReactFlowProvider>{children}</ReactFlowProvider>
-      </HarnessCanvasStoreProvider>
+      </CanvasPageStoreProvider>
     </QueryClientProvider>
   );
 
@@ -61,9 +61,9 @@ const wrapperWithNode = makeWrapper([existingNode]);
 
 const wrapperWithoutPipeline = ({ children }: React.PropsWithChildren) => (
   <QueryClientProvider client={queryClient}>
-    <HarnessCanvasStoreProvider pipeline={null}>
+    <CanvasPageStoreProvider pipeline={null}>
       <ReactFlowProvider>{children}</ReactFlowProvider>
-    </HarnessCanvasStoreProvider>
+    </CanvasPageStoreProvider>
   </QueryClientProvider>
 );
 

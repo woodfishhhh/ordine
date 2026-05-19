@@ -5,6 +5,7 @@ import {
   getNodePortCount,
   getNodePortCounts,
   getNodePortOffsets,
+  getNodePortVisualCounts,
   makeNodePortId,
 } from "./nodePorts";
 
@@ -41,21 +42,21 @@ describe("node port helpers", () => {
         nodeId: "source",
         handleId: "right-port-0",
         handleType: "source",
-      })
+      }),
     ).toBe(1);
     expect(
       getNodePortCount([edge], "source", "right", {
         nodeId: "source",
         handleId: "right-port-0",
         handleType: "source",
-      })
+      }),
     ).toBe(2);
     expect(
       getNodePortCount([edge], "source", "left", {
         nodeId: "source",
         handleId: "right-port-0",
         handleType: "source",
-      })
+      }),
     ).toBe(1);
   });
 
@@ -70,8 +71,76 @@ describe("node port helpers", () => {
         nodeId: "node",
         handleId: "left-port-0",
         handleType: "target",
-      })
+      }),
     ).toEqual({ leftPortCount: 2, rightPortCount: 1 });
+  });
+
+  it("separates connected and active port visual counts", () => {
+    const edges = [
+      makeEdge("edge-in", "upstream", "node"),
+      makeEdge("edge-out", "node", "downstream"),
+    ];
+
+    expect(
+      getNodePortVisualCounts(
+        [makeNode("upstream", 0), makeNode("node", 120), makeNode("downstream", 240)],
+        edges,
+        "node",
+        {
+          nodeId: "node",
+          handleId: "right-port-0",
+          handleType: "source",
+        },
+      ),
+    ).toEqual({
+      leftActivePortCount: 0,
+      leftActivePortMask: 0,
+      leftConnectedPortCount: 1,
+      leftConnectedPortMask: 1,
+      leftPortCount: 1,
+      rightActivePortCount: 1,
+      rightActivePortMask: 1,
+      rightConnectedPortCount: 1,
+      rightConnectedPortMask: 2,
+      rightPortCount: 2,
+    });
+  });
+
+  it("marks connected visual ports by assigned handle index", () => {
+    const nodes = [makeNode("source", 100), makeNode("target", 240)];
+    const edges = [
+      {
+        ...makeEdge("edge-existing", "source", "target"),
+        sourceHandle: "right-port-0",
+      },
+    ];
+
+    expect(
+      getNodePortVisualCounts(nodes, edges, "source", {
+        nodeId: "source",
+        handleId: "right-port-0",
+        handleType: "source",
+      }),
+    ).toMatchObject({
+      rightActivePortMask: 1,
+      rightConnectedPortMask: 2,
+      rightPortCount: 2,
+    });
+  });
+
+  it("ignores unsafe decorated handle indexes in visual masks", () => {
+    const nodes = [makeNode("source", 100), makeNode("target", 240)];
+    const edges = [
+      {
+        ...makeEdge("edge-existing", "source", "target"),
+        sourceHandle: "right-port-53",
+      },
+    ];
+
+    expect(getNodePortVisualCounts(nodes, edges, "source", null, edges)).toMatchObject({
+      rightConnectedPortCount: 1,
+      rightConnectedPortMask: 0,
+    });
   });
 
   it("creates predictable split offsets", () => {
@@ -151,7 +220,7 @@ describe("node port helpers", () => {
         nodeId: "source",
         handleId: "right-port-0",
         handleType: "source",
-      })
+      }),
     ).toEqual([expect.objectContaining({ id: "edge-existing", sourceHandle: "right-port-1" })]);
   });
 
@@ -202,7 +271,7 @@ describe("node port helpers", () => {
         nodeId: "target",
         handleId: "left-port-0",
         handleType: "target",
-      })
+      }),
     ).toEqual([expect.objectContaining({ id: "edge-existing", targetHandle: "left-port-1" })]);
   });
 });

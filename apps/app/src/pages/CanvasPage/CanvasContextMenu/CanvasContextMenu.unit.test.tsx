@@ -1,7 +1,7 @@
 import { render } from "@/test/test-wrapper";
 import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { createHarnessCanvasStore, HarnessCanvasStoreContext } from "../_store/harnessCanvasStore";
+import { createCanvasPageStore, CanvasPageStoreContext } from "../_store/canvasPageStore";
 import { CanvasContextMenu } from "./CanvasContextMenu";
 
 vi.mock("@/routes/canvas", () => ({
@@ -9,14 +9,13 @@ vi.mock("@/routes/canvas", () => ({
     useLoaderData: () => ({
       pipeline: null,
       operations: [],
-      recipes: [],
       bestPractices: [],
     }),
   },
 }));
 
 const createTestStore = () => {
-  const store = createHarnessCanvasStore();
+  const store = createCanvasPageStore();
   store.setState({
     contextMenu: { screenX: 200, screenY: 200, flowX: 100, flowY: 100 },
   });
@@ -28,10 +27,10 @@ describe("CanvasContextMenu", () => {
   it("renders without crashing", () => {
     const store = createTestStore();
     render(
-      <HarnessCanvasStoreContext.Provider value={store}>
+      <CanvasPageStoreContext.Provider value={store}>
         <CanvasContextMenu />
-      </HarnessCanvasStoreContext.Provider>
+      </CanvasPageStoreContext.Provider>,
     );
-    expect(screen.getByText("新建节点")).toBeTruthy();
+    expect(screen.getByText("New Node")).toBeTruthy();
   });
 });

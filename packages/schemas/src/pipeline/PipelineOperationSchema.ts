@@ -1,5 +1,5 @@
 import { z } from "zod/v4";
-import { PipelineNodeDataSchema } from "./PipelineNodeDataSchema";
+import { PipelineNodeDataSchema } from "./node-data/PipelineNodeDataSchema";
 import { PipelineGraphNodeSchema, PipelineGraphEdgeSchema } from "./PipelineGraphSnapshotSchema";
 
 export const AddNodePipelineOperationSchema = z.object({

@@ -2,10 +2,7 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { publicProcedure, router } from "../init";
 import { pipelinesService, pipelineRunnerService } from "../services";
-import {
-  PipelineGraphSnapshotSchema,
-  PipelineSchema,
-} from "@repo/pipeline-engine/schemas";
+import { PipelineGraphSnapshotSchema, PipelineSchema } from "@repo/schemas";
 
 export const pipelinesRouter = router({
   getMany: publicProcedure.query(() => pipelinesService.getAll()),
@@ -21,7 +18,7 @@ export const pipelinesRouter = router({
         ...input,
         nodes: input.nodes as never,
         edges: input.edges as never,
-      })
+      }),
     ),
 
   update: publicProcedure
@@ -29,14 +26,14 @@ export const pipelinesRouter = router({
       z.object({
         id: z.string(),
         patch: PipelineSchema.omit({ createdAt: true, updatedAt: true }).partial(),
-      })
+      }),
     )
     .mutation(({ input }) =>
       pipelinesService.update(input.id, {
         ...input.patch,
         nodes: input.patch.nodes as never,
         edges: input.patch.edges as never,
-      })
+      }),
     ),
 
   delete: publicProcedure
@@ -49,7 +46,7 @@ export const pipelinesRouter = router({
         id: z.string(),
         inputPath: z.string().optional(),
         githubToken: z.string().optional(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const pipeline = await pipelinesService.getById(input.id);
@@ -77,7 +74,7 @@ export const pipelinesRouter = router({
         userPrompt: z
           .string()
           .default("Optimize this pipeline based on the distillation insights."),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const result = await pipelinesService.optimizeFromDistillation({
@@ -102,16 +99,44 @@ export const pipelinesRouter = router({
         snapshot: PipelineGraphSnapshotSchema,
         message: z.string(),
         pipelineName: z.string().optional(),
-      })
+      }),
     )
-    .mutation(async ({ input }) => {
-      const result = await pipelinesService.proposeOperations({
+    .mutation(({ input }) =>
+      pipelinesService.proposeOperations({
         pipelineId: input.id,
         snapshot: input.snapshot,
         message: input.message,
         pipelineName: input.pipelineName,
-      });
+      }),
+    ),
 
-      return result;
-    }),
+  generateStructure: publicProcedure
+    .input(
+      z.object({
+        name: z.string(),
+        description: z.string(),
+        matchedOperations: z
+          .array(
+            z.object({
+              operationId: z.string(),
+              operationName: z.string(),
+              reason: z.string(),
+            }),
+          )
+          .optional(),
+        unmatchedSteps: z
+          .array(
+            z.object({
+              step: z.string(),
+              reason: z.string(),
+            }),
+          )
+          .optional(),
+      }),
+    )
+    .mutation(({ input }) => pipelinesService.generateStructure(input)),
+
+  analyzeIntent: publicProcedure
+    .input(z.object({ name: z.string(), description: z.string() }))
+    .mutation(({ input }) => pipelinesService.analyzeIntent(input)),
 });

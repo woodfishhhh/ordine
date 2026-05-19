@@ -2,7 +2,15 @@ import { useNavigate } from "@tanstack/react-router";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { FileCode, Folder, FolderGit2, Puzzle, Terminal, Wand2 } from "lucide-react";
+import {
+  FileCode,
+  Folder,
+  FolderGit2,
+  MessageSquareText,
+  Puzzle,
+  Terminal,
+  Wand2,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@repo/ui/lib/utils";
 import { Button } from "@repo/ui/button";
@@ -15,11 +23,12 @@ import { ResourceName } from "@/integrations/refine/dataProvider";
 import { PageHeader } from "@/components/PageHeader";
 import {
   type Skill,
-  ObjectTypeSchema,
+  ObjectNodeTypeSchema,
   type ObjectType,
-  ExecutorTypeSchema,
+  OperationExecutorTypeSchema,
   AgentModeSchema,
   ScriptLanguageSchema,
+  type OperationConfigInput,
 } from "@repo/schemas";
 import { PageLoadingState } from "@/components/PageLoadingState";
 import { useStore } from "zustand";
@@ -38,14 +47,15 @@ const AGENT_MODE_ICONS = {
 const OBJECT_TYPE_ICONS: Record<ObjectType, React.ElementType> = {
   file: FileCode,
   folder: Folder,
-  project: FolderGit2,
+  "github-project": FolderGit2,
+  prompt: MessageSquareText,
 };
 
 const createFormSchema = z.object({
   name: z.string().min(1, "名称不能为空"),
   description: z.string(),
-  acceptedObjectTypes: z.array(ObjectTypeSchema).min(1),
-  executorType: ExecutorTypeSchema,
+  acceptedObjectTypes: z.array(ObjectNodeTypeSchema).min(1),
+  executorType: OperationExecutorTypeSchema,
   agentMode: AgentModeSchema,
   skillId: z.string(),
   promptText: z.string(),
@@ -53,34 +63,34 @@ const createFormSchema = z.object({
   scriptLanguage: ScriptLanguageSchema,
 });
 
-const buildConfig = (values: CreateFormValues): string => {
+const buildConfig = (values: CreateFormValues): OperationConfigInput => {
   if (values.executorType === "agent") {
     if (values.agentMode === "skill") {
-      return JSON.stringify({
+      return {
         executor: {
           type: "agent",
           agentMode: "skill",
           skillId: values.skillId,
         },
-      });
+      };
     }
 
-    return JSON.stringify({
+    return {
       executor: {
         type: "agent",
         agentMode: "prompt",
         prompt: values.promptText,
       },
-    });
+    };
   }
 
-  return JSON.stringify({
+  return {
     executor: {
       type: "script",
       command: values.scriptCommand,
       language: values.scriptLanguage,
     },
-  });
+  };
 };
 
 type CreateFormValues = z.infer<typeof createFormSchema>;
@@ -99,7 +109,7 @@ export const OperationCreatePageContent = () => {
   const { result: skillsResult, query: skillsQuery } = useList<Skill>({
     resource: ResourceName.skills,
   });
-  const skills = skillsResult?.data ?? [];
+  const skills = skillsResult.data;
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -108,7 +118,7 @@ export const OperationCreatePageContent = () => {
     defaultValues: {
       name: "",
       description: "",
-      acceptedObjectTypes: ["file", "folder", "project"],
+      acceptedObjectTypes: ["file", "folder", "github-project"],
       executorType: "agent" as const,
       agentMode: "skill" as const,
       skillId: "",
@@ -123,12 +133,18 @@ export const OperationCreatePageContent = () => {
 
   const store = useOperationCreatePageStore();
   const skillOpen = useStore(store, (s) => s.skillOpen);
-  const handleSkillOpenChange = useStore(store, (s) => s.handleSetSkillOpen);
-  const handleSkillToggle = useStore(store, (s) => s.handleToggleSkillOpen);
+  const handleSkillSelectOpenChange = useStore(store, (s) => s.handleSkillSelectOpenChange);
+  const handleSkillSelectTriggerClick = useStore(store, (s) => s.handleSkillSelectTriggerClick);
 
   const scriptLangOpen = useStore(store, (s) => s.scriptLangOpen);
-  const handleScriptLangOpenChange = useStore(store, (s) => s.handleSetScriptLangOpen);
-  const handleScriptLangToggle = useStore(store, (s) => s.handleToggleScriptLangOpen);
+  const handleScriptLangSelectOpenChange = useStore(
+    store,
+    (s) => s.handleScriptLangSelectOpenChange,
+  );
+  const handleScriptLangSelectTriggerClick = useStore(
+    store,
+    (s) => s.handleScriptLangSelectTriggerClick,
+  );
 
   const { mutateAsync: createOpMutate } = useCreate();
 
@@ -187,9 +203,9 @@ export const OperationCreatePageContent = () => {
       icon: OBJECT_TYPE_ICONS.folder,
     },
     {
-      value: "project",
+      value: "github-project",
       label: t("operations.objectTypeProject"),
-      icon: OBJECT_TYPE_ICONS.project,
+      icon: OBJECT_TYPE_ICONS["github-project"],
     },
   ];
 
@@ -278,21 +294,22 @@ export const OperationCreatePageContent = () => {
                             const selected = field.value.includes(value);
 
                             return (
-                              <button
+                              <Button
                                 key={value}
                                 className={cn(
-                                  "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+                                  "flex h-auto items-center gap-2 rounded-lg border px-3 py-2 text-sm font-normal",
                                   selected
-                                    ? "border-primary/50 bg-primary/10 text-primary"
-                                    : "border-border bg-background text-muted-foreground hover:bg-muted"
+                                    ? "border-primary/50 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary"
+                                    : "border-border bg-background text-muted-foreground",
                                 )}
                                 type="button"
+                                variant="ghost"
                                 onClick={() => handleChange(toggleObjectType(field.value, value))}
                               >
                                 <Icon className="h-4 w-4" />
                                 {label}
                                 {selected && <span className="ml-1 text-xs">✓</span>}
-                              </button>
+                              </Button>
                             );
                           })}
                         </div>
@@ -321,15 +338,16 @@ export const OperationCreatePageContent = () => {
                           const selected = field.value === value;
 
                           return (
-                            <button
+                            <Button
                               key={value}
                               className={cn(
-                                "flex flex-1 flex-col items-start gap-1 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
+                                "flex h-auto flex-1 flex-col items-start gap-1 rounded-lg border px-3 py-2.5 text-left text-sm font-normal",
                                 selected
-                                  ? "border-primary/50 bg-primary/10 text-primary"
-                                  : "border-border bg-background text-muted-foreground hover:bg-muted"
+                                  ? "border-primary/50 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary"
+                                  : "border-border bg-background text-muted-foreground",
                               )}
                               type="button"
+                              variant="ghost"
                               onClick={() => handleChange(value)}
                             >
                               <span className="flex items-center gap-1.5 font-medium">
@@ -337,7 +355,7 @@ export const OperationCreatePageContent = () => {
                                 {label}
                               </span>
                               <span className="text-[11px] opacity-70">{description}</span>
-                            </button>
+                            </Button>
                           );
                         })}
                       </div>
@@ -362,15 +380,16 @@ export const OperationCreatePageContent = () => {
                               const selected = field.value === value;
 
                               return (
-                                <button
+                                <Button
                                   key={value}
                                   className={cn(
-                                    "flex flex-1 flex-col items-start gap-1 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
+                                    "flex h-auto flex-1 flex-col items-start gap-1 rounded-lg border px-3 py-2 text-left text-sm font-normal",
                                     selected
-                                      ? "border-primary/50 bg-primary/10 text-primary"
-                                      : "border-border bg-background text-muted-foreground hover:bg-muted"
+                                      ? "border-primary/50 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary"
+                                      : "border-border bg-background text-muted-foreground",
                                   )}
                                   type="button"
+                                  variant="ghost"
                                   onClick={() => handleChange(value)}
                                 >
                                   <span className="flex items-center gap-1.5 font-medium">
@@ -378,7 +397,7 @@ export const OperationCreatePageContent = () => {
                                     {label}
                                   </span>
                                   <span className="text-[11px] opacity-70">{description}</span>
-                                </button>
+                                </Button>
                               );
                             })}
                           </div>
@@ -393,7 +412,7 @@ export const OperationCreatePageContent = () => {
                         render={({ field }) => {
                           const handleChange = (v: string | null) => {
                             if (v) field.onChange(v);
-                            handleSkillOpenChange(false);
+                            handleSkillSelectOpenChange(false);
                           };
 
                           return (
@@ -405,10 +424,13 @@ export const OperationCreatePageContent = () => {
                                 <Select
                                   open={skillOpen}
                                   value={field.value}
-                                  onOpenChange={handleSkillOpenChange}
+                                  onOpenChange={handleSkillSelectOpenChange}
                                   onValueChange={handleChange}
                                 >
-                                  <SelectTrigger className="h-9 w-full" onClick={handleSkillToggle}>
+                                  <SelectTrigger
+                                    className="h-9 w-full"
+                                    onClick={handleSkillSelectTriggerClick}
+                                  >
                                     <SelectValue placeholder={t("operations.selectSkill")} />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -481,7 +503,7 @@ export const OperationCreatePageContent = () => {
                       render={({ field }) => {
                         const handleChange = (v: string | null) => {
                           if (v) field.onChange(v);
-                          handleScriptLangOpenChange(false);
+                          handleScriptLangSelectOpenChange(false);
                         };
 
                         return (
@@ -493,12 +515,12 @@ export const OperationCreatePageContent = () => {
                               <Select
                                 open={scriptLangOpen}
                                 value={field.value}
-                                onOpenChange={handleScriptLangOpenChange}
+                                onOpenChange={handleScriptLangSelectOpenChange}
                                 onValueChange={handleChange}
                               >
                                 <SelectTrigger
                                   className="h-9 w-full"
-                                  onClick={handleScriptLangToggle}
+                                  onClick={handleScriptLangSelectTriggerClick}
                                 >
                                   <SelectValue />
                                 </SelectTrigger>

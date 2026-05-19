@@ -6,8 +6,9 @@ import { useList } from "@refinedev/core";
 import { useStore } from "zustand";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@repo/ui/dialog";
 import { Input } from "@repo/ui/input";
+import { Button } from "@repo/ui/button";
 import { ResourceName } from "@/integrations/refine/dataProvider";
-import type { PipelineData } from "@repo/pipeline-engine/schemas";
+import type { PipelineData } from "@repo/schemas";
 import { useSidebarStore } from "@/store/sidebarStore";
 
 export const SearchPipelineDialog = () => {
@@ -15,7 +16,7 @@ export const SearchPipelineDialog = () => {
   const navigate = useNavigate();
   const store = useSidebarStore();
   const open = useStore(store, (s) => s.searchOpen);
-  const setOpen = useStore(store, (s) => s.setSearchOpen);
+  const handleSearchDialogOpenChange = useStore(store, (s) => s.handleSearchDialogOpenChange);
   const [query, setQuery] = useState("");
 
   const { result: pipelinesResult } = useList<PipelineData>({
@@ -29,12 +30,12 @@ export const SearchPipelineDialog = () => {
     if (!q) return items;
 
     return items.filter(
-      (p) => p.name.toLowerCase().includes(q) || (p.description ?? "").toLowerCase().includes(q)
+      (p) => p.name.toLowerCase().includes(q) || (p.description ?? "").toLowerCase().includes(q),
     );
   }, [pipelinesData, query]);
 
   const handleSelect = (pipeline: PipelineData) => {
-    setOpen(false);
+    handleSearchDialogOpenChange(false);
     setQuery("");
     void navigate({ to: "/canvas", search: { id: pipeline.id } });
   };
@@ -44,7 +45,7 @@ export const SearchPipelineDialog = () => {
   };
 
   const handleOpenChange = (value: boolean) => {
-    setOpen(value);
+    handleSearchDialogOpenChange(value);
     if (!value) setQuery("");
   };
 
@@ -62,17 +63,18 @@ export const SearchPipelineDialog = () => {
             onChange={handleQueryChange}
           />
         </div>
-        <div className="max-h-[300px] overflow-y-auto p-1">
+        <div className="max-h-75 overflow-y-auto p-1">
           {filtered.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
               {t("pipelines.noPipelines")}
             </div>
           ) : (
             filtered.map((pipeline) => (
-              <button
+              <Button
                 key={pipeline.id}
-                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent"
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm h-auto"
                 type="button"
+                variant="ghost"
                 onClick={() => handleSelect(pipeline)}
               >
                 <Layers className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -84,7 +86,7 @@ export const SearchPipelineDialog = () => {
                     </div>
                   )}
                 </div>
-              </button>
+              </Button>
             ))
           )}
         </div>

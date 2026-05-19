@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as CanvasRouteImport } from './routes/canvas'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
+import { Route as LayoutSkillsRouteImport } from './routes/_layout/skills'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutRuntimesRouteImport } from './routes/_layout/runtimes'
 import { Route as LayoutPluginsRouteImport } from './routes/_layout/plugins'
@@ -24,10 +25,9 @@ import { Route as LayoutAssistantRouteImport } from './routes/_layout/assistant'
 import { Route as LayoutRuntimesIndexRouteImport } from './routes/_layout/runtimes.index'
 import { Route as LayoutPipelinesIndexRouteImport } from './routes/_layout/pipelines.index'
 import { Route as LayoutDistillationsIndexRouteImport } from './routes/_layout/distillations.index'
+import { Route as LayoutAgentsIndexRouteImport } from './routes/_layout/agents.index'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
-import { Route as LayoutPipelinesSkillsRouteImport } from './routes/_layout/pipelines.skills'
-import { Route as LayoutPipelinesRecipesRouteImport } from './routes/_layout/pipelines.recipes'
 import { Route as LayoutPipelinesJobsRouteImport } from './routes/_layout/pipelines.jobs'
 import { Route as LayoutPipelinesPipelineIdRouteImport } from './routes/_layout/pipelines.$pipelineId'
 import { Route as LayoutDistillationsNewRouteImport } from './routes/_layout/distillations.new'
@@ -36,6 +36,7 @@ import { Route as LayoutRuntimesRuntimeIdIndexRouteImport } from './routes/_layo
 import { Route as LayoutPipelinesOperationsIndexRouteImport } from './routes/_layout/pipelines.operations.index'
 import { Route as LayoutPipelinesObjectsIndexRouteImport } from './routes/_layout/pipelines.objects.index'
 import { Route as LayoutPipelinesJobsIndexRouteImport } from './routes/_layout/pipelines.jobs.index'
+import { Route as LayoutAgentsAgentIdIndexRouteImport } from './routes/_layout/agents.$agentId.index'
 import { Route as LayoutRuntimesRuntimeIdEditRouteImport } from './routes/_layout/runtimes.$runtimeId.edit'
 import { Route as LayoutPipelinesOperationsNewRouteImport } from './routes/_layout/pipelines.operations.new'
 import { Route as LayoutPipelinesObjectsObjectTypeIdRouteImport } from './routes/_layout/pipelines.objects.$objectTypeId'
@@ -65,6 +66,11 @@ const LayoutRoute = LayoutRouteImport.update({
 const LayoutIndexRoute = LayoutIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutSkillsRoute = LayoutSkillsRouteImport.update({
+  id: '/skills',
+  path: '/skills',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
@@ -119,6 +125,11 @@ const LayoutDistillationsIndexRoute =
     path: '/',
     getParentRoute: () => LayoutDistillationsRoute,
   } as any)
+const LayoutAgentsIndexRoute = LayoutAgentsIndexRouteImport.update({
+  id: '/agents/',
+  path: '/agents/',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const ApiTrpcSplatRoute = ApiTrpcSplatRouteImport.update({
   id: '/api/trpc/$',
   path: '/api/trpc/$',
@@ -128,16 +139,6 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
-} as any)
-const LayoutPipelinesSkillsRoute = LayoutPipelinesSkillsRouteImport.update({
-  id: '/skills',
-  path: '/skills',
-  getParentRoute: () => LayoutPipelinesRoute,
-} as any)
-const LayoutPipelinesRecipesRoute = LayoutPipelinesRecipesRouteImport.update({
-  id: '/recipes',
-  path: '/recipes',
-  getParentRoute: () => LayoutPipelinesRoute,
 } as any)
 const LayoutPipelinesJobsRoute = LayoutPipelinesJobsRouteImport.update({
   id: '/jobs',
@@ -184,6 +185,12 @@ const LayoutPipelinesJobsIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => LayoutPipelinesJobsRoute,
+  } as any)
+const LayoutAgentsAgentIdIndexRoute =
+  LayoutAgentsAgentIdIndexRouteImport.update({
+    id: '/agents/$agentId/',
+    path: '/agents/$agentId/',
+    getParentRoute: () => LayoutRoute,
   } as any)
 const LayoutRuntimesRuntimeIdEditRoute =
   LayoutRuntimesRuntimeIdEditRouteImport.update({
@@ -234,14 +241,14 @@ export interface FileRoutesByFullPath {
   '/plugins': typeof LayoutPluginsRoute
   '/runtimes': typeof LayoutRuntimesRouteWithChildren
   '/settings': typeof LayoutSettingsRoute
+  '/skills': typeof LayoutSkillsRoute
   '/distillations/$distillationId': typeof LayoutDistillationsDistillationIdRoute
   '/distillations/new': typeof LayoutDistillationsNewRoute
   '/pipelines/$pipelineId': typeof LayoutPipelinesPipelineIdRoute
   '/pipelines/jobs': typeof LayoutPipelinesJobsRouteWithChildren
-  '/pipelines/recipes': typeof LayoutPipelinesRecipesRoute
-  '/pipelines/skills': typeof LayoutPipelinesSkillsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/agents/': typeof LayoutAgentsIndexRoute
   '/distillations/': typeof LayoutDistillationsIndexRoute
   '/pipelines/': typeof LayoutPipelinesIndexRoute
   '/runtimes/': typeof LayoutRuntimesIndexRoute
@@ -249,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/pipelines/objects/$objectTypeId': typeof LayoutPipelinesObjectsObjectTypeIdRoute
   '/pipelines/operations/new': typeof LayoutPipelinesOperationsNewRoute
   '/runtimes/$runtimeId/edit': typeof LayoutRuntimesRuntimeIdEditRoute
+  '/agents/$agentId/': typeof LayoutAgentsAgentIdIndexRoute
   '/pipelines/jobs/': typeof LayoutPipelinesJobsIndexRoute
   '/pipelines/objects/': typeof LayoutPipelinesObjectsIndexRoute
   '/pipelines/operations/': typeof LayoutPipelinesOperationsIndexRoute
@@ -264,14 +272,14 @@ export interface FileRoutesByTo {
   '/distillation-studio': typeof LayoutDistillationStudioRoute
   '/plugins': typeof LayoutPluginsRoute
   '/settings': typeof LayoutSettingsRoute
+  '/skills': typeof LayoutSkillsRoute
   '/': typeof LayoutIndexRoute
   '/distillations/$distillationId': typeof LayoutDistillationsDistillationIdRoute
   '/distillations/new': typeof LayoutDistillationsNewRoute
   '/pipelines/$pipelineId': typeof LayoutPipelinesPipelineIdRoute
-  '/pipelines/recipes': typeof LayoutPipelinesRecipesRoute
-  '/pipelines/skills': typeof LayoutPipelinesSkillsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/agents': typeof LayoutAgentsIndexRoute
   '/distillations': typeof LayoutDistillationsIndexRoute
   '/pipelines': typeof LayoutPipelinesIndexRoute
   '/runtimes': typeof LayoutRuntimesIndexRoute
@@ -279,6 +287,7 @@ export interface FileRoutesByTo {
   '/pipelines/objects/$objectTypeId': typeof LayoutPipelinesObjectsObjectTypeIdRoute
   '/pipelines/operations/new': typeof LayoutPipelinesOperationsNewRoute
   '/runtimes/$runtimeId/edit': typeof LayoutRuntimesRuntimeIdEditRoute
+  '/agents/$agentId': typeof LayoutAgentsAgentIdIndexRoute
   '/pipelines/jobs': typeof LayoutPipelinesJobsIndexRoute
   '/pipelines/objects': typeof LayoutPipelinesObjectsIndexRoute
   '/pipelines/operations': typeof LayoutPipelinesOperationsIndexRoute
@@ -299,15 +308,15 @@ export interface FileRoutesById {
   '/_layout/plugins': typeof LayoutPluginsRoute
   '/_layout/runtimes': typeof LayoutRuntimesRouteWithChildren
   '/_layout/settings': typeof LayoutSettingsRoute
+  '/_layout/skills': typeof LayoutSkillsRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/distillations/$distillationId': typeof LayoutDistillationsDistillationIdRoute
   '/_layout/distillations/new': typeof LayoutDistillationsNewRoute
   '/_layout/pipelines/$pipelineId': typeof LayoutPipelinesPipelineIdRoute
   '/_layout/pipelines/jobs': typeof LayoutPipelinesJobsRouteWithChildren
-  '/_layout/pipelines/recipes': typeof LayoutPipelinesRecipesRoute
-  '/_layout/pipelines/skills': typeof LayoutPipelinesSkillsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/_layout/agents/': typeof LayoutAgentsIndexRoute
   '/_layout/distillations/': typeof LayoutDistillationsIndexRoute
   '/_layout/pipelines/': typeof LayoutPipelinesIndexRoute
   '/_layout/runtimes/': typeof LayoutRuntimesIndexRoute
@@ -315,6 +324,7 @@ export interface FileRoutesById {
   '/_layout/pipelines/objects/$objectTypeId': typeof LayoutPipelinesObjectsObjectTypeIdRoute
   '/_layout/pipelines/operations/new': typeof LayoutPipelinesOperationsNewRoute
   '/_layout/runtimes/$runtimeId/edit': typeof LayoutRuntimesRuntimeIdEditRoute
+  '/_layout/agents/$agentId/': typeof LayoutAgentsAgentIdIndexRoute
   '/_layout/pipelines/jobs/': typeof LayoutPipelinesJobsIndexRoute
   '/_layout/pipelines/objects/': typeof LayoutPipelinesObjectsIndexRoute
   '/_layout/pipelines/operations/': typeof LayoutPipelinesOperationsIndexRoute
@@ -336,14 +346,14 @@ export interface FileRouteTypes {
     | '/plugins'
     | '/runtimes'
     | '/settings'
+    | '/skills'
     | '/distillations/$distillationId'
     | '/distillations/new'
     | '/pipelines/$pipelineId'
     | '/pipelines/jobs'
-    | '/pipelines/recipes'
-    | '/pipelines/skills'
     | '/api/auth/$'
     | '/api/trpc/$'
+    | '/agents/'
     | '/distillations/'
     | '/pipelines/'
     | '/runtimes/'
@@ -351,6 +361,7 @@ export interface FileRouteTypes {
     | '/pipelines/objects/$objectTypeId'
     | '/pipelines/operations/new'
     | '/runtimes/$runtimeId/edit'
+    | '/agents/$agentId/'
     | '/pipelines/jobs/'
     | '/pipelines/objects/'
     | '/pipelines/operations/'
@@ -366,14 +377,14 @@ export interface FileRouteTypes {
     | '/distillation-studio'
     | '/plugins'
     | '/settings'
+    | '/skills'
     | '/'
     | '/distillations/$distillationId'
     | '/distillations/new'
     | '/pipelines/$pipelineId'
-    | '/pipelines/recipes'
-    | '/pipelines/skills'
     | '/api/auth/$'
     | '/api/trpc/$'
+    | '/agents'
     | '/distillations'
     | '/pipelines'
     | '/runtimes'
@@ -381,6 +392,7 @@ export interface FileRouteTypes {
     | '/pipelines/objects/$objectTypeId'
     | '/pipelines/operations/new'
     | '/runtimes/$runtimeId/edit'
+    | '/agents/$agentId'
     | '/pipelines/jobs'
     | '/pipelines/objects'
     | '/pipelines/operations'
@@ -400,15 +412,15 @@ export interface FileRouteTypes {
     | '/_layout/plugins'
     | '/_layout/runtimes'
     | '/_layout/settings'
+    | '/_layout/skills'
     | '/_layout/'
     | '/_layout/distillations/$distillationId'
     | '/_layout/distillations/new'
     | '/_layout/pipelines/$pipelineId'
     | '/_layout/pipelines/jobs'
-    | '/_layout/pipelines/recipes'
-    | '/_layout/pipelines/skills'
     | '/api/auth/$'
     | '/api/trpc/$'
+    | '/_layout/agents/'
     | '/_layout/distillations/'
     | '/_layout/pipelines/'
     | '/_layout/runtimes/'
@@ -416,6 +428,7 @@ export interface FileRouteTypes {
     | '/_layout/pipelines/objects/$objectTypeId'
     | '/_layout/pipelines/operations/new'
     | '/_layout/runtimes/$runtimeId/edit'
+    | '/_layout/agents/$agentId/'
     | '/_layout/pipelines/jobs/'
     | '/_layout/pipelines/objects/'
     | '/_layout/pipelines/operations/'
@@ -468,6 +481,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof LayoutIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/skills': {
+      id: '/_layout/skills'
+      path: '/skills'
+      fullPath: '/skills'
+      preLoaderRoute: typeof LayoutSkillsRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/settings': {
@@ -540,6 +560,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutDistillationsIndexRouteImport
       parentRoute: typeof LayoutDistillationsRoute
     }
+    '/_layout/agents/': {
+      id: '/_layout/agents/'
+      path: '/agents'
+      fullPath: '/agents/'
+      preLoaderRoute: typeof LayoutAgentsIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/api/trpc/$': {
       id: '/api/trpc/$'
       path: '/api/trpc/$'
@@ -553,20 +580,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_layout/pipelines/skills': {
-      id: '/_layout/pipelines/skills'
-      path: '/skills'
-      fullPath: '/pipelines/skills'
-      preLoaderRoute: typeof LayoutPipelinesSkillsRouteImport
-      parentRoute: typeof LayoutPipelinesRoute
-    }
-    '/_layout/pipelines/recipes': {
-      id: '/_layout/pipelines/recipes'
-      path: '/recipes'
-      fullPath: '/pipelines/recipes'
-      preLoaderRoute: typeof LayoutPipelinesRecipesRouteImport
-      parentRoute: typeof LayoutPipelinesRoute
     }
     '/_layout/pipelines/jobs': {
       id: '/_layout/pipelines/jobs'
@@ -623,6 +636,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/pipelines/jobs/'
       preLoaderRoute: typeof LayoutPipelinesJobsIndexRouteImport
       parentRoute: typeof LayoutPipelinesJobsRoute
+    }
+    '/_layout/agents/$agentId/': {
+      id: '/_layout/agents/$agentId/'
+      path: '/agents/$agentId'
+      fullPath: '/agents/$agentId/'
+      preLoaderRoute: typeof LayoutAgentsAgentIdIndexRouteImport
+      parentRoute: typeof LayoutRoute
     }
     '/_layout/runtimes/$runtimeId/edit': {
       id: '/_layout/runtimes/$runtimeId/edit'
@@ -701,8 +721,6 @@ const LayoutPipelinesJobsRouteWithChildren =
 interface LayoutPipelinesRouteChildren {
   LayoutPipelinesPipelineIdRoute: typeof LayoutPipelinesPipelineIdRoute
   LayoutPipelinesJobsRoute: typeof LayoutPipelinesJobsRouteWithChildren
-  LayoutPipelinesRecipesRoute: typeof LayoutPipelinesRecipesRoute
-  LayoutPipelinesSkillsRoute: typeof LayoutPipelinesSkillsRoute
   LayoutPipelinesIndexRoute: typeof LayoutPipelinesIndexRoute
   LayoutPipelinesObjectsObjectTypeIdRoute: typeof LayoutPipelinesObjectsObjectTypeIdRoute
   LayoutPipelinesOperationsNewRoute: typeof LayoutPipelinesOperationsNewRoute
@@ -715,8 +733,6 @@ interface LayoutPipelinesRouteChildren {
 const LayoutPipelinesRouteChildren: LayoutPipelinesRouteChildren = {
   LayoutPipelinesPipelineIdRoute: LayoutPipelinesPipelineIdRoute,
   LayoutPipelinesJobsRoute: LayoutPipelinesJobsRouteWithChildren,
-  LayoutPipelinesRecipesRoute: LayoutPipelinesRecipesRoute,
-  LayoutPipelinesSkillsRoute: LayoutPipelinesSkillsRoute,
   LayoutPipelinesIndexRoute: LayoutPipelinesIndexRoute,
   LayoutPipelinesObjectsObjectTypeIdRoute:
     LayoutPipelinesObjectsObjectTypeIdRoute,
@@ -757,7 +773,10 @@ interface LayoutRouteChildren {
   LayoutPluginsRoute: typeof LayoutPluginsRoute
   LayoutRuntimesRoute: typeof LayoutRuntimesRouteWithChildren
   LayoutSettingsRoute: typeof LayoutSettingsRoute
+  LayoutSkillsRoute: typeof LayoutSkillsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
+  LayoutAgentsIndexRoute: typeof LayoutAgentsIndexRoute
+  LayoutAgentsAgentIdIndexRoute: typeof LayoutAgentsAgentIdIndexRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
@@ -768,7 +787,10 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutPluginsRoute: LayoutPluginsRoute,
   LayoutRuntimesRoute: LayoutRuntimesRouteWithChildren,
   LayoutSettingsRoute: LayoutSettingsRoute,
+  LayoutSkillsRoute: LayoutSkillsRoute,
   LayoutIndexRoute: LayoutIndexRoute,
+  LayoutAgentsIndexRoute: LayoutAgentsIndexRoute,
+  LayoutAgentsAgentIdIndexRoute: LayoutAgentsAgentIdIndexRoute,
 }
 
 const LayoutRouteWithChildren =

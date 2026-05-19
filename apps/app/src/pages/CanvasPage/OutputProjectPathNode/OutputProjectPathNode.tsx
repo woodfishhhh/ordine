@@ -1,25 +1,33 @@
 import { FolderOutput } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/shallow";
-import { useHarnessCanvasStore, selectNodeRunState } from "../_store";
-import type { OutputProjectPathNodeData } from "@repo/pipeline-engine/schemas";
-import { NodeCard, useNodePortCounts } from "../NodeCard";
+import { useCanvasPageStore, selectNodeRunState, selectNodePortCounts } from "../_store";
+import type { ProjectPathOutputNodeData } from "@repo/schemas";
+import { NodeCard } from "../NodeCard";
 import { Input } from "@repo/ui/input";
 import { Textarea } from "@repo/ui/textarea";
 
 export interface OutputProjectPathNodeProps {
   id: string;
-  data: OutputProjectPathNodeData;
+  data: ProjectPathOutputNodeData;
   selected?: boolean;
 }
 
 const handleMouseDown = (e: React.MouseEvent) => e.stopPropagation();
 
 export const OutputProjectPathNode = ({ id, data, selected }: OutputProjectPathNodeProps) => {
-  const store = useHarnessCanvasStore();
+  const { t } = useTranslation();
+  const store = useCanvasPageStore();
   const { runStatus, dimmed } = useStore(store, useShallow(selectNodeRunState(id)));
   const updateNodeData = useStore(store, (s) => s.updateNodeData);
-  const { leftPortCount } = useNodePortCounts(id);
+  const {
+    leftActivePortCount,
+    leftActivePortMask,
+    leftConnectedPortCount,
+    leftConnectedPortMask,
+    leftPortCount,
+  } = useStore(store, useShallow(selectNodePortCounts(id)));
 
   const handleLabelChange = (v: string) => updateNodeData(id, { label: v });
   const handleProjectIdChange = (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -30,14 +38,18 @@ export const OutputProjectPathNode = ({ id, data, selected }: OutputProjectPathN
     updateNodeData(id, { description: e.target.value });
 
   return (
-    <div className="group relative" style={{ overflow: "visible" }}>
+    <div className="group relative overflow-visible">
       <NodeCard
         leftHandle
         bodyClassName="space-y-2"
-        description="项目路径输出"
+        description={t("nodes.outputProjectPath.description")}
         dimmed={dimmed}
         icon={FolderOutput}
         label={data.label}
+        leftActivePortCount={leftActivePortCount}
+        leftActivePortMask={leftActivePortMask}
+        leftConnectedPortCount={leftConnectedPortCount}
+        leftConnectedPortMask={leftConnectedPortMask}
         leftHandleCount={leftPortCount}
         runStatus={runStatus}
         selected={selected}
@@ -46,7 +58,9 @@ export const OutputProjectPathNode = ({ id, data, selected }: OutputProjectPathN
       >
         <div className="space-y-1.5">
           <div className="flex items-center gap-1 rounded-md border border-slate-100 bg-slate-50 px-2.5 py-1">
-            <span className="shrink-0 text-[10px] font-medium text-slate-400">项目 ID</span>
+            <span className="shrink-0 text-[10px] font-medium text-slate-400">
+              {t("nodes.outputProjectPath.projectIdLabel")}
+            </span>
             <Input
               className="nodrag nopan flex-1 min-w-0 bg-transparent font-mono text-[11px] text-slate-700 focus:outline-none border-none shadow-none p-0 h-auto"
               placeholder="project-id"
@@ -56,7 +70,9 @@ export const OutputProjectPathNode = ({ id, data, selected }: OutputProjectPathN
             />
           </div>
           <div className="flex items-center gap-1 rounded-md border border-teal-100 bg-teal-50 px-2.5 py-1">
-            <span className="shrink-0 text-[10px] font-medium text-teal-500">路径</span>
+            <span className="shrink-0 text-[10px] font-medium text-teal-500">
+              {t("nodes.outputProjectPath.pathLabel")}
+            </span>
             <Input
               className="nodrag nopan flex-1 min-w-0 bg-transparent font-mono text-[11px] font-semibold text-teal-800 focus:outline-none border-none shadow-none p-0 h-auto"
               placeholder="src/output/"
@@ -68,7 +84,7 @@ export const OutputProjectPathNode = ({ id, data, selected }: OutputProjectPathN
         </div>
         <Textarea
           className="nodrag nopan text-[11px] text-slate-500 bg-transparent w-full resize-none focus:outline-none focus:bg-slate-50 focus:ring-1 focus:ring-slate-200 rounded px-1 border-none shadow-none min-h-0 p-0"
-          placeholder="描述此输出..."
+          placeholder={t("nodes.outputProjectPath.descriptionPlaceholder")}
           rows={2}
           value={data.description ?? ""}
           onChange={handleDescriptionChange}

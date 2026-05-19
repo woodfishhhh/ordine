@@ -8,8 +8,9 @@
 
 ## executor 配置
 
-- [ ] `executor.type` 为 `"skill"` 或 `"script"`
-- [ ] 当 type=skill 时，`executor.skillId` 指向一个已存在的 Skill
+- [ ] `executor.type` 为 `"agent"` 或 `"script"`
+- [ ] 当 type=agent 且 agentMode=skill 时，`executor.skillId` 指向一个已存在的 Skill
+- [ ] 当 type=agent 且 agentMode=prompt 时，`executor.prompt` 包含清晰的任务指令
 - [ ] 当 type=script 时，`executor.scriptPath` 路径正确
 
 ## 输入输出
@@ -27,4 +28,4 @@
 ## 关联性
 
 - [ ] 如果是 fix 操作，是否有对应的 check 操作
-- [ ] 是否需要创建对应的 Recipe 绑定 Best Practice
+- [ ] 是否需要在 Pipeline 或文档中关联对应的 Best Practice

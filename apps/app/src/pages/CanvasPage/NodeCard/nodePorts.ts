@@ -8,6 +8,19 @@ export interface PendingNodePortConnection {
   handleType?: "source" | "target" | null;
 }
 
+export interface NodePortVisualCounts {
+  leftPortCount: number;
+  rightPortCount: number;
+  leftConnectedPortCount: number;
+  rightConnectedPortCount: number;
+  leftActivePortCount: number;
+  rightActivePortCount: number;
+  leftConnectedPortMask: number;
+  rightConnectedPortMask: number;
+  leftActivePortMask: number;
+  rightActivePortMask: number;
+}
+
 const DEFAULT_NODE_HEIGHT = 120;
 const MAX_PORT_SPREAD = 42;
 const MIN_PORT_SPREAD = 28;
@@ -30,7 +43,7 @@ const getNodePortIndex = (side: NodePortSide, handleId?: string | null): number 
 
 const getPendingPortSide = (
   pendingConnection: PendingNodePortConnection | null | undefined,
-  nodeId: string
+  nodeId: string,
 ): NodePortSide | null => {
   if (!pendingConnection || pendingConnection.nodeId !== nodeId) {
     return null;
@@ -65,7 +78,7 @@ export const getNodePortOffsets = (count: number, maxSpread?: number): number[] 
   const clampedSpread = clampPortSpread(spread, maxSpread);
 
   return Array.from({ length: safeCount }, (_item, index) =>
-    Math.round(-clampedSpread + (clampedSpread * 2 * index) / (safeCount - 1))
+    Math.round(-clampedSpread + (clampedSpread * 2 * index) / (safeCount - 1)),
   );
 };
 
@@ -73,10 +86,10 @@ export const getNodePortCount = (
   edges: PipelineEdge[],
   nodeId: string,
   side: NodePortSide,
-  pendingConnection?: PendingNodePortConnection | null
+  pendingConnection?: PendingNodePortConnection | null,
 ): number => {
   const connectionCount = edges.filter((edge) =>
-    side === "left" ? edge.target === nodeId : edge.source === nodeId
+    side === "left" ? edge.target === nodeId : edge.source === nodeId,
   ).length;
   const pendingConnectionCount = getPendingPortSide(pendingConnection, nodeId) === side ? 1 : 0;
 
@@ -86,14 +99,14 @@ export const getNodePortCount = (
 export const getNodePortCounts = (
   edges: PipelineEdge[],
   nodeId: string,
-  pendingConnection?: PendingNodePortConnection | null
+  pendingConnection?: PendingNodePortConnection | null,
 ) => {
   const { leftConnectionCount, rightConnectionCount } = edges.reduce(
     (counts, edge) => ({
       leftConnectionCount: counts.leftConnectionCount + (edge.target === nodeId ? 1 : 0),
       rightConnectionCount: counts.rightConnectionCount + (edge.source === nodeId ? 1 : 0),
     }),
-    { leftConnectionCount: 0, rightConnectionCount: 0 }
+    { leftConnectionCount: 0, rightConnectionCount: 0 },
   );
   const pendingSide = getPendingPortSide(pendingConnection, nodeId);
 
@@ -142,14 +155,14 @@ const makePortAssignments = (
   nodes: PipelineNode[],
   edges: PipelineEdge[],
   side: NodePortSide,
-  pendingConnection?: PendingNodePortConnection | null
+  pendingConnection?: PendingNodePortConnection | null,
 ): Map<string, string> => {
   const nodeById = new Map(nodes.map((node) => [node.id, node]));
   const assignments = new Map<string, string>();
 
   for (const node of nodes) {
     const sideEdges = [...getSideEdges(edges, node.id, side)].sort(
-      compareByOtherNodeY(nodeById, side)
+      compareByOtherNodeY(nodeById, side),
     );
     const hasPendingConnection = getPendingPortSide(pendingConnection, node.id) === side;
     const slotCount = Math.max(1, sideEdges.length + (hasPendingConnection ? 1 : 0));
@@ -192,7 +205,7 @@ const makePortAssignments = (
 export const decorateEdgesWithPortHandles = (
   nodes: PipelineNode[],
   edges: PipelineEdge[],
-  pendingConnection?: PendingNodePortConnection | null
+  pendingConnection?: PendingNodePortConnection | null,
 ): PipelineEdge[] => {
   const sourceHandleByEdgeId = makePortAssignments(nodes, edges, "right", pendingConnection);
   const targetHandleByEdgeId = makePortAssignments(nodes, edges, "left", pendingConnection);
@@ -213,4 +226,112 @@ export const decorateEdgesWithPortHandles = (
       targetHandle,
     };
   });
+};
+
+const MAX_SAFE_PORT_INDEX = 52;
+
+const isSafePortIndex = (index: number): boolean =>
+  Number.isInteger(index) && index >= 0 && index <= MAX_SAFE_PORT_INDEX;
+
+const getPortIndexMask = (index: number): number => (isSafePortIndex(index) ? 2 ** index : 0);
+
+const hasPortIndex = (mask: number, index: number): boolean => {
+  const indexMask = getPortIndexMask(index);
+
+  return indexMask > 0 && Math.floor(mask / indexMask) % 2 === 1;
+};
+
+const addPortIndexToMask = (mask: number, index: number): number => {
+  const indexMask = getPortIndexMask(index);
+
+  return indexMask === 0 || hasPortIndex(mask, index) ? mask : mask + indexMask;
+};
+
+const getConnectedPortMasks = (
+  edges: PipelineEdge[],
+  nodeId: string,
+): { left: number; right: number; leftCount: number; rightCount: number } =>
+  edges.reduce(
+    (acc, edge) => {
+      if (edge.target === nodeId) {
+        const index = getNodePortIndex("left", getEdgePortHandleId(edge, "left")) ?? 0;
+        acc.left = addPortIndexToMask(acc.left, index);
+        acc.leftCount += 1;
+      }
+      if (edge.source === nodeId) {
+        const index = getNodePortIndex("right", getEdgePortHandleId(edge, "right")) ?? 0;
+        acc.right = addPortIndexToMask(acc.right, index);
+        acc.rightCount += 1;
+      }
+
+      return acc;
+    },
+    { left: 0, right: 0, leftCount: 0, rightCount: 0 },
+  );
+
+const getActivePortMask = (
+  pendingConnection: PendingNodePortConnection | null | undefined,
+  nodeId: string,
+  side: NodePortSide,
+  portCount: number,
+  connectedPortMask: number,
+): number => {
+  if (getPendingPortSide(pendingConnection, nodeId) !== side) {
+    return 0;
+  }
+
+  const explicitIndex = getNodePortIndex(side, pendingConnection?.handleId);
+  if (explicitIndex !== null && explicitIndex < portCount) {
+    return getPortIndexMask(explicitIndex);
+  }
+
+  const safePortCount = Math.min(portCount, MAX_SAFE_PORT_INDEX + 1);
+  const availableIndex = Array.from({ length: safePortCount }, (_item, index) => index).find(
+    (index) => !hasPortIndex(connectedPortMask, index),
+  );
+
+  return availableIndex === undefined ? 0 : getPortIndexMask(availableIndex);
+};
+
+export const getNodePortVisualCounts = (
+  nodes: PipelineNode[],
+  edges: PipelineEdge[],
+  nodeId: string,
+  pendingConnection?: PendingNodePortConnection | null,
+  decoratedEdgesOverride?: PipelineEdge[],
+): NodePortVisualCounts => {
+  const decoratedEdges =
+    decoratedEdgesOverride ?? decorateEdgesWithPortHandles(nodes, edges, pendingConnection);
+  const counts = getNodePortCounts(decoratedEdges, nodeId, pendingConnection);
+  const pendingSide = getPendingPortSide(pendingConnection, nodeId);
+  const {
+    left: leftConnectedPortMask,
+    right: rightConnectedPortMask,
+    leftCount: leftConnectedPortCount,
+    rightCount: rightConnectedPortCount,
+  } = getConnectedPortMasks(decoratedEdges, nodeId);
+
+  return {
+    ...counts,
+    leftConnectedPortCount,
+    rightConnectedPortCount,
+    leftActivePortCount: pendingSide === "left" ? 1 : 0,
+    rightActivePortCount: pendingSide === "right" ? 1 : 0,
+    leftConnectedPortMask,
+    rightConnectedPortMask,
+    leftActivePortMask: getActivePortMask(
+      pendingConnection,
+      nodeId,
+      "left",
+      counts.leftPortCount,
+      leftConnectedPortMask,
+    ),
+    rightActivePortMask: getActivePortMask(
+      pendingConnection,
+      nodeId,
+      "right",
+      counts.rightPortCount,
+      rightConnectedPortMask,
+    ),
+  };
 };

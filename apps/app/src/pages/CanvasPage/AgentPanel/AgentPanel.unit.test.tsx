@@ -3,8 +3,8 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { AgentPanel } from "./AgentPanel";
-import { HarnessCanvasStoreProvider, useHarnessCanvasStore } from "../_store";
-import { useRef } from "react";
+import { CanvasPageStoreProvider, useCanvasPageStore } from "../_store";
+import { useRef, type ReactNode } from "react";
 import type { PipelineOperationProposal, PipelineOperationDiagnostic } from "@repo/pipeline-engine/schemas";
 import type * as ReactI18Next from "react-i18next";
 import { err, ok } from "neverthrow";
@@ -96,8 +96,8 @@ vi.mock("@repo/ui/input", () => ({
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const wrapperWithoutPipeline = ({ children }: { children?: React.ReactNode }) => (
-  <HarnessCanvasStoreProvider>{children}</HarnessCanvasStoreProvider>
+const wrapperWithoutPipeline = ({ children }: { children?: ReactNode }) => (
+  <CanvasPageStoreProvider>{children}</CanvasPageStoreProvider>
 );
 
 const PanelActivator = ({
@@ -106,12 +106,12 @@ const PanelActivator = ({
   pendingProposal = null,
   diagnostics = null,
 }: {
-  children?: React.ReactNode;
+  children?: ReactNode;
   isOpen?: boolean;
   pendingProposal?: PipelineOperationProposal | null;
   diagnostics?: PipelineOperationDiagnostic[] | null;
 }) => {
-  const store = useHarnessCanvasStore();
+  const store = useCanvasPageStore();
   const initializedRef = useRef(false);
   if (!initializedRef.current) {
     initializedRef.current = true;
@@ -133,10 +133,10 @@ const wrapperWithState = (props: {
   pendingProposal?: PipelineOperationProposal | null;
   diagnostics?: PipelineOperationDiagnostic[] | null;
 } = {}) => {
-  const Wrapper = ({ children }: { children?: React.ReactNode }) => (
-    <HarnessCanvasStoreProvider pipeline={{ id: "pipe-1", name: "Test Pipeline", nodes: [], edges: [] }}>
+  const Wrapper = ({ children }: { children?: ReactNode }) => (
+    <CanvasPageStoreProvider pipeline={{ id: "pipe-1", name: "Test Pipeline", nodes: [], edges: [] }}>
       <PanelActivator {...props}>{children}</PanelActivator>
-    </HarnessCanvasStoreProvider>
+    </CanvasPageStoreProvider>
   );
 
   return Wrapper;
@@ -151,7 +151,13 @@ const makeProposal = (overrides: Partial<PipelineOperationProposal> = {}): Pipel
         id: "op-1",
         type: "operation",
         position: { x: 100, y: 100 },
-        data: { operationId: "op-test", label: "Test Op" },
+        data: {
+          nodeType: "operation",
+          operationId: "op-test",
+          operationName: "Test Op",
+          label: "Test Op",
+          status: "idle",
+        },
       },
     } as PipelineOperationProposal["operations"][number],
   ],

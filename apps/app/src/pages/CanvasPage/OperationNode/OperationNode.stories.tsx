@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Refine } from "@refinedev/core";
 import { ReactFlowProvider } from "@xyflow/react";
-import type { OperationNodeData } from "@repo/pipeline-engine/schemas";
-import { createHarnessCanvasStore, HarnessCanvasStoreContext, type PipelineNode } from "../_store";
+import type { OperationNodeData } from "@repo/schemas";
+import { createCanvasPageStore, CanvasPageStoreContext, type PipelineNode } from "../_store";
 import { canvasStoryDataProvider } from "../storybookData";
 import { OperationNode } from "./OperationNode";
 
@@ -13,8 +13,6 @@ const baseData: OperationNodeData = {
   operationName: "Review Code",
   status: "idle",
   config: {},
-  bestPracticeId: "bp-strict-review",
-  bestPracticeName: "Strict Review",
 };
 
 const withCanvasProviders = (Story: React.ComponentType, context: { args: OperationNodeProps }) => {
@@ -25,7 +23,7 @@ const withCanvasProviders = (Story: React.ComponentType, context: { args: Operat
     position: { x: 0, y: 0 },
     data: context.args.data ?? baseData,
   } as PipelineNode;
-  const store = createHarnessCanvasStore([node]);
+  const store = createCanvasPageStore([node]);
 
   store.setState({
     isTestRunning: context.args.data?.status === "running",
@@ -34,13 +32,13 @@ const withCanvasProviders = (Story: React.ComponentType, context: { args: Operat
 
   return (
     <Refine dataProvider={canvasStoryDataProvider}>
-      <HarnessCanvasStoreContext.Provider value={store}>
+      <CanvasPageStoreContext.Provider value={store}>
         <ReactFlowProvider>
           <div className="p-6">
             <Story />
           </div>
         </ReactFlowProvider>
-      </HarnessCanvasStoreContext.Provider>
+      </CanvasPageStoreContext.Provider>
     </Refine>
   );
 };
@@ -60,7 +58,7 @@ const meta: Meta<typeof OperationNode> = {
     docs: {
       description: {
         component:
-          "Operation node used to run a configured operation or recipe. The Docs stories load mocked Operations and Best Practices through the Canvas Storybook data provider.",
+          "Operation node used to run a configured operation. The Docs stories load mocked Operations and Best Practices through the Canvas Storybook data provider.",
       },
     },
   },

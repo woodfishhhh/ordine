@@ -1,5 +1,6 @@
 import { Zap, CheckCircle2, XCircle, Loader2, Circle, Brain, Repeat } from "lucide-react";
-import { useState } from "react";
+import { type ElementType, type SyntheticEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@repo/ui/lib/utils";
 import {
   Select,
@@ -8,16 +9,14 @@ import {
   SelectItem,
   SelectLabel,
   SelectTrigger,
-  SelectValue,
 } from "@repo/ui/select";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/shallow";
-import { useHarnessCanvasStore, selectNodeRunState } from "../_store";
-import type { OperationNodeData, NodeRunStatus } from "@repo/pipeline-engine/schemas";
+import { useCanvasPageStore, selectNodeRunState, selectNodePortCounts } from "../_store";
+import type { OperationNodeData, NodeRunStatus, Operation, Agent } from "@repo/schemas";
 import { useList } from "@refinedev/core";
 import { ResourceName } from "@/integrations/refine/dataProvider";
-import { type Operation, AgentRuntimeSchema } from "@repo/schemas";
-import { NodeCard, useNodePortCounts } from "../NodeCard";
+import { NodeCard } from "../NodeCard";
 
 export interface OperationNodeProps {
   id: string;
@@ -25,93 +24,134 @@ export interface OperationNodeProps {
   selected?: boolean;
 }
 
-const statusConfig: Record<
-  NodeRunStatus,
-  { icon: React.ElementType; color: string; label: string }
-> = {
-  idle: { icon: Circle, color: "text-gray-400", label: "待运行" },
-  running: {
-    icon: Loader2,
-    color: "text-blue-500 animate-spin",
-    label: "运行中",
-  },
-  pass: { icon: CheckCircle2, color: "text-green-500", label: "成功" },
-  fail: { icon: XCircle, color: "text-red-500", label: "失败" },
-};
+const statusConfig: Record<NodeRunStatus, { icon: ElementType; color: string; labelKey: string }> =
+  {
+    idle: {
+      icon: Circle,
+      color: "text-gray-400",
+      labelKey: "nodes.operation.statusIdle",
+    },
+    running: {
+      icon: Loader2,
+      color: "text-blue-500 animate-spin",
+      labelKey: "nodes.operation.statusRunning",
+    },
+    pass: {
+      icon: CheckCircle2,
+      color: "text-green-500",
+      labelKey: "nodes.operation.statusPass",
+    },
+    fail: {
+      icon: XCircle,
+      color: "text-red-500",
+      labelKey: "nodes.operation.statusFail",
+    },
+  };
 
-const handleStopPropagation = (e: React.SyntheticEvent) => e.stopPropagation();
-
-const RUNTIME_LABELS: Record<string, string> = {
-  "claude-code": "Claude",
-  codex: "Codex",
-  mastra: "Mastra",
-};
+const stopCanvasInteraction = (event: SyntheticEvent) => event.stopPropagation();
 
 export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
-  const store = useHarnessCanvasStore();
+  const { t } = useTranslation();
+  const store = useCanvasPageStore();
   const { runStatus: nodeRunStatus, dimmed } = useStore(store, useShallow(selectNodeRunState(id)));
   const { result: operationsResult } = useList<Operation>({
     resource: ResourceName.operations,
   });
-  const operations = operationsResult?.data ?? [];
-  const updateNodeData = useStore(store, (s) => s.updateNodeData);
-  const isTestRunning = useStore(store, (s) => s.isTestRunning);
-  const nodeLlmContent = useStore(store, (s) => s.nodeLlmContent);
-  const setInspectingNodeId = useStore(store, (s) => s.setInspectingNodeId);
-  const { leftPortCount, rightPortCount } = useNodePortCounts(id);
+  const { result: agentsResult } = useList<Agent>({
+    resource: ResourceName.agents,
+  });
+  const operations = operationsResult.data;
+  const agents = agentsResult.data;
+  const {
+    isTestRunning,
+    nodeLlmContent,
+    operationAgentDropdownNodeId,
+    handleOperationLabelChange,
+    handleOperationAgentChange,
+    handleOperationLoopToggle,
+    handleOperationMaxLoopChange,
+    handleOperationConditionChange,
+    handleOperationCardClick,
+    handleOperationAgentDropdownOpenChange,
+  } = useStore(
+    store,
+    useShallow((s) => ({
+      isTestRunning: s.isTestRunning,
+      nodeLlmContent: s.nodeLlmContent,
+      operationAgentDropdownNodeId: s.operationAgentDropdownNodeId,
+      handleOperationLabelChange: s.handleOperationLabelChange,
+      handleOperationAgentChange: s.handleOperationAgentChange,
+      handleOperationLoopToggle: s.handleOperationLoopToggle,
+      handleOperationMaxLoopChange: s.handleOperationMaxLoopChange,
+      handleOperationConditionChange: s.handleOperationConditionChange,
+      handleOperationCardClick: s.handleOperationCardClick,
+      handleOperationAgentDropdownOpenChange: s.handleOperationAgentDropdownOpenChange,
+    })),
+  );
+  const {
+    leftActivePortCount,
+    leftActivePortMask,
+    leftConnectedPortCount,
+    leftConnectedPortMask,
+    leftPortCount,
+    rightActivePortCount,
+    rightActivePortMask,
+    rightConnectedPortCount,
+    rightConnectedPortMask,
+    rightPortCount,
+  } = useStore(store, useShallow(selectNodePortCounts(id)));
+  const agentOpen = operationAgentDropdownNodeId === id;
 
-  const { icon: StatusIcon, color, label: statusLabel } = statusConfig[data.status ?? "idle"];
+  const { icon: StatusIcon, color, labelKey } = statusConfig[data.status ?? "idle"];
+  const statusLabel = t(labelKey);
 
   const operation = operations.find((op: Operation) => op.id === data.operationId);
+  const executor = operation?.config.executor;
+  const effectiveAgentMode =
+    executor?.type === "agent" ? (executor.agentMode ?? "prompt") : undefined;
+  const isSkillOperation = effectiveAgentMode === "skill";
+  const selectableAgents = isSkillOperation
+    ? agents.filter((agent) => agent.defaultRuntime !== "hermes")
+    : agents;
 
-  const handleLabelChange = (v: string) => updateNodeData(id, { label: v, operationName: v });
-
-  const selectedRuntime = data.agentRuntime ?? "";
-
-  const handleRuntimeChange = (value: string | null) => {
-    if (!value || value === "__default__") {
-      updateNodeData(id, { agentRuntime: undefined });
-    } else {
-      updateNodeData(id, { agentRuntime: value });
-    }
-    setRuntimeOpen(false);
-  };
-
-  const [runtimeOpen, setRuntimeOpen] = useState(false);
-  const handleRuntimeOpenChange = (v: boolean) => setRuntimeOpen(v);
-  const handleRuntimeToggle = () => setRuntimeOpen((prev) => !prev);
-
-  const handleLoopToggle = () => {
-    updateNodeData(id, { loopEnabled: !data.loopEnabled });
-  };
-
-  const handleMaxLoopChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = Number.parseInt(e.target.value, 10);
-    if (val >= 1 && val <= 20) updateNodeData(id, { maxLoopCount: val });
-  };
-
-  const handleConditionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    updateNodeData(id, { loopConditionPrompt: e.target.value });
-  };
+  const selectedAgentId = data.agentId ?? "";
+  const selectedAgent = agents.find((agent) => agent.id === selectedAgentId);
+  const isAgentIncompatible =
+    isSkillOperation && !!selectedAgent && selectedAgent.defaultRuntime === "hermes";
+  const selectedAgentLabel = isAgentIncompatible
+    ? `${selectedAgent.name} (${t("nodes.operation.agentIncompatible")})`
+    : selectedAgentId
+      ? (selectedAgent?.name ?? selectedAgentId)
+      : t("nodes.operation.defaultAgent");
 
   const hasLlmContent = !!nodeLlmContent[id];
   const canInspect = isTestRunning || hasLlmContent;
-  const handleCardClick = canInspect ? () => setInspectingNodeId(id) : undefined;
+  const objectTypeLabels: Record<string, string> = {
+    file: t("nodes.operation.objectTypes.file"),
+    folder: t("nodes.operation.objectTypes.folder"),
+    project: t("nodes.operation.objectTypes.project"),
+  };
+  const canvasInteractionHandlers = {
+    onPointerDown: stopCanvasInteraction,
+    onMouseDown: stopCanvasInteraction,
+    onClick: stopCanvasInteraction,
+    onKeyDown: stopCanvasInteraction,
+  };
+  const handleLoopButtonClick = (event: SyntheticEvent) => {
+    stopCanvasInteraction(event);
+    handleOperationLoopToggle(id);
+  };
 
   return (
     <div
-      className="group relative"
-      style={{
-        overflow: "visible",
-        cursor: canInspect ? "pointer" : undefined,
-      }}
-      onClick={handleCardClick}
+      className={cn("group relative overflow-visible", canInspect && "cursor-pointer")}
+      onClick={handleOperationCardClick.bind(null, id)}
     >
       <NodeCard
         leftHandle
         rightHandle
         bodyClassName="space-y-2"
-        description={operation?.description || "自定义操作"}
+        description={operation?.description || t("nodes.operation.customDescription")}
         dimmed={dimmed}
         headerRight={
           <div
@@ -120,7 +160,7 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
               data.status === "pass" && "bg-green-50 border-green-100",
               data.status === "fail" && "bg-red-50 border-red-100",
               data.status === "running" && "bg-blue-50 border-blue-100",
-              (!data.status || data.status === "idle") && "bg-white border-slate-100"
+              (!data.status || data.status === "idle") && "bg-white border-slate-100",
             )}
           >
             <StatusIcon className={cn("h-3 w-3 shrink-0", color)} />
@@ -131,18 +171,25 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
         }
         icon={Zap}
         label={data.operationName || data.label}
+        leftActivePortCount={leftActivePortCount}
+        leftActivePortMask={leftActivePortMask}
+        leftConnectedPortCount={leftConnectedPortCount}
+        leftConnectedPortMask={leftConnectedPortMask}
         leftHandleCount={leftPortCount}
+        rightActivePortCount={rightActivePortCount}
+        rightActivePortMask={rightActivePortMask}
+        rightConnectedPortCount={rightConnectedPortCount}
+        rightConnectedPortMask={rightConnectedPortMask}
         rightHandleCount={rightPortCount}
         runStatus={nodeRunStatus}
         selected={selected}
         theme="violet"
-        onLabelChange={handleLabelChange}
+        onLabelChange={handleOperationLabelChange.bind(null, id)}
       >
-        {/* Config display (read-only summary) */}
         {data.config && Object.keys(data.config).length > 0 && (
           <div className="space-y-1">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              配置
+              {t("nodes.operation.config")}
             </p>
             <div className="rounded bg-slate-50 px-2 py-1.5">
               <pre className="text-[9px] text-slate-500 overflow-hidden text-ellipsis">
@@ -153,11 +200,10 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
           </div>
         )}
 
-        {/* Accepted object types */}
         {operation?.acceptedObjectTypes && (
           <div className="space-y-1">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              接受的对象类型
+              {t("nodes.operation.acceptedObjectTypes")}
             </p>
             <div className="flex flex-wrap gap-1">
               {operation.acceptedObjectTypes.map((type) => (
@@ -165,40 +211,47 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
                   key={type}
                   className="rounded bg-violet-50 px-1.5 py-0.5 text-[9px] font-medium text-violet-600"
                 >
-                  {type === "file" && "文件"}
-                  {type === "folder" && "文件夹"}
-                  {type === "project" && "项目"}
+                  {objectTypeLabels[type] ?? type}
                 </span>
               ))}
             </div>
           </div>
         )}
 
-        {/* Agent Runtime selector */}
-        <div className="space-y-1" onMouseDown={handleStopPropagation}>
+        <div className="nodrag nopan space-y-1.5" {...canvasInteractionHandlers}>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
             <Brain className="mr-1 inline-block h-3 w-3" />
-            Agent Runtime
+            {t("nodes.operation.agent")}
           </p>
           <Select
-            open={runtimeOpen}
-            value={selectedRuntime || "__default__"}
-            onOpenChange={handleRuntimeOpenChange}
-            onValueChange={handleRuntimeChange}
+            open={agentOpen}
+            value={selectedAgentId || "__default__"}
+            onOpenChange={handleOperationAgentDropdownOpenChange.bind(null, id)}
+            onValueChange={handleOperationAgentChange.bind(null, id)}
           >
             <SelectTrigger
-              className="h-6 min-w-0 flex-1 px-1.5 text-[10px]"
-              onClick={handleRuntimeToggle}
+              aria-label={t("nodes.operation.agent")}
+              className="nodrag nopan h-8 w-full min-w-0 px-2.5 text-xs"
             >
-              <SelectValue />
+              <span className="truncate">{selectedAgentLabel}</span>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent
+              align="start"
+              alignItemWithTrigger={false}
+              className="nodrag nopan min-w-44"
+              sideOffset={6}
+            >
               <SelectGroup>
-                <SelectLabel>Runtime</SelectLabel>
-                <SelectItem value="__default__">默认</SelectItem>
-                {AgentRuntimeSchema.options.map((p) => (
-                  <SelectItem key={p} value={p}>
-                    {RUNTIME_LABELS[p] ?? p}
+                <SelectLabel>{t("nodes.operation.agent")}</SelectLabel>
+                <SelectItem value="__default__">{t("nodes.operation.defaultAgent")}</SelectItem>
+                {isAgentIncompatible && (
+                  <SelectItem disabled value={selectedAgentId}>
+                    {selectedAgent.name} ({t("nodes.operation.agentIncompatible")})
+                  </SelectItem>
+                )}
+                {selectableAgents.map((agent) => (
+                  <SelectItem key={agent.id} value={agent.id}>
+                    {agent.name}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -209,53 +262,56 @@ export const OperationNode = ({ id, data, selected }: OperationNodeProps) => {
         {hasLlmContent && (
           <div className="flex items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] text-violet-600">
             <Brain className="h-3 w-3 shrink-0" />
-            <span>点击查看 LLM 输出</span>
+            <span>{t("nodes.operation.inspectLlmOutput")}</span>
           </div>
         )}
 
-        {/* Loop / Retry settings */}
-        <div className="space-y-1.5" onMouseDown={handleStopPropagation}>
+        <div className="nodrag nopan space-y-1.5" {...canvasInteractionHandlers}>
           <button
             className={cn(
-              "flex w-full items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] font-medium transition-colors",
+              "nodrag nopan flex h-8 w-full items-center gap-1.5 rounded-md border px-2.5 text-[11px] font-medium transition-colors",
               data.loopEnabled
                 ? "border-amber-200 bg-amber-50 text-amber-700"
-                : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100"
+                : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100",
             )}
             type="button"
-            onClick={handleLoopToggle}
+            onClick={handleLoopButtonClick}
           >
             <Repeat className="h-3 w-3 shrink-0" />
-            {data.loopEnabled ? "循环已开启" : "开启循环"}
+            {data.loopEnabled ? t("nodes.operation.loopEnabled") : t("nodes.operation.enableLoop")}
           </button>
 
           {data.loopEnabled && (
-            <div className="space-y-1.5 rounded-md border border-amber-100 bg-amber-50/50 p-2">
+            <div className="space-y-2 rounded-md border border-amber-100 bg-amber-50/50 p-2.5">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-medium text-amber-700 whitespace-nowrap">
-                  最大次数
+                <span className="text-[11px] font-medium text-amber-700 whitespace-nowrap">
+                  {t("nodes.operation.maxLoopCount")}
                 </span>
                 <input
-                  aria-label="Maximum loop count"
-                  className="nodrag nopan h-5 w-14 rounded border border-amber-200 bg-white px-1.5 text-[10px] text-amber-800 focus:outline-none focus:ring-1 focus:ring-amber-300"
+                  aria-label={t("nodes.operation.maxLoopCountAria")}
+                  className="nodrag nopan h-7 w-16 rounded border border-amber-200 bg-white px-2 text-xs text-amber-800 focus:outline-none focus:ring-1 focus:ring-amber-300"
                   max={20}
                   min={1}
                   name={`${id}-maxLoopCount`}
                   type="number"
                   value={data.maxLoopCount ?? 3}
-                  onChange={handleMaxLoopChange}
+                  onChange={(e) =>
+                    handleOperationMaxLoopChange(id, Number.parseInt(e.target.value, 10))
+                  }
                 />
               </div>
-              <div className="space-y-0.5">
-                <span className="text-[10px] font-medium text-amber-700">验收条件</span>
+              <div className="space-y-1">
+                <span className="text-[11px] font-medium text-amber-700">
+                  {t("nodes.operation.acceptanceCondition")}
+                </span>
                 <textarea
-                  aria-label="Loop acceptance condition"
-                  className="nodrag nopan w-full rounded border border-amber-200 bg-white px-1.5 py-1 text-[10px] text-amber-800 placeholder:text-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-300"
+                  aria-label={t("nodes.operation.loopConditionAria")}
+                  className="nodrag nopan min-h-16 w-full rounded border border-amber-200 bg-white px-2 py-1.5 text-xs text-amber-800 placeholder:text-amber-300 focus:outline-none focus:ring-1 focus:ring-amber-300"
                   name={`${id}-loopCondition`}
-                  placeholder="描述输出需要满足的条件..."
+                  placeholder={t("nodes.operation.loopConditionPlaceholder")}
                   rows={2}
                   value={data.loopConditionPrompt ?? ""}
-                  onChange={handleConditionChange}
+                  onChange={(e) => handleOperationConditionChange(id, e.target.value)}
                 />
               </div>
             </div>
