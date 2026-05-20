@@ -1,4 +1,4 @@
-import { readFile } from "node:fs";
+import { readFile, unlink } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
@@ -61,6 +61,14 @@ export const runCodex = async ({
   await onProgress?.(`[Codex] Starting codex exec (cwd=${cwd}, sandbox=${sandbox})...`);
 
   return new Promise<string>((resolve, reject) => {
+    const removeOutputFile = () => {
+      unlink(outputFile, (error) => {
+        if (error && error.code !== "ENOENT") {
+          logger.debug({ err: error.message }, "runCodex: failed to remove output file");
+        }
+      });
+    };
+
     const child =
       process.platform === "win32"
         ? spawn("cmd.exe", ["/d", "/s", "/c", CODEX_BIN, ...args], {
@@ -86,11 +94,13 @@ export const runCodex = async ({
 
     const timer = setTimeout(() => {
       child.kill("SIGTERM");
+      removeOutputFile();
       reject(new Error(`codex timed out after ${timeoutMs / 1000}s`));
     }, timeoutMs);
 
     child.on("error", (error) => {
       clearTimeout(timer);
+      removeOutputFile();
       logger.error({ err: error.message }, "runCodex: spawn error");
       void onProgress?.(`[Codex] Spawn error: ${error.message}`);
       reject(error);
@@ -101,6 +111,7 @@ export const runCodex = async ({
       const stdout = Buffer.concat(stdoutChunks).toString("utf8");
       const stderr = Buffer.concat(stderrChunks).toString("utf8");
       readFile(outputFile, "utf8", (readError, fileOutput) => {
+        removeOutputFile();
         const output = readError ? stdout : fileOutput;
 
         if (code !== 0 && output.trim().length === 0) {

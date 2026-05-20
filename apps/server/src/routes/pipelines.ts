@@ -6,9 +6,9 @@ import { pipelinesService, pipelineRunnerService } from "../services.js";
 
 export const pipelinesRoutes = new Hono();
 
-const ProposeOperationsBodySchema = z.object({
+const proposeActionsBodySchema = z.object({
   snapshot: PipelineGraphSnapshotSchema,
-  message: z.string().min(1),
+  message: z.string().trim().min(1),
   pipelineName: z.string().optional(),
   runtimeId: z.string().optional(),
 });
@@ -69,19 +69,19 @@ pipelinesRoutes.delete("/:id", async (c) => {
   return c.body(null, 204);
 });
 
-pipelinesRoutes.post("/:id/propose-operations", async (c) => {
+pipelinesRoutes.post("/:id/propose-actions", async (c) => {
   const id = c.req.param("id");
   const bodyResult = await ResultAsync.fromPromise(
     c.req.json() as Promise<unknown>,
     () => undefined,
   );
   const body = bodyResult.unwrapOr(undefined);
-  const parsed = ProposeOperationsBodySchema.safeParse(body);
+  const parsed = proposeActionsBodySchema.safeParse(body);
   if (!parsed.success) {
     return c.json({ error: "Invalid request body" }, 400);
   }
 
-  const result = await pipelinesService.proposeOperations({
+  const result = await pipelinesService.proposeActions({
     pipelineId: id,
     snapshot: parsed.data.snapshot,
     message: parsed.data.message,

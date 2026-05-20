@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  proposeOperations: vi.fn(),
+  proposeActions: vi.fn(),
   startRun: vi.fn(),
 }));
 
@@ -13,7 +13,7 @@ vi.mock("../../src/services.js", () => ({
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-    proposeOperations: mocks.proposeOperations,
+    proposeActions: mocks.proposeActions,
   },
   pipelineRunnerService: {
     startRun: mocks.startRun,
@@ -29,14 +29,14 @@ const makeApp = () => {
   return app;
 };
 
-describe("pipelinesRoutes propose-operations", () => {
+describe("pipelinesRoutes propose-actions", () => {
   beforeEach(() => {
-    mocks.proposeOperations.mockReset();
+    mocks.proposeActions.mockReset();
     mocks.startRun.mockReset();
   });
 
-  it("returns 400 when propose-operations receives invalid JSON", async () => {
-    const response = await makeApp().request("/pipelines/p1/propose-operations", {
+  it("returns 400 when propose-actions receives invalid JSON", async () => {
+    const response = await makeApp().request("/pipelines/p1/propose-actions", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: "not-json",
@@ -44,11 +44,11 @@ describe("pipelinesRoutes propose-operations", () => {
 
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ error: "Invalid request body" });
-    expect(mocks.proposeOperations).not.toHaveBeenCalled();
+    expect(mocks.proposeActions).not.toHaveBeenCalled();
   });
 
-  it("returns 400 when propose-operations receives an invalid snapshot", async () => {
-    const response = await makeApp().request("/pipelines/p1/propose-operations", {
+  it("returns 400 when propose-actions receives an invalid snapshot", async () => {
+    const response = await makeApp().request("/pipelines/p1/propose-actions", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ snapshot: null, message: "add node" }),
@@ -56,15 +56,27 @@ describe("pipelinesRoutes propose-operations", () => {
 
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ error: "Invalid request body" });
-    expect(mocks.proposeOperations).not.toHaveBeenCalled();
+    expect(mocks.proposeActions).not.toHaveBeenCalled();
   });
 
-  it("forwards valid propose-operations requests to the service", async () => {
+  it("returns 400 when propose-actions receives a blank message", async () => {
+    const response = await makeApp().request("/pipelines/p1/propose-actions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ snapshot: { nodes: [], edges: [] }, message: "   " }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "Invalid request body" });
+    expect(mocks.proposeActions).not.toHaveBeenCalled();
+  });
+
+  it("forwards valid propose-actions requests to the service", async () => {
     const responseBody = { proposal: null, diagnostics: [] };
-    mocks.proposeOperations.mockResolvedValue(responseBody);
+    mocks.proposeActions.mockResolvedValue(responseBody);
 
     const snapshot = { nodes: [], edges: [] };
-    const response = await makeApp().request("/pipelines/p1/propose-operations", {
+    const response = await makeApp().request("/pipelines/p1/propose-actions", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -77,7 +89,7 @@ describe("pipelinesRoutes propose-operations", () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual(responseBody);
-    expect(mocks.proposeOperations).toHaveBeenCalledWith({
+    expect(mocks.proposeActions).toHaveBeenCalledWith({
       pipelineId: "p1",
       snapshot,
       message: "add node",

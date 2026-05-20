@@ -3,14 +3,14 @@ import { err, ok } from "neverthrow";
 import { createCanvasPageStore } from "./canvasPageStore";
 import type { PipelineEdge, PipelineNode } from "./canvasSlice";
 import type {
-  PipelineOperationDiagnostic,
-  PipelineOperationProposal,
-} from "@repo/pipeline-engine/schemas";
+  PipelineActionDiagnostic,
+  PipelineActionProposal,
+} from "@repo/schemas";
 
-const mockApplyPipelineOperations = vi.fn();
+const mockApplyPipelineActions = vi.fn();
 
-vi.mock("@repo/pipeline-engine/operations", () => ({
-  applyPipelineOperations: (...args: unknown[]) => mockApplyPipelineOperations(...args),
+vi.mock("@repo/pipeline-engine/actions", () => ({
+  applyPipelineActions: (...args: unknown[]) => mockApplyPipelineActions(...args),
 }));
 
 const makeNode = (id: string, type = "folder"): PipelineNode =>
@@ -30,15 +30,15 @@ const makeEdge = (id: string, source: string, target: string): PipelineEdge =>
     data: {},
   }) as unknown as PipelineEdge;
 
-const makeProposal = (): PipelineOperationProposal =>
+const makeProposal = (): PipelineActionProposal =>
   ({
     summary: "Agent proposal summary",
-    operations: [{ type: "removeNode", nodeId: "node-a" }],
-  }) as PipelineOperationProposal;
+    actions: [{ type: "removeNode", nodeId: "node-a" }],
+  }) as PipelineActionProposal;
 
 describe("uiSlice applyAgentProposal", () => {
   beforeEach(() => {
-    mockApplyPipelineOperations.mockReset();
+    mockApplyPipelineActions.mockReset();
   });
 
   it("records one history entry, updates graph atomically, and clears interaction UI", () => {
@@ -66,7 +66,7 @@ describe("uiSlice applyAgentProposal", () => {
       },
     });
 
-    mockApplyPipelineOperations.mockReturnValue(ok({ nodes: [nodeB], edges: [edgeB] }));
+    mockApplyPipelineActions.mockReturnValue(ok({ nodes: [nodeB], edges: [edgeB] }));
 
     const applied = store.getState().applyAgentProposal(proposal);
 
@@ -94,12 +94,12 @@ describe("uiSlice applyAgentProposal", () => {
     expect(undone.edges).toEqual([edgeA]);
   });
 
-  it("keeps graph unchanged and exposes diagnostics when operation application fails", () => {
+  it("keeps graph unchanged and exposes diagnostics when action application fails", () => {
     const nodeA = makeNode("node-a");
     const edgeA = makeEdge("edge-a", "node-a", "node-a");
     const proposal = makeProposal();
-    const diagnostics: PipelineOperationDiagnostic[] = [
-      { code: "NODE_NOT_FOUND", severity: "error", message: "missing node", operationIndex: 0 },
+    const diagnostics: PipelineActionDiagnostic[] = [
+      { code: "NODE_NOT_FOUND", severity: "error", message: "missing node", actionIndex: 0 },
     ];
     const store = createCanvasPageStore([nodeA], [edgeA], "pipe-1", "Pipeline 1");
 
@@ -112,7 +112,7 @@ describe("uiSlice applyAgentProposal", () => {
       },
     });
 
-    mockApplyPipelineOperations.mockReturnValue(err(diagnostics));
+    mockApplyPipelineActions.mockReturnValue(err(diagnostics));
 
     const applied = store.getState().applyAgentProposal(proposal);
 

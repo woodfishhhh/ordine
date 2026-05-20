@@ -5,7 +5,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { AgentPanel } from "./AgentPanel";
 import { CanvasPageStoreProvider, useCanvasPageStore } from "../_store";
 import { useRef, type ReactNode } from "react";
-import type { PipelineOperationProposal, PipelineOperationDiagnostic } from "@repo/pipeline-engine/schemas";
+import type { PipelineActionProposal, PipelineActionDiagnostic } from "@repo/schemas";
 import type * as ReactI18Next from "react-i18next";
 import { err, ok } from "neverthrow";
 import zh from "@/locales/zh.json";
@@ -35,11 +35,11 @@ vi.mock("react-i18next", async (importOriginal) => {
   };
 });
 
-const mockApplyPipelineOperations = vi.fn();
+const mockApplyPipelineActions = vi.fn();
 const mockScrollIntoView = vi.fn();
 
-vi.mock("@repo/pipeline-engine/operations", () => ({
-  applyPipelineOperations: (...args: unknown[]) => mockApplyPipelineOperations(...args),
+vi.mock("@repo/pipeline-engine/actions", () => ({
+  applyPipelineActions: (...args: unknown[]) => mockApplyPipelineActions(...args),
 }));
 
 const mockCustom = vi.fn();
@@ -110,8 +110,8 @@ const PanelActivator = ({
 }: {
   children?: ReactNode;
   isOpen?: boolean;
-  pendingProposal?: PipelineOperationProposal | null;
-  diagnostics?: PipelineOperationDiagnostic[] | null;
+  pendingProposal?: PipelineActionProposal | null;
+  diagnostics?: PipelineActionDiagnostic[] | null;
 }) => {
   const store = useCanvasPageStore();
   const initializedRef = useRef(false);
@@ -132,8 +132,8 @@ const PanelActivator = ({
 
 const wrapperWithState = (props: {
   isOpen?: boolean;
-  pendingProposal?: PipelineOperationProposal | null;
-  diagnostics?: PipelineOperationDiagnostic[] | null;
+  pendingProposal?: PipelineActionProposal | null;
+  diagnostics?: PipelineActionDiagnostic[] | null;
 } = {}) => {
   const Wrapper = ({ children }: { children?: ReactNode }) => (
     <CanvasPageStoreProvider pipeline={{ id: "pipe-1", name: "Test Pipeline", nodes: [], edges: [] }}>
@@ -144,9 +144,9 @@ const wrapperWithState = (props: {
   return Wrapper;
 };
 
-const makeProposal = (overrides: Partial<PipelineOperationProposal> = {}): PipelineOperationProposal => ({
+const makeProposal = (overrides: Partial<PipelineActionProposal> = {}): PipelineActionProposal => ({
   summary: "添加操作节点",
-  operations: [
+  actions: [
     {
       type: "addNode",
       node: {
@@ -161,7 +161,7 @@ const makeProposal = (overrides: Partial<PipelineOperationProposal> = {}): Pipel
           status: "idle",
         },
       },
-    } as PipelineOperationProposal["operations"][number],
+    } as PipelineActionProposal["actions"][number],
   ],
   ...overrides,
 });
@@ -173,7 +173,7 @@ describe("AgentPanel", () => {
     mockCustom.mockReset();
     mockGetOne.mockReset();
     mockGetList.mockReset();
-    mockApplyPipelineOperations.mockReset();
+    mockApplyPipelineActions.mockReset();
     mockScrollIntoView.mockReset();
     Object.defineProperty(globalThis.HTMLElement.prototype, "scrollIntoView", {
       configurable: true,
@@ -229,7 +229,7 @@ describe("AgentPanel", () => {
     expect(screen.getByText("添加一个操作节点")).toBeInTheDocument();
     expect(mockCustom).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: "pipelines/proposeOperations",
+        url: "pipelines/proposeActions",
         method: "post",
         payload: expect.objectContaining({
           id: "pipe-1",
@@ -265,6 +265,21 @@ describe("AgentPanel", () => {
     });
   });
 
+  it("keeps the current proposal when whitespace is submitted", async () => {
+    const user = userEvent.setup();
+    const proposal = makeProposal();
+
+    render(<AgentPanel />, {
+      wrapper: wrapperWithState({ pendingProposal: proposal }),
+    });
+    const input = screen.getByPlaceholderText("输入你的需求...");
+    await user.type(input, "   ");
+    await user.click(screen.getByLabelText("发送请求"));
+
+    expect(mockCustom).not.toHaveBeenCalled();
+    expect(screen.getByText("添加操作节点")).toBeInTheDocument();
+  });
+
   it("shows thinking indicator while loading", async () => {
     const user = userEvent.setup();
     mockCustom.mockImplementation(() => new Promise(() => {})); // never resolves
@@ -295,7 +310,7 @@ describe("AgentPanel", () => {
   it("applies proposal and shows confirmation", async () => {
     const user = userEvent.setup();
     const proposal = makeProposal();
-    mockApplyPipelineOperations.mockReturnValue(
+    mockApplyPipelineActions.mockReturnValue(
       ok({ nodes: [], edges: [] })
     );
 
@@ -305,9 +320,9 @@ describe("AgentPanel", () => {
 
     await user.click(screen.getByText("应用"));
 
-    expect(mockApplyPipelineOperations).toHaveBeenCalledWith(
+    expect(mockApplyPipelineActions).toHaveBeenCalledWith(
       expect.objectContaining({ nodes: expect.any(Array), edges: expect.any(Array) }),
-      proposal.operations
+      proposal.actions
     );
     expect(screen.getByText("已应用操作建议。")).toBeInTheDocument();
   });
@@ -315,10 +330,10 @@ describe("AgentPanel", () => {
   it("does not show confirmation when proposal application fails", async () => {
     const user = userEvent.setup();
     const proposal = makeProposal();
-    const diagnostics: PipelineOperationDiagnostic[] = [
-      { code: "NODE_NOT_FOUND", severity: "error", message: "missing node", operationIndex: 0 },
+    const diagnostics: PipelineActionDiagnostic[] = [
+      { code: "NODE_NOT_FOUND", severity: "error", message: "missing node", actionIndex: 0 },
     ];
-    mockApplyPipelineOperations.mockReturnValue(err(diagnostics));
+    mockApplyPipelineActions.mockReturnValue(err(diagnostics));
 
     render(<AgentPanel />, {
       wrapper: wrapperWithState({ pendingProposal: proposal }),
@@ -335,15 +350,15 @@ describe("AgentPanel", () => {
   it("does not apply proposals that already have error diagnostics", async () => {
     const user = userEvent.setup();
     const proposal = makeProposal();
-    const diagnostics: PipelineOperationDiagnostic[] = [
+    const diagnostics: PipelineActionDiagnostic[] = [
       {
         code: "INVALID_NODE_DATA",
         severity: "error",
         message: "unknown operation",
-        operationIndex: 0,
+        actionIndex: 0,
       },
     ];
-    mockApplyPipelineOperations.mockReturnValue(ok({ nodes: [], edges: [] }));
+    mockApplyPipelineActions.mockReturnValue(ok({ nodes: [], edges: [] }));
 
     render(<AgentPanel />, {
       wrapper: wrapperWithState({ pendingProposal: proposal, diagnostics }),
@@ -353,7 +368,7 @@ describe("AgentPanel", () => {
     expect(applyButton).toBeDisabled();
     await user.click(applyButton!);
 
-    expect(mockApplyPipelineOperations).not.toHaveBeenCalled();
+    expect(mockApplyPipelineActions).not.toHaveBeenCalled();
     expect(screen.queryByText("已应用操作建议。")).not.toBeInTheDocument();
   });
 
@@ -370,7 +385,7 @@ describe("AgentPanel", () => {
   });
 
   it("displays diagnostics when present", () => {
-    const diagnostics: PipelineOperationDiagnostic[] = [
+    const diagnostics: PipelineActionDiagnostic[] = [
       { code: "DUPLICATE_NODE_ID", severity: "error", message: "节点 ID 重复" },
       { code: "INVALID_CONNECTION", severity: "warning", message: "缺少输入端口" },
     ];

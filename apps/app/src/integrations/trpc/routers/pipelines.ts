@@ -92,18 +92,18 @@ export const pipelinesRouter = router({
       return result;
     }),
 
-  proposeOperations: publicProcedure
+  proposeActions: publicProcedure
     .input(
       z.object({
         id: z.string(),
         snapshot: PipelineGraphSnapshotSchema,
-        message: z.string(),
+        message: z.string().trim().min(1),
         pipelineName: z.string().optional(),
         runtimeId: z.string().optional(),
       }),
     )
     .mutation(({ input }) =>
-      pipelinesService.proposeOperations({
+      pipelinesService.proposeActions({
         pipelineId: input.id,
         snapshot: input.snapshot,
         message: input.message,

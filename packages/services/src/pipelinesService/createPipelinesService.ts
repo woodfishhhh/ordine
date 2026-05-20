@@ -18,19 +18,19 @@ import {
 } from "@repo/models";
 import { extractJsonFromText } from "@repo/agent";
 import { logger } from "@repo/logger";
-import { validatePipelineOperations } from "@repo/pipeline-engine";
+import { validatePipelineActions } from "@repo/pipeline-engine";
 import {
   BuiltinNodeTypeSchema,
   PipelineGraphSnapshotSchema,
-  PipelineOperationProposalSchema,
+  PipelineActionProposalSchema,
   PipelineSchema,
   type ObjectNodeType,
   type OperationNodeData,
   type PipelineData,
   type PipelineGraphSnapshot,
-  type PipelineOperation,
-  type PipelineOperationDiagnostic,
-  type PipelineOperationProposal,
+  type PipelineAction,
+  type PipelineActionDiagnostic,
+  type PipelineActionProposal,
 } from "@repo/schemas";
 import { runAgent } from "../pipelineRunnerService/agentRunner/agentRunner";
 import { normalizeSettingsRecord } from "../settingsService/normalizeSettingsRecord";
@@ -54,7 +54,7 @@ const expandTildeInNodes = (nodes: PipelineData["nodes"]): PipelineData["nodes"]
 const GENERATE_AGENT_ID = "pipeline-generator";
 
 const OPTIMIZE_AGENT_ID = "pipeline-optimizer";
-const PROPOSE_AGENT_ID = "pipeline-propose-operations";
+const PROPOSE_AGENT_ID = "pipeline-propose-actions";
 
 const SKILL_REFERENCES = [nodeTypesRef, pipelineAnatomyRef].filter(Boolean).join("\n\n---\n\n");
 
@@ -277,9 +277,9 @@ const truncate = (text: string, max: number) =>
 
 const PROPOSE_SYSTEM_PROMPT = [
   "You are an AI pipeline editing assistant for Ordine, a pipeline orchestration platform.",
-  "Your job is to propose a sequence of graph edit operations that modify a pipeline graph based on the user's request.",
+  "Your job is to propose a sequence of graph edit actions that modify a pipeline graph based on the user's request.",
   "",
-  "=== AVAILABLE OPERATION TYPES ===",
+  "=== AVAILABLE ACTION TYPES ===",
   "",
   "1. addNode — adds a new node to the graph:",
   '   { "type": "addNode", "node": { "id": "<unique>", "type": "<nodeType>", "position": {"x": number, "y": number}, "data": { "nodeType": "<nodeType>", ... } } }',
@@ -301,11 +301,11 @@ const PROPOSE_SYSTEM_PROMPT = [
   "",
   "=== OUTPUT SCHEMA ===",
   "Return ONLY a JSON object matching this exact schema:",
-  '{ "summary": "Brief description of what changes are proposed and why", "operations": [ /* array of operations above */ ] }',
+  '{ "summary": "Brief description of what changes are proposed and why", "actions": [ /* array of actions above */ ] }',
   "",
   "=== RULES ===",
   "- The 'summary' field must be a non-empty string explaining the proposed changes.",
-  "- The 'operations' array must contain at least one operation.",
+  "- The 'actions' array must contain at least one action.",
   "- All node IDs and edge IDs must be unique within the graph.",
   "- When adding a node, the node 'type' MUST match the 'nodeType' inside its data payload.",
   "- When adding edges, both source and target nodes must already exist in the graph (or be added in a previous operation).",
@@ -314,18 +314,18 @@ const PROPOSE_SYSTEM_PROMPT = [
   "- For operation nodes, operationName MUST match the selected available operation's name.",
   "- Compound nodes (type === 'compound' or data.nodeType === 'compound') are NOT supported.",
   "- Child nodes (nodes with a 'parentId' field) are NOT supported.",
-  "- Do NOT propose operations that create compound nodes or child nodes.",
+  "- Do NOT propose actions that create compound nodes or child nodes.",
   "- Return ONLY the JSON object. No markdown, no explanation, no code fences.",
 ].join("\n");
 
 const makeProposalDiagnostic = (
-  code: PipelineOperationDiagnostic["code"],
+  code: PipelineActionDiagnostic["code"],
   message: string,
-  operationIndex: number,
-): PipelineOperationDiagnostic => ({
+  actionIndex: number,
+): PipelineActionDiagnostic => ({
   code,
   message,
-  operationIndex,
+  actionIndex,
   severity: "error",
 });
 
@@ -333,15 +333,15 @@ const validateOperationNodeCatalog = (
   nodeId: string,
   data: OperationNodeData,
   operationById: Map<string, { name: string }>,
-  operationIndex: number,
-): PipelineOperationDiagnostic[] => {
+  actionIndex: number,
+): PipelineActionDiagnostic[] => {
   const catalogOperation = operationById.get(data.operationId);
   if (!catalogOperation) {
     return [
       makeProposalDiagnostic(
         "INVALID_NODE_DATA",
         `Operation node "${nodeId}" references unknown operationId "${data.operationId}".`,
-        operationIndex,
+        actionIndex,
       ),
     ];
   }
@@ -351,7 +351,7 @@ const validateOperationNodeCatalog = (
       makeProposalDiagnostic(
         "INVALID_NODE_DATA",
         `Operation node "${nodeId}" operationName must match operation "${data.operationId}" (${catalogOperation.name}).`,
-        operationIndex,
+        actionIndex,
       ),
     ];
   }
@@ -359,26 +359,26 @@ const validateOperationNodeCatalog = (
   return [];
 };
 
-const validateProposalOperationCatalog = (
-  operations: PipelineOperation[],
+const validateProposalActionCatalog = (
+  actions: PipelineAction[],
   operationById: Map<string, { name: string }>,
-): PipelineOperationDiagnostic[] =>
-  operations.flatMap((operation, operationIndex) => {
-    if (operation.type === "addNode" && operation.node.data.nodeType === "operation") {
+): PipelineActionDiagnostic[] =>
+  actions.flatMap((action, actionIndex) => {
+    if (action.type === "addNode" && action.node.data.nodeType === "operation") {
       return validateOperationNodeCatalog(
-        operation.node.id,
-        operation.node.data,
+        action.node.id,
+        action.node.data,
         operationById,
-        operationIndex,
+        actionIndex,
       );
     }
 
-    if (operation.type === "replaceNodeData" && operation.data.nodeType === "operation") {
+    if (action.type === "replaceNodeData" && action.data.nodeType === "operation") {
       return validateOperationNodeCatalog(
-        operation.nodeId,
-        operation.data,
+        action.nodeId,
+        action.data,
         operationById,
-        operationIndex,
+        actionIndex,
       );
     }
 
@@ -393,7 +393,7 @@ const NODE_TYPE_ALIASES = {
   output_project_path: "output-project-path",
 } as const;
 
-const OPERATION_TYPE_ALIASES = {
+const ACTION_TYPE_ALIASES = {
   add_node: "addNode",
   remove_node: "removeNode",
   add_edge: "addEdge",
@@ -413,36 +413,40 @@ const normalizeProposalPayload = (value: unknown): unknown => {
   }
 
   const proposalRecord = rawProposal as Record<string, unknown>;
-  const rawOperations = Array.isArray(proposalRecord.operations) ? proposalRecord.operations : [];
-  const operations = rawOperations.map((rawOperation) => {
-    if (!rawOperation || typeof rawOperation !== "object" || Array.isArray(rawOperation)) {
-      return rawOperation;
+  const rawActions = Array.isArray(proposalRecord.actions)
+    ? proposalRecord.actions
+    : Array.isArray(proposalRecord.operations)
+      ? proposalRecord.operations
+      : [];
+  const actions = rawActions.map((rawAction) => {
+    if (!rawAction || typeof rawAction !== "object" || Array.isArray(rawAction)) {
+      return rawAction;
     }
 
-    const rawOperationRecord = rawOperation as Record<string, unknown>;
+    const rawActionRecord = rawAction as Record<string, unknown>;
     const normalizedType =
-      typeof rawOperationRecord.type === "string"
-        ? rawOperationRecord.type in OPERATION_TYPE_ALIASES
-          ? OPERATION_TYPE_ALIASES[rawOperationRecord.type as keyof typeof OPERATION_TYPE_ALIASES]
-          : rawOperationRecord.type
-        : typeof rawOperationRecord.op === "string" &&
-            rawOperationRecord.op in OPERATION_TYPE_ALIASES
-          ? OPERATION_TYPE_ALIASES[rawOperationRecord.op as keyof typeof OPERATION_TYPE_ALIASES]
-          : rawOperationRecord.type;
-    const normalizedOperation: Record<string, unknown> = {
-      ...rawOperationRecord,
+      typeof rawActionRecord.type === "string"
+        ? rawActionRecord.type in ACTION_TYPE_ALIASES
+          ? ACTION_TYPE_ALIASES[rawActionRecord.type as keyof typeof ACTION_TYPE_ALIASES]
+          : rawActionRecord.type
+        : typeof rawActionRecord.op === "string" &&
+            rawActionRecord.op in ACTION_TYPE_ALIASES
+          ? ACTION_TYPE_ALIASES[rawActionRecord.op as keyof typeof ACTION_TYPE_ALIASES]
+          : rawActionRecord.type;
+    const normalizedAction: Record<string, unknown> = {
+      ...rawActionRecord,
       ...(typeof normalizedType === "string" ? { type: normalizedType } : {}),
     };
 
     if (
-      normalizedOperation.type === "addNode" &&
-      normalizedOperation.node &&
-      typeof normalizedOperation.node === "object" &&
-      !Array.isArray(normalizedOperation.node) &&
-      !("data" in (normalizedOperation.node as Record<string, unknown>))
+      normalizedAction.type === "addNode" &&
+      normalizedAction.node &&
+      typeof normalizedAction.node === "object" &&
+      !Array.isArray(normalizedAction.node) &&
+      !("data" in (normalizedAction.node as Record<string, unknown>))
     ) {
-      const nodeRecord = normalizedOperation.node as Record<string, unknown>;
-      normalizedOperation.node = {
+      const nodeRecord = normalizedAction.node as Record<string, unknown>;
+      normalizedAction.node = {
         ...nodeRecord,
         data: {
           ...(typeof nodeRecord.label === "string" ? { label: nodeRecord.label } : {}),
@@ -460,14 +464,14 @@ const normalizeProposalPayload = (value: unknown): unknown => {
     }
 
     if (
-      normalizedOperation.type === "addNode" &&
-      !("node" in normalizedOperation) &&
-      normalizedOperation.data &&
-      typeof normalizedOperation.data === "object" &&
-      !Array.isArray(normalizedOperation.data)
+      normalizedAction.type === "addNode" &&
+      !("node" in normalizedAction) &&
+      normalizedAction.data &&
+      typeof normalizedAction.data === "object" &&
+      !Array.isArray(normalizedAction.data)
     ) {
-      const dataRecord = normalizedOperation.data as Record<string, unknown>;
-      normalizedOperation.node = {
+      const dataRecord = normalizedAction.data as Record<string, unknown>;
+      normalizedAction.node = {
         id: dataRecord.id,
         type: dataRecord.type,
         position:
@@ -478,20 +482,20 @@ const normalizeProposalPayload = (value: unknown): unknown => {
       };
     }
 
-    const operation = normalizedOperation;
+    const action = normalizedAction;
 
-    if (!operation || typeof operation !== "object" || Array.isArray(operation)) {
-      return operation;
+    if (!action || typeof action !== "object" || Array.isArray(action)) {
+      return action;
     }
 
-    const operationRecord = operation as Record<string, unknown>;
-    if (operationRecord.type !== "addNode") {
-      return operation;
+    const actionRecord = action as Record<string, unknown>;
+    if (actionRecord.type !== "addNode") {
+      return action;
     }
 
     const node =
-      operationRecord.node && typeof operationRecord.node === "object" && !Array.isArray(operationRecord.node)
-        ? (operationRecord.node as Record<string, unknown>)
+      actionRecord.node && typeof actionRecord.node === "object" && !Array.isArray(actionRecord.node)
+        ? (actionRecord.node as Record<string, unknown>)
         : null;
     const data =
       node?.data && typeof node.data === "object" && !Array.isArray(node.data)
@@ -499,7 +503,7 @@ const normalizeProposalPayload = (value: unknown): unknown => {
         : null;
 
     if (!node || !data) {
-      return operation;
+      return action;
     }
 
     const parsedNodeType =
@@ -534,11 +538,11 @@ const normalizeProposalPayload = (value: unknown): unknown => {
                         : null;
 
     if (!inferredNodeType) {
-      return operation;
+      return action;
     }
 
     return {
-      ...operationRecord,
+      ...actionRecord,
       node: {
         ...node,
         type: inferredNodeType,
@@ -559,7 +563,7 @@ const normalizeProposalPayload = (value: unknown): unknown => {
       typeof proposalRecord.summary === "string" && proposalRecord.summary.trim().length > 0
         ? proposalRecord.summary
         : "Apply AI-assisted graph updates.",
-    operations,
+    actions,
   };
 };
 
@@ -596,22 +600,22 @@ export const createPipelinesService = (db: DbConnection) => {
       await dao.delete(id);
     },
 
-    proposeOperations: async (opts: {
+    proposeActions: async (opts: {
       snapshot: PipelineGraphSnapshot;
       message: string;
       pipelineId?: string;
       pipelineName?: string;
       runtimeId?: string;
     }): Promise<{
-      proposal: PipelineOperationProposal | null;
-      diagnostics: PipelineOperationDiagnostic[];
+      proposal: PipelineActionProposal | null;
+      diagnostics: PipelineActionDiagnostic[];
       reply?: string;
     }> => {
       const parsedSnapshot = PipelineGraphSnapshotSchema.safeParse(opts.snapshot);
       if (!parsedSnapshot.success) {
         logger.warn(
           { error: parsedSnapshot.error },
-          "proposeOperations: invalid pipeline graph snapshot",
+          "proposeActions: invalid pipeline graph snapshot",
         );
 
         return { proposal: null, diagnostics: [] };
@@ -625,7 +629,7 @@ export const createPipelinesService = (db: DbConnection) => {
         : null;
 
       if (opts.runtimeId && !selectedRuntime) {
-        logger.warn({ runtimeId: opts.runtimeId }, "proposeOperations: runtime not found");
+        logger.warn({ runtimeId: opts.runtimeId }, "proposeActions: runtime not found");
 
         return {
           proposal: null,
@@ -676,7 +680,7 @@ export const createPipelinesService = (db: DbConnection) => {
               inputPath: process.cwd(),
               agentId: PROPOSE_AGENT_ID,
               allowedTools: [],
-              logPrefix: "proposeOperations",
+              logPrefix: "proposeActions",
               apiKey: settings.defaultApiKey,
               model: settings.defaultModel,
               ssh: effectiveRuntime?.connection.mode === "ssh" ? effectiveRuntime.connection : undefined,
@@ -687,7 +691,7 @@ export const createPipelinesService = (db: DbConnection) => {
           if (attempt === MAX_RETRIES) return result;
           logger.warn(
             { attempt, err: result.error.message },
-            "proposeOperations: agent attempt failed, retrying",
+            "proposeActions: agent attempt failed, retrying",
           );
         }
 
@@ -697,7 +701,7 @@ export const createPipelinesService = (db: DbConnection) => {
       if (!execution || execution.isErr()) {
         logger.error(
           { err: execution?.error },
-          "proposeOperations: agent failed after retries",
+          "proposeActions: agent failed after retries",
         );
 
         return { proposal: null, diagnostics: [] };
@@ -709,7 +713,7 @@ export const createPipelinesService = (db: DbConnection) => {
         () => new Error("failed to extract JSON from agent response"),
       )(raw);
       if (extractJsonResult.isErr()) {
-        logger.error({ raw }, "proposeOperations: failed to extract JSON from agent response");
+        logger.error({ raw }, "proposeActions: failed to extract JSON from agent response");
 
         return { proposal: null, diagnostics: [] };
       }
@@ -721,28 +725,28 @@ export const createPipelinesService = (db: DbConnection) => {
       if (parseJsonResult.isErr()) {
         logger.error(
           { json: extractJsonResult.value },
-          "proposeOperations: extracted text is not valid JSON",
+          "proposeActions: extracted text is not valid JSON",
         );
 
         return { proposal: null, diagnostics: [] };
       }
 
       const normalizedProposal = normalizeProposalPayload(parseJsonResult.value);
-      const parsed = PipelineOperationProposalSchema.safeParse(normalizedProposal);
+      const parsed = PipelineActionProposalSchema.safeParse(normalizedProposal);
       if (!parsed.success) {
         logger.error(
           { error: parsed.error },
-          "proposeOperations: invalid PipelineOperationProposal from agent",
+          "proposeActions: invalid PipelineActionProposal from agent",
         );
 
         return { proposal: null, diagnostics: [] };
       }
 
       const proposal = parsed.data;
-      const validationResult = validatePipelineOperations(snapshot, proposal.operations);
+      const validationResult = validatePipelineActions(snapshot, proposal.actions);
       const graphDiagnostics = validationResult.isErr() ? validationResult.error : [];
-      const operationDiagnostics = validateProposalOperationCatalog(
-        proposal.operations,
+      const operationDiagnostics = validateProposalActionCatalog(
+        proposal.actions,
         operationById,
       );
 

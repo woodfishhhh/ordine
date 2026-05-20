@@ -2,8 +2,8 @@ import { err, ok, type Result } from "neverthrow";
 import {
   BuiltinNodeTypeSchema,
   type PipelineGraphSnapshot,
-  type PipelineOperation,
-  type PipelineOperationDiagnostic,
+  type PipelineAction,
+  type PipelineActionDiagnostic,
 } from "@repo/schemas";
 import { isConnectionAllowed } from "../schemas/nodes/NodeConnectionRulesSchema";
 
@@ -15,13 +15,13 @@ const cloneSnapshot = (snapshot: PipelineGraphSnapshot): PipelineGraphSnapshot =
 });
 
 const makeDiagnostic = (
-  code: PipelineOperationDiagnostic["code"],
+  code: PipelineActionDiagnostic["code"],
   message: string,
-  operationIndex: number,
-): PipelineOperationDiagnostic => ({
+  actionIndex: number,
+): PipelineActionDiagnostic => ({
   code,
   message,
-  operationIndex,
+  actionIndex,
   severity: "error",
 });
 
@@ -32,14 +32,14 @@ const isChildNode = (node: PipelineGraphNode): boolean => typeof node.parentId =
 
 const validateSupportedNode = (
   node: PipelineGraphNode,
-  operationIndex: number,
-): PipelineOperationDiagnostic[] => {
+  actionIndex: number,
+): PipelineActionDiagnostic[] => {
   if (isCompoundNode(node)) {
     return [
       makeDiagnostic(
         "COMPOUND_NODE_NOT_SUPPORTED",
         `Compound node "${node.id}" is not supported by AI graph edits in v1.`,
-        operationIndex,
+        actionIndex,
       ),
     ];
   }
@@ -49,7 +49,7 @@ const validateSupportedNode = (
       makeDiagnostic(
         "CHILD_NODE_NOT_SUPPORTED",
         `Child node "${node.id}" is not supported by AI graph edits in v1.`,
-        operationIndex,
+        actionIndex,
       ),
     ];
   }
@@ -60,8 +60,8 @@ const validateSupportedNode = (
 const validateConnection = (
   sourceNode: PipelineGraphNode,
   targetNode: PipelineGraphNode,
-  operationIndex: number,
-): PipelineOperationDiagnostic[] => {
+  actionIndex: number,
+): PipelineActionDiagnostic[] => {
   const sourceType = BuiltinNodeTypeSchema.safeParse(sourceNode.type);
   const targetType = BuiltinNodeTypeSchema.safeParse(targetNode.type);
 
@@ -70,7 +70,7 @@ const validateConnection = (
       makeDiagnostic(
         "INVALID_CONNECTION",
         `Connection ${sourceNode.id} -> ${targetNode.id} uses unsupported node types for AI graph edits.`,
-        operationIndex,
+        actionIndex,
       ),
     ];
   }
@@ -80,7 +80,7 @@ const validateConnection = (
       makeDiagnostic(
         "INVALID_CONNECTION",
         `Connection ${sourceNode.id} -> ${targetNode.id} violates pipeline connection rules.`,
-        operationIndex,
+        actionIndex,
       ),
     ];
   }
@@ -90,224 +90,224 @@ const validateConnection = (
 
 const validateNodeDataMatch = (
   node: PipelineGraphNode,
-  operation: Extract<PipelineOperation, { type: "replaceNodeData" }>,
-  operationIndex: number,
-): PipelineOperationDiagnostic[] =>
-  node.type === operation.data.nodeType
+  action: Extract<PipelineAction, { type: "replaceNodeData" }>,
+  actionIndex: number,
+): PipelineActionDiagnostic[] =>
+  node.type === action.data.nodeType
     ? []
     : [
         makeDiagnostic(
           "INVALID_NODE_DATA",
           `Replacement data for node "${node.id}" must keep nodeType "${node.type}".`,
-          operationIndex,
+          actionIndex,
         ),
       ];
 
 const validateNodeTypeMatchesData = (
   node: PipelineGraphNode,
-  operationIndex: number,
-): PipelineOperationDiagnostic[] =>
+  actionIndex: number,
+): PipelineActionDiagnostic[] =>
   node.type === node.data.nodeType
     ? []
     : [
         makeDiagnostic(
           "INVALID_NODE_DATA",
           `Node "${node.id}" type "${node.type}" must match data.nodeType "${node.data.nodeType}".`,
-          operationIndex,
+          actionIndex,
         ),
       ];
 
-const applyOperation = (
+const applyAction = (
   draft: PipelineGraphSnapshot,
-  operation: PipelineOperation,
-  operationIndex: number,
-): PipelineOperationDiagnostic[] => {
-  switch (operation.type) {
+  action: PipelineAction,
+  actionIndex: number,
+): PipelineActionDiagnostic[] => {
+  switch (action.type) {
     case "addNode": {
-      const unsupported = validateSupportedNode(operation.node, operationIndex);
+      const unsupported = validateSupportedNode(action.node, actionIndex);
       if (unsupported.length > 0) {
         return unsupported;
       }
 
-      const nodeDataDiagnostics = validateNodeTypeMatchesData(operation.node, operationIndex);
+      const nodeDataDiagnostics = validateNodeTypeMatchesData(action.node, actionIndex);
       if (nodeDataDiagnostics.length > 0) {
         return nodeDataDiagnostics;
       }
 
-      if (draft.nodes.some((node) => node.id === operation.node.id)) {
+      if (draft.nodes.some((node) => node.id === action.node.id)) {
         return [
           makeDiagnostic(
             "DUPLICATE_NODE_ID",
-            `Node "${operation.node.id}" already exists.`,
-            operationIndex,
+            `Node "${action.node.id}" already exists.`,
+            actionIndex,
           ),
         ];
       }
 
-      draft.nodes.push(operation.node);
+      draft.nodes.push(action.node);
 
       return [];
     }
 
     case "removeNode": {
-      const node = draft.nodes.find((entry) => entry.id === operation.nodeId);
+      const node = draft.nodes.find((entry) => entry.id === action.nodeId);
       if (!node) {
         return [
-          makeDiagnostic("NODE_NOT_FOUND", `Node "${operation.nodeId}" was not found.`, operationIndex),
+          makeDiagnostic("NODE_NOT_FOUND", `Node "${action.nodeId}" was not found.`, actionIndex),
         ];
       }
 
-      const unsupported = validateSupportedNode(node, operationIndex);
+      const unsupported = validateSupportedNode(node, actionIndex);
       if (unsupported.length > 0) {
         return unsupported;
       }
 
-      draft.nodes = draft.nodes.filter((entry) => entry.id !== operation.nodeId);
+      draft.nodes = draft.nodes.filter((entry) => entry.id !== action.nodeId);
       draft.edges = draft.edges.filter(
-        (edge) => edge.source !== operation.nodeId && edge.target !== operation.nodeId,
+        (edge) => edge.source !== action.nodeId && edge.target !== action.nodeId,
       );
 
       return [];
     }
 
     case "addEdge": {
-      if (draft.edges.some((edge) => edge.id === operation.edge.id)) {
+      if (draft.edges.some((edge) => edge.id === action.edge.id)) {
         return [
           makeDiagnostic(
             "DUPLICATE_EDGE_ID",
-            `Edge "${operation.edge.id}" already exists.`,
-            operationIndex,
+            `Edge "${action.edge.id}" already exists.`,
+            actionIndex,
           ),
         ];
       }
 
-      const sourceNode = draft.nodes.find((entry) => entry.id === operation.edge.source);
-      const targetNode = draft.nodes.find((entry) => entry.id === operation.edge.target);
+      const sourceNode = draft.nodes.find((entry) => entry.id === action.edge.source);
+      const targetNode = draft.nodes.find((entry) => entry.id === action.edge.target);
       if (!sourceNode || !targetNode) {
         return [
           makeDiagnostic(
             "NODE_NOT_FOUND",
-            `Edge "${operation.edge.id}" references a missing node.`,
-            operationIndex,
+            `Edge "${action.edge.id}" references a missing node.`,
+            actionIndex,
           ),
         ];
       }
 
       const unsupported = [
-        ...validateSupportedNode(sourceNode, operationIndex),
-        ...validateSupportedNode(targetNode, operationIndex),
+        ...validateSupportedNode(sourceNode, actionIndex),
+        ...validateSupportedNode(targetNode, actionIndex),
       ];
       if (unsupported.length > 0) {
         return unsupported;
       }
 
-      const connectionDiagnostics = validateConnection(sourceNode, targetNode, operationIndex);
+      const connectionDiagnostics = validateConnection(sourceNode, targetNode, actionIndex);
       if (connectionDiagnostics.length > 0) {
         return connectionDiagnostics;
       }
 
-      draft.edges.push(operation.edge);
+      draft.edges.push(action.edge);
 
       return [];
     }
 
     case "removeEdge": {
-      const edge = draft.edges.find((entry) => entry.id === operation.edgeId);
+      const edge = draft.edges.find((entry) => entry.id === action.edgeId);
       if (!edge) {
         return [
-          makeDiagnostic("EDGE_NOT_FOUND", `Edge "${operation.edgeId}" was not found.`, operationIndex),
+          makeDiagnostic("EDGE_NOT_FOUND", `Edge "${action.edgeId}" was not found.`, actionIndex),
         ];
       }
 
       const sourceNode = draft.nodes.find((entry) => entry.id === edge.source);
       const targetNode = draft.nodes.find((entry) => entry.id === edge.target);
       const unsupported = [
-        ...(sourceNode ? validateSupportedNode(sourceNode, operationIndex) : []),
-        ...(targetNode ? validateSupportedNode(targetNode, operationIndex) : []),
+        ...(sourceNode ? validateSupportedNode(sourceNode, actionIndex) : []),
+        ...(targetNode ? validateSupportedNode(targetNode, actionIndex) : []),
       ];
       if (unsupported.length > 0) {
         return unsupported;
       }
 
-      draft.edges = draft.edges.filter((entry) => entry.id !== operation.edgeId);
+      draft.edges = draft.edges.filter((entry) => entry.id !== action.edgeId);
 
       return [];
     }
 
     case "reconnectEdge": {
-      const edge = draft.edges.find((entry) => entry.id === operation.edgeId);
+      const edge = draft.edges.find((entry) => entry.id === action.edgeId);
       if (!edge) {
         return [
-          makeDiagnostic("EDGE_NOT_FOUND", `Edge "${operation.edgeId}" was not found.`, operationIndex),
+          makeDiagnostic("EDGE_NOT_FOUND", `Edge "${action.edgeId}" was not found.`, actionIndex),
         ];
       }
 
-      const sourceNode = draft.nodes.find((entry) => entry.id === operation.source);
-      const targetNode = draft.nodes.find((entry) => entry.id === operation.target);
+      const sourceNode = draft.nodes.find((entry) => entry.id === action.source);
+      const targetNode = draft.nodes.find((entry) => entry.id === action.target);
       if (!sourceNode || !targetNode) {
         return [
           makeDiagnostic(
             "NODE_NOT_FOUND",
-            `Reconnected edge "${operation.edgeId}" references a missing node.`,
-            operationIndex,
+            `Reconnected edge "${action.edgeId}" references a missing node.`,
+            actionIndex,
           ),
         ];
       }
 
       const unsupported = [
-        ...validateSupportedNode(sourceNode, operationIndex),
-        ...validateSupportedNode(targetNode, operationIndex),
+        ...validateSupportedNode(sourceNode, actionIndex),
+        ...validateSupportedNode(targetNode, actionIndex),
       ];
       if (unsupported.length > 0) {
         return unsupported;
       }
 
-      const connectionDiagnostics = validateConnection(sourceNode, targetNode, operationIndex);
+      const connectionDiagnostics = validateConnection(sourceNode, targetNode, actionIndex);
       if (connectionDiagnostics.length > 0) {
         return connectionDiagnostics;
       }
 
-      edge.source = operation.source;
-      edge.target = operation.target;
-      edge.sourceHandle = operation.sourceHandle ?? null;
-      edge.targetHandle = operation.targetHandle ?? null;
+      edge.source = action.source;
+      edge.target = action.target;
+      edge.sourceHandle = action.sourceHandle ?? null;
+      edge.targetHandle = action.targetHandle ?? null;
 
       return [];
     }
 
     case "replaceNodeData": {
-      const node = draft.nodes.find((entry) => entry.id === operation.nodeId);
+      const node = draft.nodes.find((entry) => entry.id === action.nodeId);
       if (!node) {
         return [
-          makeDiagnostic("NODE_NOT_FOUND", `Node "${operation.nodeId}" was not found.`, operationIndex),
+          makeDiagnostic("NODE_NOT_FOUND", `Node "${action.nodeId}" was not found.`, actionIndex),
         ];
       }
 
-      const unsupported = validateSupportedNode(node, operationIndex);
+      const unsupported = validateSupportedNode(node, actionIndex);
       if (unsupported.length > 0) {
         return unsupported;
       }
 
-      const nodeDataDiagnostics = validateNodeDataMatch(node, operation, operationIndex);
+      const nodeDataDiagnostics = validateNodeDataMatch(node, action, actionIndex);
       if (nodeDataDiagnostics.length > 0) {
         return nodeDataDiagnostics;
       }
 
-      node.data = operation.data;
+      node.data = action.data;
 
       return [];
     }
   }
 };
 
-const runPipelineOperations = (
+const runPipelineActions = (
   snapshot: PipelineGraphSnapshot,
-  operations: PipelineOperation[],
-): Result<PipelineGraphSnapshot, PipelineOperationDiagnostic[]> => {
+  actions: PipelineAction[],
+): Result<PipelineGraphSnapshot, PipelineActionDiagnostic[]> => {
   const draft = cloneSnapshot(snapshot);
 
-  for (const [operationIndex, operation] of operations.entries()) {
-    const diagnostics = applyOperation(draft, operation, operationIndex);
+  for (const [actionIndex, action] of actions.entries()) {
+    const diagnostics = applyAction(draft, action, actionIndex);
     if (diagnostics.length > 0) {
       return err(diagnostics);
     }
@@ -316,14 +316,14 @@ const runPipelineOperations = (
   return ok(draft);
 };
 
-export const validatePipelineOperations = (
+export const validatePipelineActions = (
   snapshot: PipelineGraphSnapshot,
-  operations: PipelineOperation[],
-): Result<void, PipelineOperationDiagnostic[]> =>
-  runPipelineOperations(snapshot, operations).map(() => undefined);
+  actions: PipelineAction[],
+): Result<void, PipelineActionDiagnostic[]> =>
+  runPipelineActions(snapshot, actions).map(() => undefined);
 
-export const applyPipelineOperations = (
+export const applyPipelineActions = (
   snapshot: PipelineGraphSnapshot,
-  operations: PipelineOperation[],
-): Result<PipelineGraphSnapshot, PipelineOperationDiagnostic[]> =>
-  runPipelineOperations(snapshot, operations);
+  actions: PipelineAction[],
+): Result<PipelineGraphSnapshot, PipelineActionDiagnostic[]> =>
+  runPipelineActions(snapshot, actions);

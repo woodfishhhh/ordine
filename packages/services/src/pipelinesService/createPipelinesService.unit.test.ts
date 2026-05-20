@@ -139,16 +139,16 @@ describe("createPipelinesService", () => {
     expect(mockDao.delete).toHaveBeenCalledWith("p1");
   });
 
-  it("proposeOperations returns a parsed proposal and diagnostics", async () => {
+  it("proposeActions returns a parsed proposal and diagnostics", async () => {
     mockRunAgent.mockResolvedValue(
       JSON.stringify({
         summary: "remove stale node",
-        operations: [{ type: "removeNode", nodeId: "folder-1" }],
+        actions: [{ type: "removeNode", nodeId: "folder-1" }],
       }),
     );
     const svc = createPipelinesService({} as never);
 
-    const result = await svc.proposeOperations({
+    const result = await svc.proposeActions({
       snapshot,
       message: "remove folder-1",
       pipelineId: "p1",
@@ -159,14 +159,14 @@ describe("createPipelinesService", () => {
       expect.objectContaining({
         agent: "codex",
         allowedTools: [],
-        agentId: "pipeline-propose-operations",
+        agentId: "pipeline-propose-actions",
         userPrompt: expect.stringContaining("op-known"),
       }),
     );
     expect(mockOperationsDao.findMany).toHaveBeenCalled();
     expect(result.proposal).toEqual({
       summary: "remove stale node",
-      operations: [{ type: "removeNode", nodeId: "folder-1" }],
+      actions: [{ type: "removeNode", nodeId: "folder-1" }],
     });
     expect(result.diagnostics).toEqual([]);
     expect(mockDao.create).not.toHaveBeenCalled();
@@ -174,16 +174,16 @@ describe("createPipelinesService", () => {
     expect(mockDao.delete).not.toHaveBeenCalled();
   });
 
-  it("proposeOperations uses the selected runtime config when runtimeId is provided", async () => {
+  it("proposeActions uses the selected runtime config when runtimeId is provided", async () => {
     mockRunAgent.mockResolvedValue(
       JSON.stringify({
         summary: "remove stale node",
-        operations: [{ type: "removeNode", nodeId: "folder-1" }],
+        actions: [{ type: "removeNode", nodeId: "folder-1" }],
       }),
     );
     const svc = createPipelinesService({} as never);
 
-    await svc.proposeOperations({
+    await svc.proposeActions({
       snapshot,
       message: "remove folder-1",
       runtimeId: "runtime-claude-ssh",
@@ -197,10 +197,10 @@ describe("createPipelinesService", () => {
     );
   });
 
-  it("proposeOperations reports a missing selected runtime without invoking the agent", async () => {
+  it("proposeActions reports a missing selected runtime without invoking the agent", async () => {
     const svc = createPipelinesService({} as never);
 
-    const result = await svc.proposeOperations({
+    const result = await svc.proposeActions({
       snapshot,
       message: "remove folder-1",
       runtimeId: "missing-runtime",
@@ -214,11 +214,11 @@ describe("createPipelinesService", () => {
     expect(mockRunAgent).not.toHaveBeenCalled();
   });
 
-  it("proposeOperations returns diagnostics for operation nodes with unknown operation IDs", async () => {
+  it("proposeActions returns diagnostics for operation nodes with unknown operation IDs", async () => {
     mockRunAgent.mockResolvedValue(
       JSON.stringify({
         summary: "add unknown operation",
-        operations: [
+        actions: [
           {
             type: "addNode",
             node: {
@@ -239,26 +239,26 @@ describe("createPipelinesService", () => {
     );
     const svc = createPipelinesService({} as never);
 
-    const result = await svc.proposeOperations({
+    const result = await svc.proposeActions({
       snapshot,
       message: "add missing operation",
     });
 
-    expect(result.proposal?.operations).toHaveLength(1);
+    expect(result.proposal?.actions).toHaveLength(1);
     expect(result.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           code: "INVALID_NODE_DATA",
-          operationIndex: 0,
+          actionIndex: 0,
         }),
       ]),
     );
   });
 
-  it("proposeOperations normalizes missing summary and addNode nodeType from agent output", async () => {
+  it("proposeActions normalizes missing summary and addNode nodeType from agent output", async () => {
     mockRunAgent.mockResolvedValue(
       JSON.stringify({
-        operations: [
+        actions: [
           {
             type: "addNode",
             node: {
@@ -276,14 +276,14 @@ describe("createPipelinesService", () => {
     );
     const svc = createPipelinesService({} as never);
 
-    const result = await svc.proposeOperations({
+    const result = await svc.proposeActions({
       snapshot,
       message: "add prompt",
     });
 
     expect(result.proposal).toEqual({
       summary: "Apply AI-assisted graph updates.",
-      operations: [
+      actions: [
         {
           type: "addNode",
           node: {
@@ -301,11 +301,11 @@ describe("createPipelinesService", () => {
     });
   });
 
-  it("proposeOperations infers built-in prompt node types from addNode payloads", async () => {
+  it("proposeActions infers built-in prompt node types from addNode payloads", async () => {
     mockRunAgent.mockResolvedValue(
       JSON.stringify({
         summary: "add prompt node",
-        operations: [
+        actions: [
           {
             type: "addNode",
             node: {
@@ -323,14 +323,14 @@ describe("createPipelinesService", () => {
     );
     const svc = createPipelinesService({} as never);
 
-    const result = await svc.proposeOperations({
+    const result = await svc.proposeActions({
       snapshot,
       message: "add prompt",
     });
 
     expect(result.proposal).toEqual({
       summary: "add prompt node",
-      operations: [
+      actions: [
         {
           type: "addNode",
           node: {
@@ -348,11 +348,11 @@ describe("createPipelinesService", () => {
     });
   });
 
-  it("proposeOperations normalizes codex promptInput nodes into prompt nodes", async () => {
+  it("proposeActions normalizes codex promptInput nodes into prompt nodes", async () => {
     mockRunAgent.mockResolvedValue(
       JSON.stringify({
         summary: "Added a prompt input node labeled Prompt.",
-        operations: [
+        actions: [
           {
             type: "addNode",
             node: {
@@ -369,14 +369,14 @@ describe("createPipelinesService", () => {
     );
     const svc = createPipelinesService({} as never);
 
-    const result = await svc.proposeOperations({
+    const result = await svc.proposeActions({
       snapshot,
       message: "add prompt",
     });
 
     expect(result.proposal).toEqual({
       summary: "Added a prompt input node labeled Prompt.",
-      operations: [
+      actions: [
         {
           type: "addNode",
           node: {
@@ -394,11 +394,11 @@ describe("createPipelinesService", () => {
     });
   });
 
-  it("proposeOperations normalizes claude snake_case add_node payloads", async () => {
+  it("proposeActions normalizes claude snake_case add_node payloads", async () => {
     mockRunAgent.mockResolvedValue(
       JSON.stringify({
         summary: "Add a Prompt input node to the empty pipeline graph.",
-        operations: [
+        actions: [
           {
             op: "add_node",
             data: {
@@ -413,14 +413,14 @@ describe("createPipelinesService", () => {
     );
     const svc = createPipelinesService({} as never);
 
-    const result = await svc.proposeOperations({
+    const result = await svc.proposeActions({
       snapshot,
       message: "add prompt",
     });
 
     expect(result.proposal).toEqual({
       summary: "Add a Prompt input node to the empty pipeline graph.",
-      operations: [
+      actions: [
         {
           type: "addNode",
           node: {
@@ -438,11 +438,11 @@ describe("createPipelinesService", () => {
     });
   });
 
-  it("proposeOperations normalizes claude flat node payloads with snake_case type", async () => {
+  it("proposeActions normalizes claude flat node payloads with snake_case type", async () => {
     mockRunAgent.mockResolvedValue(
       JSON.stringify({
         summary: "Added a Prompt input node (type: prompt) to the empty graph at default position (100, 100).",
-        operations: [
+        actions: [
           {
             type: "add_node",
             node: {
@@ -457,14 +457,14 @@ describe("createPipelinesService", () => {
     );
     const svc = createPipelinesService({} as never);
 
-    const result = await svc.proposeOperations({
+    const result = await svc.proposeActions({
       snapshot,
       message: "add prompt",
     });
 
     expect(result.proposal).toEqual({
       summary: "Added a Prompt input node (type: prompt) to the empty graph at default position (100, 100).",
-      operations: [
+      actions: [
         {
           type: "addNode",
           node: {
@@ -483,10 +483,10 @@ describe("createPipelinesService", () => {
     });
   });
 
-  it("proposeOperations returns null proposal when snapshot is invalid at runtime", async () => {
+  it("proposeActions returns null proposal when snapshot is invalid at runtime", async () => {
     const svc = createPipelinesService({} as never);
 
-    const result = await svc.proposeOperations({
+    const result = await svc.proposeActions({
       snapshot: undefined as never,
       message: "invalid snapshot",
     });
@@ -495,12 +495,12 @@ describe("createPipelinesService", () => {
     expect(mockRunAgent).not.toHaveBeenCalled();
   });
 
-  it("proposeOperations returns null proposal when extracted JSON is invalid", async () => {
+  it("proposeActions returns null proposal when extracted JSON is invalid", async () => {
     mockRunAgent.mockResolvedValue("raw response");
     mockExtractJsonFromText.mockReturnValue("not-json");
     const svc = createPipelinesService({} as never);
 
-    const result = await svc.proposeOperations({
+    const result = await svc.proposeActions({
       snapshot,
       message: "invalid",
     });
@@ -511,17 +511,17 @@ describe("createPipelinesService", () => {
     expect(mockDao.delete).not.toHaveBeenCalled();
   });
 
-  it("proposeOperations returns null proposal when schema validation fails", async () => {
+  it("proposeActions returns null proposal when schema validation fails", async () => {
     mockRunAgent.mockResolvedValue("raw response");
     mockExtractJsonFromText.mockReturnValue(
       JSON.stringify({
         summary: "",
-        operations: [],
+        actions: [],
       }),
     );
     const svc = createPipelinesService({} as never);
 
-    const result = await svc.proposeOperations({
+    const result = await svc.proposeActions({
       snapshot,
       message: "schema-invalid",
     });
@@ -532,23 +532,23 @@ describe("createPipelinesService", () => {
     expect(mockDao.delete).not.toHaveBeenCalled();
   });
 
-  it("proposeOperations returns diagnostics for disallowed compound-node operations", async () => {
+  it("proposeActions returns diagnostics for disallowed compound-node operations", async () => {
     mockRunAgent.mockResolvedValue(
       JSON.stringify({
         summary: "remove grouped node",
-        operations: [{ type: "removeNode", nodeId: "compound-1" }],
+        actions: [{ type: "removeNode", nodeId: "compound-1" }],
       }),
     );
     const svc = createPipelinesService({} as never);
 
-    const result = await svc.proposeOperations({
+    const result = await svc.proposeActions({
       snapshot: compoundSnapshot,
       message: "remove group",
     });
 
     expect(result.proposal).toEqual({
       summary: "remove grouped node",
-      operations: [{ type: "removeNode", nodeId: "compound-1" }],
+      actions: [{ type: "removeNode", nodeId: "compound-1" }],
     });
     expect(result.diagnostics).toEqual(
       expect.arrayContaining([

@@ -1,9 +1,9 @@
 import type { ChangeEvent } from "react";
-import { applyPipelineOperations } from "@repo/pipeline-engine/operations";
+import { applyPipelineActions } from "@repo/pipeline-engine/actions";
 import type {
   NodeRunStatus,
-  PipelineOperationDiagnostic,
-  PipelineOperationProposal,
+  PipelineActionDiagnostic,
+  PipelineActionProposal,
 } from "@repo/schemas";
 import type { CanvasPageStoreSlice } from "./canvasPageStore";
 import { DEFAULT_CANVAS_VIEWPORT } from "../utils/canvasViewport";
@@ -45,8 +45,8 @@ export const DEFAULT_CANVAS_SETTINGS: CanvasSettingsState = {
 
 export interface AgentPanelState {
   isOpen: boolean;
-  pendingProposal: PipelineOperationProposal | null;
-  diagnostics: PipelineOperationDiagnostic[] | null;
+  pendingProposal: PipelineActionProposal | null;
+  diagnostics: PipelineActionDiagnostic[] | null;
   isLoading: boolean;
 }
 
@@ -129,11 +129,11 @@ export interface UISlice {
   // Agent panel actions
   toggleAgentPanel: () => void;
   setPendingProposal: (
-    proposal: PipelineOperationProposal | null,
-    diagnostics: PipelineOperationDiagnostic[] | null,
+    proposal: PipelineActionProposal | null,
+    diagnostics: PipelineActionDiagnostic[] | null,
   ) => void;
   clearPendingProposal: () => void;
-  applyAgentProposal: (proposal: PipelineOperationProposal) => boolean;
+  applyAgentProposal: (proposal: PipelineActionProposal) => boolean;
 }
 
 export const createUISlice = (
@@ -424,7 +424,7 @@ export const createUISlice = (
 
   applyAgentProposal: (proposal) => {
     const { edges, nodes, recordCommand } = get();
-    const result = applyPipelineOperations({ nodes, edges }, proposal.operations);
+    const result = applyPipelineActions({ nodes, edges }, proposal.actions);
 
     if (result.isErr()) {
       set((state) => ({
@@ -444,7 +444,7 @@ export const createUISlice = (
         type: "APPLY_AGENT_PROPOSAL",
         label: `Apply AI proposal: ${proposal.summary}`,
         payload: {
-          operationCount: proposal.operations.length,
+          actionCount: proposal.actions.length,
           summary: proposal.summary,
         },
       },

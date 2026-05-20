@@ -449,9 +449,9 @@ export const dataProvider: DataProvider = {
 
       return { data: data as unknown as TData };
     }
-    if (url === "pipelines/proposeOperations") {
-      const data = await trpcClient.pipelines.proposeOperations.mutate(
-        payload as unknown as Parameters<typeof trpcClient.pipelines.proposeOperations.mutate>[0],
+    if (url === "pipelines/proposeActions") {
+      const data = await trpcClient.pipelines.proposeActions.mutate(
+        payload as unknown as Parameters<typeof trpcClient.pipelines.proposeActions.mutate>[0],
       );
 
       return { data: data as unknown as TData };

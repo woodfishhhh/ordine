@@ -24,15 +24,15 @@ import {
 } from "@repo/ui/select";
 import { cn } from "@repo/ui/lib/utils";
 import { ResultAsync } from "neverthrow";
-import type { AgentRuntimeConfig } from "@repo/schemas";
+import type {
+  AgentRuntimeConfig,
+  PipelineActionProposal,
+  PipelineAction,
+  PipelineActionDiagnostic,
+} from "@repo/schemas";
 import { useCanvasPageStore } from "../_store";
 import { dataProvider, ResourceName } from "@/integrations/refine/dataProvider";
 import { toastStore } from "@/store/toastStore";
-import type {
-  PipelineOperationProposal,
-  PipelineOperation,
-  PipelineOperationDiagnostic,
-} from "@repo/pipeline-engine/schemas";
 
 interface Message {
   id: string;
@@ -45,28 +45,28 @@ interface RuntimeState {
   suggestedRuntimeId: string | null;
 }
 
-const getOperationLabel = (op: PipelineOperation): string => {
-  switch (op.type) {
+const getActionLabel = (action: PipelineAction): string => {
+  switch (action.type) {
     case "addNode": {
-      return `添加节点: ${op.node.type}`;
+      return `添加节点: ${action.node.type}`;
     }
     case "removeNode": {
-      return `删除节点: ${op.nodeId}`;
+      return `删除节点: ${action.nodeId}`;
     }
     case "addEdge": {
-      return `添加连线: ${op.edge.source} → ${op.edge.target}`;
+      return `添加连线: ${action.edge.source} → ${action.edge.target}`;
     }
     case "removeEdge": {
-      return `删除连线: ${op.edgeId}`;
+      return `删除连线: ${action.edgeId}`;
     }
     case "reconnectEdge": {
-      return `重连连线: ${op.edgeId}`;
+      return `重连连线: ${action.edgeId}`;
     }
     case "replaceNodeData": {
-      return `替换节点数据: ${op.nodeId}`;
+      return `替换节点数据: ${action.nodeId}`;
     }
     default: {
-      return (op as { type: string }).type;
+      return (action as { type: string }).type;
     }
   }
 };
@@ -176,7 +176,6 @@ export const AgentPanel = () => {
     if (isSending) {
       return;
     }
-    clearPendingProposal();
     const text = inputValue.trim();
     if (!text) {
       return;
@@ -190,6 +189,8 @@ export const AgentPanel = () => {
 
       return;
     }
+
+    clearPendingProposal();
 
     const userMessage: Message = {
       id: `user-${Date.now()}`,
@@ -251,7 +252,7 @@ export const AgentPanel = () => {
 
     const result = await ResultAsync.fromPromise(
       dataProvider.custom!({
-        url: "pipelines/proposeOperations",
+        url: "pipelines/proposeActions",
         method: "post",
         payload: {
           id: pipelineId,
@@ -283,8 +284,8 @@ export const AgentPanel = () => {
     }
 
     const data = result.value.data as {
-      proposal?: PipelineOperationProposal | null;
-      diagnostics?: PipelineOperationDiagnostic[] | null;
+      proposal?: PipelineActionProposal | null;
+      diagnostics?: PipelineActionDiagnostic[] | null;
       reply?: string;
     };
 
@@ -393,7 +394,7 @@ export const AgentPanel = () => {
   }, [clearPendingProposal, scrollToBottom, t]);
 
   const proposal =
-    agentPanel.pendingProposal as PipelineOperationProposal | null;
+    agentPanel.pendingProposal as PipelineActionProposal | null;
   const hasProposal = proposal !== null;
 
   return (
@@ -513,12 +514,12 @@ export const AgentPanel = () => {
             <div className="rounded-md border bg-muted/50 p-2.5">
               <p className="mb-2 text-xs font-medium">{proposal.summary}</p>
               <ul className="flex flex-col gap-1">
-                {proposal.operations.map((op, i) => (
+                {proposal.actions.map((action, i) => (
                   <li
                     key={i}
                     className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-                    {getOperationLabel(op)}
+                    {getActionLabel(action)}
                   </li>
                 ))}
               </ul>
